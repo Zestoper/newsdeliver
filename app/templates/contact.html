@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/nav.css') }}">
+{% endblock %}
+
+{% block content %}
+  <header>
+    <h1>News Delivery</h1>
+
+    <div class="button-container">
+      <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
+      {% if current_user %}
+        <span class="user-badge">{{ current_user }}님</span>
+        <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
+      {% else %}
+        <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>
+      {% endif %}
+    </div>
+
+    <h2>문의하기</h2>
+    <hr>
+
+    <nav class="main-nav">
+      <ul>
+        <li><a href="{{ request.url_for('home') }}">Home</a></li>
+        <li><a href="{{ request.url_for('news') }}">News</a></li>
+        <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
+      </ul>
+    </nav>
+
+    <section class="page-section">
+      <div class="contact-card">
+        <h3>News Delivery Contact</h3>
+        <p>문의사항이 있다면 아래 메일로 연락해주세요.</p>
+        <p><strong>Email:</strong> support@newsdelivery.local</p>
+        <p><strong>Hours:</strong> Mon-Fri 09:00 - 18:00</p>
+      </div>
+    </section>
+
+    <hr>
+  </header>
+
+  <footer>
+    <p>&copy; 2026 News Delivery. All rights reserved.</p>
+  </footer>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}구독하기 - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}">
+{% endblock %}
+
+{% block content %}
+  <form class="subscribe-form" action="{{ request.url_for('subscribe') }}" method="post">
+    <h1>구독 서비스</h1>
+    <p>뉴스레터를 받으실 이메일을 입력해주세요.</p>
+
+    {% if message %}
+      <div class="message {{ message_type }}">{{ message }}</div>
+    {% endif %}
+
+    <input type="email" id="email" name="email" placeholder="example@email.com" value="{{ form_data.get('email', '') }}" required>
+
+    <button type="submit" class="form-button">구독하기</button>
+    <a class="helper-link" href="{{ request.url_for('home') }}">메인으로 돌아가기</a>
+  </form>
+{% endblock %}

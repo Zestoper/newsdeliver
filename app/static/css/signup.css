@@ -1,0 +1,132 @@
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 40px 0;
+  background: #f4f7fe;
+  font-family: "Pretendard", sans-serif;
+}
+
+.signup-container {
+  width: 100%;
+  max-width: 450px;
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(29, 78, 216, 0.1);
+  box-sizing: border-box;
+}
+
+.signup-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.signup-header h1 {
+  font-size: 1.8rem;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.signup-header p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  margin-left: 4px;
+}
+
+input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.form-button {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.form-button.primary {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.form-button.primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.form-button.secondary {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.form-button.secondary:hover {
+  background: #e2e8f0;
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.message {
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+.message.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
