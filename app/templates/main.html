@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Home - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/nav.css') }}">
+{% endblock %}
+
+{% block content %}
+  <header>
+    <h1>News Delivery</h1>
+
+    <div class="button-container">
+      <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
+      {% if current_user %}
+        <span class="user-badge">{{ current_user }}님</span>
+        <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
+      {% else %}
+        <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>
+      {% endif %}
+    </div>
+
+    <h2>최신 뉴스</h2>
+    <hr>
+
+    <nav class="main-nav">
+      <ul>
+        <li><a href="{{ request.url_for('home') }}">Home</a></li>
+        <li><a href="{{ request.url_for('news') }}">News</a></li>
+        <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
+      </ul>
+    </nav>
+
+    <section class="news-section">
+      <ul>
+        {% for news in news_items %}
+          <li class="news-card">
+            <span class="news-category">{{ news.category }}</span>
+            <h3>{{ news.title }}</h3>
+            <p>{{ news.summary }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <hr>
+  </header>
+
+  <footer>
+    <p>&copy; 2026 News Delivery. All rights reserved.</p>
+  </footer>
+{% endblock %}

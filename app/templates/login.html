@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}로그인 - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Welcome Back</h1>
+      <p>News Delivery에 로그인하세요</p>
+    </div>
+
+    {% if message %}
+      <div class="message {{ message_type }}">{{ message }}</div>
+    {% endif %}
+
+    <form class="login-form" action="{{ request.url_for('login') }}" method="post">
+      <div class="input-group">
+        <input id="user_id" name="user_id" type="text" placeholder="아이디" value="{{ form_data.get('user_id', '') }}" required>
+        <input id="password" name="password" type="password" placeholder="비밀번호" required>
+      </div>
+
+      <button type="submit" class="form-button">로그인</button>
+    </form>
+
+    <div class="login-footer">
+      <span>계정이 없으신가요?</span>
+      <a href="{{ request.url_for('signup_page') }}">회원가입</a>
+    </div>
+
+    <div class="helper-links">
+      <a href="{{ request.url_for('home') }}">메인으로 돌아가기</a>
+    </div>
+  </div>
+{% endblock %}
