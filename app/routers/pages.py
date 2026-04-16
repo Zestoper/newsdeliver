@@ -8,9 +8,12 @@ from app.services.store import (
     add_subscription,
     add_user,
     get_news_items,
+    get_user,
     is_duplicate_subscription,
     is_duplicate_user,
 )
+
+
 
 router = APIRouter()
 
@@ -58,7 +61,8 @@ async def login(
 ) -> HTMLResponse:
     form_data = {"user_id": user_id}
 
-    if user_id == "admin" and password == "password":
+    user = get_user(user_id=user_id, password=password)
+    if user:
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(
             key=AUTH_COOKIE_NAME,
@@ -71,7 +75,7 @@ async def login(
     return render(
         request,
         "login.html",
-        message="아이디 또는 비밀번호가 올바르지 않습니다. admin / password로 로그인해보세요.",
+        message="아이디 또는 비밀번호가 올바르지 않습니다.",
         message_type="error",
         form_data=form_data,
     )

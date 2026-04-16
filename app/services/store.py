@@ -1,3 +1,6 @@
+from sqlalchemy import text
+from app.database import engine
+
 news_items = [
     {
         "title": "아침 브리핑: 오늘의 주요 헤드라인",
@@ -16,7 +19,6 @@ news_items = [
     },
 ]
 
-users = []
 subscriptions = []
 
 
@@ -25,11 +27,31 @@ def get_news_items() -> list[dict]:
 
 
 def is_duplicate_user(*, user_id: str, email: str) -> bool:
-    return any(user["user_id"] == user_id or user["email"] == email for user in users)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT id FROM news_users WHERE id = :id OR email = :email"),
+            {"id": user_id, "email": email}
+        )
+        return result.fetchone() is not None
 
 
 def add_user(user: dict) -> None:
-    users.append(user)
+    with engine.connect() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO news_users (id, name, birth, pw, email, tel)
+                VALUES (:id, :name, :birth, :pw, :email, :tel)
+            """),
+            {
+                "id": user["user_id"],
+                "name": user["name"],
+                "birth": user["birth"],
+                "pw": user["password"],
+                "email": user["email"],
+                "tel": user["phone"],
+            }
+        )
+        conn.commit()
 
 
 def is_duplicate_subscription(email: str) -> bool:
@@ -38,3 +60,12 @@ def is_duplicate_subscription(email: str) -> bool:
 
 def add_subscription(email: str) -> None:
     subscriptions.append(email)
+
+def get_user(*, user_id: str, password: str) -> dict | None:
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM news_users WHERE id = :id AND pw = :pw"),
+            {"id": user_id, "pw": password}
+        )
+        row = result.fetchone()
+        return dict(row._mapping) if row else None
