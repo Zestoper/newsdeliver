@@ -26,13 +26,20 @@ def get_news_items() -> list[dict]:
     return news_items
 
 
-def is_duplicate_user(*, user_id: str, email: str) -> bool:
+def is_duplicate_user(*, user_id: str, email: str) -> dict:
     with engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT id FROM news_users WHERE id = :id OR email = :email"),
-            {"id": user_id, "email": email}
+        id_result = conn.execute(
+            text("SELECT id FROM news_users WHERE id = :id"),
+            {"id": user_id}
         )
-        return result.fetchone() is not None
+        email_result = conn.execute(
+            text("SELECT id FROM news_users WHERE email = :email"),
+            {"email": email}
+        )
+        return {
+            "id": id_result.fetchone() is not None,
+            "email": email_result.fetchone() is not None,
+        }
 
 
 def add_user(user: dict) -> None:
@@ -54,13 +61,6 @@ def add_user(user: dict) -> None:
         conn.commit()
 
 
-def is_duplicate_subscription(email: str) -> bool:
-    return email in subscriptions
-
-
-def add_subscription(email: str) -> None:
-    subscriptions.append(email)
-
 def get_user(*, user_id: str, password: str) -> dict | None:
     with engine.connect() as conn:
         result = conn.execute(
@@ -69,3 +69,11 @@ def get_user(*, user_id: str, password: str) -> dict | None:
         )
         row = result.fetchone()
         return dict(row._mapping) if row else None
+
+
+def is_duplicate_subscription(email: str) -> bool:
+    return email in subscriptions
+
+
+def add_subscription(email: str) -> None:
+    subscriptions.append(email)

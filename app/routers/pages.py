@@ -13,8 +13,6 @@ from app.services.store import (
     is_duplicate_user,
 )
 
-
-
 router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,6 +28,7 @@ def render(
     message: str | None = None,
     message_type: str = "success",
     form_data: dict | None = None,
+    focus: str | None = None,
     **extra_context,
 ) -> HTMLResponse:
     context = {
@@ -38,6 +37,7 @@ def render(
         "message": message,
         "message_type": message_type,
         "form_data": form_data or {},
+        "focus": focus,
         **extra_context,
     }
     return templates.TemplateResponse(request, template_name, context)
@@ -123,29 +123,44 @@ async def signup(
             form_data=form_data,
         )
 
-    if is_duplicate_user(user_id=user_id, email=email):
+    dup = is_duplicate_user(user_id=user_id, email=email)
+
+    if dup["id"] and dup["email"]:
         return render(
-            request,
-            "signup.html",
-            message="이미 사용 중인 아이디 또는 이메일입니다.",
+            request, "signup.html",
+            message="이미 사용 중인 아이디와 이메일입니다. 둘 다 변경해주세요.",
             message_type="error",
             form_data=form_data,
+            focus="user_id",
+        )
+    if dup["id"]:
+        return render(
+            request, "signup.html",
+            message="이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.",
+            message_type="error",
+            form_data=form_data,
+            focus="user_id",
+        )
+    if dup["email"]:
+        return render(
+            request, "signup.html",
+            message="이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.",
+            message_type="error",
+            form_data=form_data,
+            focus="email",
         )
 
-    add_user(
-        {
-            "name": name,
-            "birth": birth,
-            "user_id": user_id,
-            "password": password,
-            "email": email,
-            "phone": phone,
-        }
-    )
+    add_user({
+        "name": name,
+        "birth": birth,
+        "user_id": user_id,
+        "password": password,
+        "email": email,
+        "phone": phone,
+    })
     return render(
-        request,
-        "signup.html",
-        message="회원가입이 완료되었습니다. 이제 admin / password로 로그인해볼 수 있습니다.",
+        request, "signup.html",
+        message="회원가입이 완료되었습니다!",
         message_type="success",
     )
 

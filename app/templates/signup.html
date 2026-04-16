@@ -53,5 +53,12 @@
         <a class="form-button secondary link-button" href="{{ request.url_for('login_page') }}">로그인으로 이동</a>
       </div>
     </form>
+
+    {% if focus %}
+    <script>
+      document.getElementById("{{ focus }}").focus();
+    </script>
+    {% endif %}
+
   </div>
 {% endblock %}
