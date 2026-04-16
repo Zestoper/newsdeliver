@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>관리자 페이지</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f4f4f4; }
+    button { margin: 2px; padding: 4px 10px; cursor: pointer; }
+    .edit-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; }
+    .del-btn  { background: #f44336; color: white; border: none; border-radius: 4px; }
+    input { width: 90%; padding: 4px; }
+  </style>
+</head>
+<body>
+  <h2>👤 회원 관리</h2>
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>이름</th><th>생년월일</th>
+        <th>이메일</th><th>전화번호</th><th>권한</th><th>관리</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API = 'http://127.0.0.1:8000/api/users';
+
+    async function loadUsers() {
+      const res = await fetch(API);
+      const users = await res.json();
+      const tbody = document.querySelector('#userTable tbody');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        tbody.innerHTML += `
+          <tr id="row-${u.id}">
+            <td>${u.id}</td>
+            <td><input id="name-${u.id}" value="${u.name || ''}"></td>
+            <td>${u.birth || ''}</td>
+            <td><input id="email-${u.id}" value="${u.email || ''}"></td>
+            <td><input id="tel-${u.id}" value="${u.tel || ''}"></td>
+            <td>
+              <select id="role-${u.id}">
+                <option ${u.role==='user'?'selected':''}>user</option>
+                <option ${u.role==='admin'?'selected':''}>admin</option>
+              </select>
+            </td>
+            <td>
+              <button class="edit-btn" onclick="updateUser('${u.id}')">수정</button>
+              <button class="del-btn"  onclick="deleteUser('${u.id}')">삭제</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    async function updateUser(id) {
+      const data = {
+        name:  document.getElementById(`name-${id}`).value,
+        email: document.getElementById(`email-${id}`).value,
+        tel:   document.getElementById(`tel-${id}`).value,
+        role:  document.getElementById(`role-${id}`).value,
+      };
+      await fetch(`${API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      alert('수정 완료!');
+      loadUsers();
+    }
+
+    async function deleteUser(id) {
+      if (!confirm(`${id} 회원을 삭제할까요?`)) return;
+      await fetch(`${API}/${id}`, { method: 'DELETE' });
+      alert('삭제 완료!');
+      loadUsers();
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>
