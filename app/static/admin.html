@@ -1,232 +1,233 @@
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-    <meta charset="UTF-8">
-    <title>관리자 페이지</title>
-    <link rel="stylesheet" href="/static/css/admin.css">
-    </head>
-    <body>
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+        <meta charset="UTF-8">
+        <title>관리자 페이지</title>
+        <link rel="stylesheet" href="/static/css/admin.css">
+        </head>
+        <body>
 
-    <div class="back-btn-wrap">
-    <button onclick="history.back()" class="back-btn">← 뒤로</button>
+        <div class="back-btn-wrap">
+        <button onclick="history.back()" class="back-btn">← 뒤로</button>
+        </div>
+
+        <div class="header" style="margin-top:50px;">
+        <h1>🛠 관리자 페이지</h1>
+        </div>
+
+        <div class="tabs">
+        <button class="tab active" onclick="showTab('users')">👤 회원 관리</button>
+        <button class="tab" onclick="showTab('write')">📰 뉴스 글쓰기</button>
+        <button class="tab" onclick="showTab('newsList')">📚 뉴스 관리</button>
+        </div>
+
+    <div class="content">
+
+    <!-- 회원 관리 -->
+    <div id="users" class="section active">
+        <h2>👤 회원 관리</h2>
+        <table id="userTable">
+        <thead>
+            <tr>
+            <th>ID</th><th>이름</th><th>생년월일</th>
+            <th>이메일</th><th>전화번호</th><th>권한</th><th>관리</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        </table>
     </div>
 
-    <div class="header" style="margin-top:50px;">
-    <h1>🛠 관리자 페이지</h1>
-    </div>
-
-    <div class="tabs">
-    <button class="tab active" onclick="showTab('users')">👤 회원 관리</button>
-    <button class="tab" onclick="showTab('write')">📰 뉴스 글쓰기</button>
-    <button class="tab" onclick="showTab('newsList')">📚 뉴스 관리</button>
-    </div>
-
-<div class="content">
-
-  <!-- 회원 관리 -->
-  <div id="users" class="section active">
-    <h2>👤 회원 관리</h2>
-    <table id="userTable">
-      <thead>
-        <tr>
-          <th>ID</th><th>이름</th><th>생년월일</th>
-          <th>이메일</th><th>전화번호</th><th>권한</th><th>관리</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- 뉴스 글쓰기 -->
-  <div id="write" class="section">
-    <h2>📰 뉴스 글쓰기</h2>
-    <div class="form-box">
-      <div class="form-group">
-        <label>제목</label>
-        <input id="news-title" type="text" placeholder="뉴스 제목을 입력하세요">
-      </div>
-      <div class="form-group">
-        <label>본문</label>
-        <textarea id="news-content" rows="10" placeholder="본문을 입력하세요"></textarea>
-      </div>
-      <div class="form-group">
-        <label>이미지 URL</label>
-        <input id="news-image" type="text" placeholder="https://...">
-      </div>
-      <div class="form-group">
-        <label>출처</label>
-        <input id="news-source" type="text" placeholder="출처를 입력하세요">
-      </div>
-      <div class="form-group">
-        <label>발행 상태</label>
-        <select id="news-status" style="width:auto;">
-          <option value="draft">임시저장</option>
-          <option value="published">발행</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <button class="btn btn-green" onclick="submitNews()">저장</button>
-        <button class="btn btn-gray" onclick="clearForm()">초기화</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 뉴스 관리 -->
-  <div id="newsList" class="section">
-    <h2>📚 뉴스 관리</h2>
-    <table id="newsTable">
-      <thead>
-        <tr>
-          <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-</div>
-
-<script>
-  const USER_API = 'http://127.0.0.1:8000/api/users';
-  const NEWS_API = 'http://127.0.0.1:8000/api/news';
-
-  function showTab(name) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(name).classList.add('active');
-    event.target.classList.add('active');
-    if (name === 'users') loadUsers();
-    if (name === 'newsList') loadNews();
-  }
-
-  // ── 회원 관리 ──
-  async function loadUsers() {
-    const res = await fetch(USER_API);
-    const users = await res.json();
-    const tbody = document.querySelector('#userTable tbody');
-    tbody.innerHTML = '';
-    users.forEach(u => {
-      tbody.innerHTML += `
-        <tr id="row-${u.id}">
-          <td>${u.id}</td>
-          <td><input id="name-${u.id}" value="${u.name || ''}"></td>
-          <td>${u.birth || ''}</td>
-          <td><input id="email-${u.id}" value="${u.email || ''}"></td>
-          <td><input id="tel-${u.id}" value="${u.tel || ''}"></td>
-          <td>
-            <select id="role-${u.id}" style="width:auto;">
-              <option ${u.role==='user'?'selected':''}>user</option>
-              <option ${u.role==='admin'?'selected':''}>admin</option>
+    <!-- 뉴스 글쓰기 -->
+    <div id="write" class="section">
+        <h2>📰 뉴스 글쓰기</h2>
+        <div class="form-box">
+        <div class="form-group">
+            <label>제목</label>
+            <input id="news-title" type="text" placeholder="뉴스 제목을 입력하세요">
+        </div>
+        <div class="form-group">
+            <label>본문</label>
+            <textarea id="news-content" rows="10" placeholder="본문을 입력하세요"></textarea>
+        </div>
+        <div class="form-group">
+            <label>이미지 URL</label>
+            <input id="news-image" type="text" placeholder="https://...">
+        </div>
+        <div class="form-group">
+            <label>출처</label>
+            <input id="news-source" type="text" placeholder="출처를 입력하세요">
+        </div>
+        <div class="form-group">
+            <label>발행 상태</label>
+            <select id="news-status" style="width:auto;">
+            <option value="draft">임시저장</option>
+            <option value="published">발행</option>
             </select>
-          </td>
-          <td>
-            <button class="btn btn-green" onclick="updateUser('${u.id}')">수정</button>
-            <button class="btn btn-red" onclick="deleteUser('${u.id}')">삭제</button>
-          </td>
-        </tr>`;
-    });
-  }
+        </div>
+        <div class="form-row">
+            <button class="btn btn-green" onclick="submitNews()">저장</button>
+            <button class="btn btn-gray" onclick="clearForm()">초기화</button>
+        </div>
+        </div>
+    </div>
 
-  async function updateUser(id) {
-    const data = {
-      name: document.getElementById(`name-${id}`).value,
-      email: document.getElementById(`email-${id}`).value,
-      tel: document.getElementById(`tel-${id}`).value,
-      role: document.getElementById(`role-${id}`).value,
-    };
-    await fetch(`${USER_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    alert('수정 완료!');
-    loadUsers();
-  }
+    <!-- 뉴스 관리 -->
+    <div id="newsList" class="section">
+        <h2>📚 뉴스 관리</h2>
+        <table id="newsTable">
+        <thead>
+            <tr>
+            <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        </table>
+    </div>
 
-  async function deleteUser(id) {
-    if (!confirm(`${id} 회원을 삭제할까요?`)) return;
-    await fetch(`${USER_API}/${id}`, { method: 'DELETE' });
-    alert('삭제 완료!');
-    loadUsers();
-  }
+    </div>
 
-  // ── 뉴스 글쓰기 ──
-  async function submitNews() {
-    const data = {
-      title: document.getElementById('news-title').value,
-      content: document.getElementById('news-content').value,
-      image_url: document.getElementById('news-image').value,
-      source: document.getElementById('news-source').value,
-      status: document.getElementById('news-status').value,
-    };
-    if (!data.title || !data.content) {
-      alert('제목과 본문을 입력해주세요.');
-      return;
+    <script>
+    const USER_API = 'http://127.0.0.1:8000/api/users';
+    const NEWS_API = 'http://127.0.0.1:8000/api/news';
+
+    function showTab(name) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(name).classList.add('active');
+        event.target.classList.add('active');
+        if (name === 'users') loadUsers();
+        if (name === 'newsList') loadNews();
     }
-    await fetch(NEWS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    alert('저장 완료!');
-    clearForm();
-  }
 
-  function clearForm() {
-    document.getElementById('news-title').value = '';
-    document.getElementById('news-content').value = '';
-    document.getElementById('news-image').value = '';
-    document.getElementById('news-source').value = '';
-    document.getElementById('news-status').value = 'draft';
-  }
+    // ── 회원 관리 ──
+    async function loadUsers() {
+        const res = await fetch(USER_API);
+        const users = await res.json();
+        const tbody = document.querySelector('#userTable tbody');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+        tbody.innerHTML += `
+            <tr id="row-${u.id}">
+            <td>${u.id}</td>
+            <td><input id="name-${u.id}" value="${u.name || ''}"></td>
+            <td>${u.birth || ''}</td>
+            <td><input id="email-${u.id}" value="${u.email || ''}"></td>
+            <td><input id="tel-${u.id}" value="${u.tel || ''}"></td>
+            <td>
+                <select id="role-${u.id}" style="width:auto;">
+                <option ${u.role==='admin'?'selected':''}>관리자</option>
+                <option ${u.role==='press'?'selected':''}>기자</option>
+                <option ${u.role==='user'?'selected':''}>사용자</option>
+                </select>
+            </td>
+            <td>
+                <button class="btn btn-green" onclick="updateUser('${u.id}')">수정</button>
+                <button class="btn btn-red" onclick="deleteUser('${u.id}')">삭제</button>
+            </td>
+            </tr>`;
+        });
+    }
 
-  // ── 뉴스 관리 ──
-  async function loadNews() {
-    const res = await fetch(NEWS_API);
-    const newsList = await res.json();
-    const tbody = document.querySelector('#newsTable tbody');
-    tbody.innerHTML = '';
-    newsList.forEach(n => {
-      const date = n.created_at ? n.created_at.substring(0, 10) : '';
-      const badge = n.status === 'published'
-        ? `<span class="badge badge-published">발행</span>`
-        : `<span class="badge badge-draft">임시저장</span>`;
-      tbody.innerHTML += `
-        <tr>
-          <td>${n.id}</td>
-          <td>${n.title}</td>
-          <td>${n.source || ''}</td>
-          <td>${badge}</td>
-          <td>${date}</td>
-          <td>
-            <button class="btn btn-blue" onclick="toggleStatus(${n.id}, '${n.status}')">
-              ${n.status === 'published' ? '임시저장으로' : '발행'}
-            </button>
-            <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
-          </td>
-        </tr>`;
-    });
-  }
+    async function updateUser(id) {
+        const data = {
+        name: document.getElementById(`name-${id}`).value,
+        email: document.getElementById(`email-${id}`).value,
+        tel: document.getElementById(`tel-${id}`).value,
+        role: document.getElementById(`role-${id}`).value,
+        };
+        await fetch(`${USER_API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        });
+        alert('수정 완료!');
+        loadUsers();
+    }
 
-  async function toggleStatus(id, current) {
-    const newStatus = current === 'published' ? 'draft' : 'published';
-    await fetch(`${NEWS_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    loadNews();
-  }
+    async function deleteUser(id) {
+        if (!confirm(`${id} 회원을 삭제할까요?`)) return;
+        await fetch(`${USER_API}/${id}`, { method: 'DELETE' });
+        alert('삭제 완료!');
+        loadUsers();
+    }
 
-  async function deleteNews(id) {
-    if (!confirm('뉴스를 삭제할까요?')) return;
-    await fetch(`${NEWS_API}/${id}`, { method: 'DELETE' });
-    alert('삭제 완료!');
-    loadNews();
-  }
+    // ── 뉴스 글쓰기 ──
+    async function submitNews() {
+        const data = {
+        title: document.getElementById('news-title').value,
+        content: document.getElementById('news-content').value,
+        image_url: document.getElementById('news-image').value,
+        source: document.getElementById('news-source').value,
+        status: document.getElementById('news-status').value,
+        };
+        if (!data.title || !data.content) {
+        alert('제목과 본문을 입력해주세요.');
+        return;
+        }
+        await fetch(NEWS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        });
+        alert('저장 완료!');
+        clearForm();
+    }
 
-  // 초기 로드
-  loadUsers();
-</script>
-</body>
-</html>
+    function clearForm() {
+        document.getElementById('news-title').value = '';
+        document.getElementById('news-content').value = '';
+        document.getElementById('news-image').value = '';
+        document.getElementById('news-source').value = '';
+        document.getElementById('news-status').value = 'draft';
+    }
+
+    // ── 뉴스 관리 ──
+    async function loadNews() {
+        const res = await fetch(NEWS_API);
+        const newsList = await res.json();
+        const tbody = document.querySelector('#newsTable tbody');
+        tbody.innerHTML = '';
+        newsList.forEach(n => {
+        const date = n.created_at ? n.created_at.substring(0, 10) : '';
+        const badge = n.status === 'published'
+            ? `<span class="badge badge-published">발행</span>`
+            : `<span class="badge badge-draft">임시저장</span>`;
+        tbody.innerHTML += `
+            <tr>
+            <td>${n.id}</td>
+            <td>${n.title}</td>
+            <td>${n.source || ''}</td>
+            <td>${badge}</td>
+            <td>${date}</td>
+            <td>
+                <button class="btn btn-blue" onclick="toggleStatus(${n.id}, '${n.status}')">
+                ${n.status === 'published' ? '임시저장으로' : '발행'}
+                </button>
+                <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
+            </td>
+            </tr>`;
+        });
+    }
+
+    async function toggleStatus(id, current) {
+        const newStatus = current === 'published' ? 'draft' : 'published';
+        await fetch(`${NEWS_API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+        });
+        loadNews();
+    }
+
+    async function deleteNews(id) {
+        if (!confirm('뉴스를 삭제할까요?')) return;
+        await fetch(`${NEWS_API}/${id}`, { method: 'DELETE' });
+        alert('삭제 완료!');
+        loadNews();
+    }
+
+    // 초기 로드
+    loadUsers();
+    </script>
+    </body>
+    </html>

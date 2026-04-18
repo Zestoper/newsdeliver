@@ -1,40 +1,44 @@
-```html
 {% extends "base.html" %}
 
 {% block title %}뉴스 작성 - News Delivery{% endblock %}
 
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}">
+{% endblock %}
+
 {% block content %}
-<div style="max-width:700px; margin:60px auto 40px; padding:0 20px;">  <h2>📰 뉴스 작성</h2>
-  <form action="/press/write.css" method="post">
-    <div style="margin-bottom:16px;">
-      <label>제목</label><br>
-      <input name="title" type="text" placeholder="뉴스 제목" style="width:100%; padding:8px; margin-top:4px;" required>
-    </div>
-    <div style="margin-bottom:16px;">
-      <label>본문</label><br>
-      <textarea name="content" rows="12" placeholder="본문을 입력하세요" style="width:100%; padding:8px; margin-top:4px;" required></textarea>
-    </div>
-    <div style="margin-bottom:16px;">
-      <label>이미지 URL</label><br>
-      <input name="image_url" type="text" placeholder="https://..." style="width:100%; padding:8px; margin-top:4px;">
-    </div>
-    <div style="margin-bottom:16px;">
-      <label>출처</label><br>
-      <input name="source" type="text" placeholder="출처" style="width:100%; padding:8px; margin-top:4px;">
-    </div>
-    <div style="margin-bottom:24px;">
-      <label>발행 상태</label><br>
-      <select name="status" style="padding:8px; margin-top:4px;">
-        <option value="draft">임시저장</option>
-        <option value="published">발행</option>
-      </select>
-    </div>
-    <div style="display:flex; gap:10px;">
-      <button type="submit" style="padding:10px 24px; background:#333; color:white; border:none; cursor:pointer;">저장</button>
-      <a href="/press/news" style="padding:10px 24px; background:#aaa; color:white; text-decoration:none;">목록으로</a>
-    </div>
-  </form>
+<div class="write-container">
+  <h2>📰 뉴스 작성</h2>
+  <div class="write-box">
+    <form action="/press/write" method="post">
+      <div class="write-group">
+        <label>제목</label>
+        <input name="title" type="text" placeholder="뉴스 제목을 입력하세요" required>
+      </div>
+      <div class="write-group">
+        <label>본문</label>
+        <textarea name="content" rows="12" placeholder="본문을 입력하세요" required></textarea>
+      </div>
+      <div class="write-group">
+        <label>이미지 URL</label>
+        <input name="image_url" type="text" placeholder="https://...">
+      </div>
+      <div class="write-group">
+        <label>출처</label>
+        <input name="source" type="text" placeholder="출처를 입력하세요">
+      </div>
+      <div class="write-group">
+        <label>발행 상태</label>
+        <select name="status">
+          <option value="draft">임시저장</option>
+          <option value="published">발행</option>
+        </select>
+      </div>
+      <div class="write-btns">
+        <button type="submit" class="btn-submit">저장</button>
+        <a href="/press/news" class="btn-back">목록으로</a>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
-static/css/write.css 경로 맞춰
-```

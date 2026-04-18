@@ -1,52 +1,48 @@
-{% extends "base.html" %}
-
-{% block title %}내 뉴스 관리 - News Delivery{% endblock %}
-
-{% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}내 뉴스 관리 - News Delivery{% endblock %} {% block head %}
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}" />
+{% endblock %} {% block content %}
 <div class="press-container">
-  <div class="press-header">
-    <h2>📚 내 뉴스 관리</h2>
-    <a href="/press/write" class="btn-new">+ 새 뉴스 작성</a>
-  </div>
+    <div class="press-header">
+        <h2>📚 내 뉴스 관리</h2>
+        <a href="/press/write" class="btn-new">+ 새 뉴스 작성</a>
+    </div>
 
-  <table class="press-table">
-    <thead>
-      <tr>
-        <th>제목</th>
-        <th>출처</th>
-        <th>상태</th>
-        <th>작성일</th>
-        <th>관리</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for news in news_list %}
-      <tr>
-        <td>{{ news.title }}</td>
-        <td>{{ news.source or '' }}</td>
-        <td>
-          {% if news.status == 'published' %}
-            <span class="badge badge-published">발행</span>
-          {% else %}
-            <span class="badge badge-draft">임시저장</span>
-          {% endif %}
-        </td>
-        <td>{{ news.created_at.strftime('%Y-%m-%d') if news.created_at else '' }}</td>
-        <td>
-          <a href="/press/edit/{{ news.id }}" class="btn-edit">수정</a>
-          <a href="/press/delete/{{ news.id }}" onclick="return confirm('삭제할까요?')" class="btn-del">삭제</a>
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="5" class="empty">작성한 뉴스가 없어요.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table class="press-table">
+        <thead>
+            <tr>
+                <th>제목</th>
+                <th>출처</th>
+                <th>상태</th>
+                <th>작성일</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for news in news_list %}
+            <tr>
+                <td>{{ news.title }}</td>
+                <td>{{ news.source or '' }}</td>
+                <td>
+                    {% if news.status == 'published' %}
+                    <span class="badge badge-published">발행</span>
+                    {% else %}
+                    <span class="badge badge-draft">임시저장</span>
+                    {% endif %}
+                </td>
+                <td>{{ news.created_at.strftime('%Y-%m-%d') if news.created_at else '' }}</td>
+                <td>
+                    <a href="/press/edit/{{ news.id }}" class="btn-edit">수정</a>
+                    <a href="/press/delete/{{ news.id }}" onclick="return confirm('삭제할까요?');" class="btn-del"
+                        >삭제</a
+                    >
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="empty">작성한 뉴스가 없어요.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
