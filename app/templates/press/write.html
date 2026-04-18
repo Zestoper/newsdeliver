@@ -34,6 +34,15 @@
           <option value="published">발행</option>
         </select>
       </div>
+      <div class="write-group">
+        <label>카테고리</label>
+        <select name="category_id">
+          <option value="">선택 안함</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <div class="write-btns">
         <button type="submit" class="btn-submit">저장</button>
         <a href="/press/news" class="btn-back">목록으로</a>

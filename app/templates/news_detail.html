@@ -1,26 +1,122 @@
-{% extends "base.html" %}
+  {% extends "base.html" %}
 
-{% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
+  {% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}">
-{% endblock %}
+  {% block head %}
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}">
+  {% endblock %}
 
-{% block content %}
-<div class="detail-container">
-  {% if news %}
-    <div class="detail-box">
-      <span class="detail-source">{{ news.source or '출처 없음' }}</span>
-      <h1 class="detail-title">{{ news.title }}</h1>
-      <p class="detail-date">{{ news.created_at.strftime('%Y년 %m월 %d일') if news.created_at else '' }}</p>
-      <hr class="detail-divider">
-      {% if news.image_url %}
-        <img src="{{ news.image_url }}" class="detail-image">
-      {% endif %}
-      <p class="detail-content">{{ news.content }}</p>
-    </div>
-  {% else %}
-    <p class="detail-empty">뉴스를 찾을 수 없습니다.</p>
-  {% endif %}
-</div>
-{% endblock %}
+  {% block content %}
+  <div class="detail-container">
+    {% if news %}
+      <div class="detail-box">
+        <span class="detail-source">{{ news.source or '출처 없음' }}</span>
+        <h1 class="detail-title">{{ news.title }}</h1>
+        <p class="detail-date">{{ news.created_at.strftime('%Y년 %m월 %d일') if news.created_at else '' }}</p>
+        <hr class="detail-divider">
+        {% if news.image_url %}
+          <img src="{{ news.image_url }}" class="detail-image">
+        {% endif %}
+        <p class="detail-content">{{ news.content }}</p>
+
+        <!-- 좋아요 / 구독 버튼 -->
+        <div class="detail-actions">
+          <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
+            ❤️ <span id="like-count">{{ like_count }}</span>
+          </button>
+          {% if current_user %}
+            {% if subscribed %}
+              <button class="btn-subscribe subscribed" onclick="location.href='/subscribe'">✅ 구독 중</button>
+            {% else %}
+              <button class="btn-subscribe" onclick="location.href='/subscribe'">🔔 구독하기</button>
+            {% endif %}
+          {% else %}
+            <button class="btn-subscribe" onclick="location.href='/login'">🔔 구독하기</button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 댓글 -->
+      <div class="comment-box">
+        <h3>💬 댓글</h3>
+
+        {% if current_user %}
+        <form class="comment-form" onsubmit="submitComment(event, {{ news.id }})">
+          <textarea id="comment-input" placeholder="댓글을 입력하세요" required></textarea>
+          <button type="submit" class="btn-comment">등록</button>
+        </form>
+        {% else %}
+        <p style="font-size:14px; color:#adb5bd; margin-bottom:16px;">
+          <a href="/login" style="color:#495057;">로그인</a> 후 댓글을 작성할 수 있습니다.
+        </p>
+        {% endif %}
+
+        <div id="comment-list"></div>
+      </div>
+    {% else %}
+      <p class="detail-empty">뉴스를 찾을 수 없습니다.</p>
+    {% endif %}
+  </div>
+
+  <script>
+    const NEWS_ID = {{ news.id if news else 0 }};
+    const CURRENT_USER = {{ 'true' if current_user else 'false' }};
+
+    // 좋아요
+    async function toggleLike(newsId) {
+      if (!CURRENT_USER) {
+        alert('로그인이 필요합니다.');
+        location.href = '/login';
+        return;
+      }
+      const res = await fetch(`/news/${newsId}/like`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('like-count').textContent = data.count;
+        const btn = document.querySelector('.btn-like');
+        btn.classList.toggle('liked', data.liked);
+      }
+    }
+
+    // 댓글 불러오기
+    async function loadComments() {
+      const res = await fetch(`/news/${NEWS_ID}/comments`);
+      const comments = await res.json();
+      const list = document.getElementById('comment-list');
+      list.innerHTML = '';
+      if (comments.length === 0) {
+        list.innerHTML = '<p style="color:#adb5bd; font-size:14px;">첫 댓글을 남겨보세요!</p>';
+        return;
+      }
+      comments.forEach(c => {
+        list.innerHTML += `
+          <div class="comment-item">
+            <div class="comment-header">
+              <span class="comment-author">${c.name}</span>
+              <span class="comment-date">${c.created_at}</span>
+            </div>
+            <p class="comment-content">${c.content}</p>
+          </div>`;
+      });
+    }
+
+    // 댓글 작성
+    async function submitComment(e, newsId) {
+      e.preventDefault();
+      const content = document.getElementById('comment-input').value;
+      const formData = new FormData();
+      formData.append('content', content);
+      const res = await fetch(`/news/${newsId}/comments`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('comment-input').value = '';
+        loadComments();
+      }
+    }
+
+    loadComments();
+  </script>
+  {% endblock %}

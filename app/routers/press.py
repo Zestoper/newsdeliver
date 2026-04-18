@@ -95,14 +95,44 @@ async def press_signup(
                   message_type="success")
 
 
-# ── 뉴스 작성 ──
 @router.get("/write", response_class=HTMLResponse)
 async def press_write_page(request: Request) -> HTMLResponse:
     user = get_current_user(request)
     if not user or user["role"] != "press":
         return RedirectResponse(url="/login", status_code=303)
-    return render(request, "press/write.html")
+    with engine.connect() as conn:
+        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+    return render(request, "press/write.html", categories=categories)
 
+
+@router.post("/write", response_class=HTMLResponse)
+async def press_write(
+    request: Request,
+    title: str = Form(...),
+    content: str = Form(...),
+    source: str = Form(""),
+    image_url: str = Form(""),
+    status: str = Form("draft"),
+    category_id: str = Form(""),
+) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user or user["role"] != "press":
+        return RedirectResponse(url="/login", status_code=303)
+
+    with engine.connect() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO news (title, content, image_url, source, status, author_id, category_id)
+                VALUES (:title, :content, :image_url, :source, :status, :author_id, :category_id)
+            """),
+            {
+                "title": title, "content": content, "image_url": image_url,
+                "source": source, "status": status, "author_id": user["id"],
+                "category_id": int(category_id) if category_id else None
+            }
+        )
+        conn.commit()
+    return RedirectResponse(url="/press/news", status_code=303)
 
 @router.post("/write", response_class=HTMLResponse)
 async def press_write(

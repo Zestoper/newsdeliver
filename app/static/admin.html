@@ -65,6 +65,12 @@
           <option value="published">발행</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>카테고리</label>
+        <select id="news-category" style="width:auto;">
+          <option value="">선택 안함</option>
+        </select>
+      </div>
       <div class="form-row">
         <button class="btn btn-green" onclick="submitNews()">저장</button>
         <button class="btn btn-gray" onclick="clearForm()">초기화</button>
@@ -173,6 +179,7 @@
       image_url: document.getElementById('news-image').value,
       source: document.getElementById('news-source').value,
       status: document.getElementById('news-status').value,
+      category_id: document.getElementById('news-category').value || null,
     };
     if (!data.title || !data.content) {
       alert('제목과 본문을 입력해주세요.');
@@ -193,6 +200,7 @@
     document.getElementById('news-image').value = '';
     document.getElementById('news-source').value = '';
     document.getElementById('news-status').value = 'draft';
+    document.getElementById('news-category').value = '';
   }
 
   // ── 뉴스 관리 ──
@@ -250,8 +258,19 @@
     result.style.color = data.success ? '#2f9e44' : '#fa5252';
   }
 
+  // ── 카테고리 로드 ──
+  async function loadCategories() {
+    const res = await fetch('/categories');
+    const categories = await res.json();
+    const select = document.getElementById('news-category');
+    categories.forEach(c => {
+      select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    });
+  }
+
   // 초기 로드
   loadUsers();
+  loadCategories();
 </script>
 </body>
 </html>

@@ -7,17 +7,50 @@
 {% endblock %}
 
 {% block content %}
-  <form class="subscribe-form" action="{{ request.url_for('subscribe') }}" method="post">
-    <h1>구독 서비스</h1>
-    <p>뉴스레터를 받으실 이메일을 입력해주세요.</p>
+<div class="subscribe-container">
+  <h1>🔔 구독 서비스</h1>
+  <p>관심 있는 카테고리를 선택하세요.</p>
 
-    {% if message %}
-      <div class="message {{ message_type }}">{{ message }}</div>
-    {% endif %}
+  {% if message %}
+    <div class="message {{ message_type }}">{{ message }}</div>
+  {% endif %}
 
-    <input type="email" id="email" name="email" placeholder="example@email.com" value="{{ form_data.get('email', '') }}" required>
+  {% if current_user %}
+    <div class="category-grid">
+      {% for category in categories %}
+        <button
+          class="category-btn {% if category.id in subscribed_ids %}subscribed{% endif %}"
+          onclick="toggleCategory({{ category.id }}, this)">
+          {% if category.name == '정치' %}🏛
+          {% elif category.name == '경제' %}💰
+          {% elif category.name == 'IT' %}💻
+          {% elif category.name == '문화' %}🎭
+          {% elif category.name == '스포츠' %}⚽
+          {% endif %}
+          {{ category.name }}
+        </button>
+      {% endfor %}
+    </div>
+    <p id="sub-result" style="margin-top:16px; font-size:14px;"></p>
+  {% else %}
+    <p style="color:#868e96; margin-top:20px;">
+      <a href="/login" style="color:#333; font-weight:600;">로그인</a> 후 구독할 수 있습니다.
+    </p>
+  {% endif %}
 
-    <button type="submit" class="form-button">구독하기</button>
-    <a class="helper-link" href="{{ request.url_for('home') }}">메인으로 돌아가기</a>
-  </form>
+  <a class="helper-link" href="{{ request.url_for('home') }}">메인으로 돌아가기</a>
+</div>
+
+<script>
+  async function toggleCategory(categoryId, btn) {
+    const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      btn.classList.toggle('subscribed', data.subscribed);
+      const result = document.getElementById('sub-result');
+      result.textContent = data.subscribed ? '구독했어요!' : '구독 해지했어요.';
+      result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
+    }
+  }
+</script>
 {% endblock %}

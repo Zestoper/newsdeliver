@@ -38,6 +38,12 @@
     </nav>
 
         <section class="news-section">
+      {% if current_user %}
+        <p style="font-size:13px; color:#868e96; margin-bottom:12px;">
+          🔔 구독한 카테고리 뉴스를 보여드려요.
+          <a href="/subscribe" style="color:#333; font-weight:600;">구독 관리</a>
+        </p>
+      {% endif %}
       <ul>
         {% for news in news_items %}
           <li class="news-card">
@@ -48,7 +54,10 @@
             </a>
           </li>
         {% else %}
-          <li>등록된 뉴스가 없습니다.</li>
+          <li style="color:#adb5bd; font-size:14px; padding:20px 0;">
+            구독한 카테고리의 뉴스가 없어요.
+            <a href="/subscribe" style="color:#333; font-weight:600;">카테고리 구독하기</a>
+          </li>
         {% endfor %}
       </ul>
     </section>
