@@ -61,5 +61,10 @@ def is_duplicate_subscription(email: str) -> bool:
     return email in subscriptions
 
 
-def add_subscription(email: str) -> None:
-    subscriptions.append(email)
+def add_subscription(email: str, user_id: str) -> None:
+    with engine.connect() as conn:
+        conn.execute(
+            text("INSERT INTO subscriptions (user_id, email, is_active) VALUES (:user_id, :email, 1)"),
+            {"user_id": user_id, "email": email}
+        )
+        conn.commit()

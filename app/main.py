@@ -9,7 +9,7 @@ from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.routers.news import router as news_router
 from app.routers.press import router as press_router
-
+from app.routers.admin_api import router as admin_api_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -33,6 +33,8 @@ app.include_router(pages_router)
 app.include_router(users_router)
 app.include_router(news_router)
 app.include_router(press_router)
+app.include_router(admin_api_router)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

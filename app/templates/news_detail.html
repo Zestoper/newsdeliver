@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+  {% if news %}
+    <div class="detail-box">
+      <span class="detail-source">{{ news.source or '출처 없음' }}</span>
+      <h1 class="detail-title">{{ news.title }}</h1>
+      <p class="detail-date">{{ news.created_at.strftime('%Y년 %m월 %d일') if news.created_at else '' }}</p>
+      <hr class="detail-divider">
+      {% if news.image_url %}
+        <img src="{{ news.image_url }}" class="detail-image">
+      {% endif %}
+      <p class="detail-content">{{ news.content }}</p>
+    </div>
+  {% else %}
+    <p class="detail-empty">뉴스를 찾을 수 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}

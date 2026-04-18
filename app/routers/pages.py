@@ -188,6 +188,16 @@ async def subscribe_page(request: Request) -> HTMLResponse:
 @router.post("/subscribe", response_class=HTMLResponse)
 async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
     form_data = {"email": email}
+    user = get_current_user(request)
+
+    if not user:
+        return render(
+            request,
+            "subscribe.html",
+            message="로그인 후 구독할 수 있습니다.",
+            message_type="error",
+            form_data=form_data,
+        )
 
     if is_duplicate_subscription(email):
         return render(
@@ -198,7 +208,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
             form_data=form_data,
         )
 
-    add_subscription(email)
+    add_subscription(email, user_id=user["id"])
     return render(
         request,
         "subscribe.html",
@@ -211,6 +221,16 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
 async def news(request: Request) -> HTMLResponse:
     return render(request, "news.html", news_items=get_news_items())
 
+@router.get("/news/{news_id}", response_class=HTMLResponse)
+async def news_detail(request: Request, news_id: int) -> HTMLResponse:
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM news WHERE id = :id"),
+            {"id": news_id}
+        )
+        row = result.fetchone()
+        news = dict(row._mapping) if row else None
+    return render(request, "news_detail.html", news=news)
 
 @router.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request) -> HTMLResponse:

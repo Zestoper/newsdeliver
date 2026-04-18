@@ -37,13 +37,15 @@
       </ul>
     </nav>
 
-    <section class="news-section">
+        <section class="news-section">
       <ul>
         {% for news in news_items %}
           <li class="news-card">
-            <span class="news-category">{{ news.source or '기타' }}</span>
-            <h3>{{ news.title }}</h3>
-            <p>{{ news.get('content', '')[:100] }}...</p>
+            <a href="/news/{{ news.id }}" style="text-decoration:none; color:inherit; display:block;">
+              <span class="news-category">{{ news.source or '기타' }}</span>
+              <h3>{{ news.title }}</h3>
+              <p>{{ news.get('content', '')[:100] }}...</p>
+            </a>
           </li>
         {% else %}
           <li>등록된 뉴스가 없습니다.</li>

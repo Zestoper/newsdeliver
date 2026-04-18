@@ -49,10 +49,9 @@ body {
 
 /* 탭 */
 .tabs {
-    display: flex;
-    background: white;
-    border-bottom: 1px solid #e9ecef;
-    padding: 0 32px;
+  display: flex;
+  background: #444;
+  flex-wrap: wrap
 }
 .tab {
     padding: 14px 20px;
