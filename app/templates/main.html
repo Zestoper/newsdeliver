@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/nav.css') }}">
 {% endblock %}
-
+{% block back_btn %}{% endblock %}
 {% block content %}
   <header>
     <h1>News Delivery</h1>
@@ -14,7 +14,12 @@
     <div class="button-container">
       <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
       {% if current_user %}
-        <span class="user-badge">{{ current_user }}님</span>
+        <span class="user-badge">{{ current_user.name }}님</span>
+        {% if current_user.role == 'admin' %}
+          <a class="button-link" href="/static/admin.html">관리자 페이지</a>
+        {% elif current_user.role == 'press' %}
+          <a class="button-link" href="/press/news">언론사 페이지</a>
+        {% endif %}
         <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
       {% else %}
         <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>
@@ -36,10 +41,12 @@
       <ul>
         {% for news in news_items %}
           <li class="news-card">
-            <span class="news-category">{{ news.category }}</span>
+            <span class="news-category">{{ news.source or '기타' }}</span>
             <h3>{{ news.title }}</h3>
-            <p>{{ news.summary }}</p>
+            <p>{{ news.get('content', '')[:100] }}...</p>
           </li>
+        {% else %}
+          <li>등록된 뉴스가 없습니다.</li>
         {% endfor %}
       </ul>
     </section>

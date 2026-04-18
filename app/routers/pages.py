@@ -3,7 +3,9 @@ from pathlib import Path
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import text
 
+from app.database import engine
 from app.services.store import (
     add_subscription,
     add_user,
@@ -21,6 +23,19 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 AUTH_COOKIE_NAME = "newsletter_user"
 
 
+def get_current_user(request: Request) -> dict | None:
+    user_id = request.cookies.get(AUTH_COOKIE_NAME)
+    if not user_id:
+        return None
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM news_users WHERE id = :id"),
+            {"id": user_id}
+        )
+        row = result.fetchone()
+        return dict(row._mapping) if row else None
+
+
 def render(
     request: Request,
     template_name: str,
@@ -33,7 +48,7 @@ def render(
 ) -> HTMLResponse:
     context = {
         "request": request,
-        "current_user": request.cookies.get(AUTH_COOKIE_NAME),
+        "current_user": get_current_user(request),
         "message": message,
         "message_type": message_type,
         "form_data": form_data or {},

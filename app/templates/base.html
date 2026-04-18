@@ -5,8 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}News Delivery{% endblock %}</title>
   {% block head %}{% endblock %}
+  <style>
+    .back-btn-wrap {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      padding: 12px 0;
+      background: white;
+      z-index: 999;
+    }
+    .back-btn {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #eee;
+      color: #333;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .back-btn:hover {
+      background: #ddd;
+    }
+  </style>
 </head>
 <body>
+  {% block back_btn %}
+  <div class="back-btn-wrap">
+    <button class="back-btn" onclick="history.back()">← 뒤로</button>
+  </div>
+  {% endblock %}
+  
   {% block content %}{% endblock %}
 </body>
 </html>

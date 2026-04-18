@@ -1,0 +1,71 @@
+* { box-sizing: border-box; }
+body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+
+/* 뒤로가기 */
+.back-btn-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 10px 0;
+  background: white;
+  z-index: 999;
+  border-bottom: 1px solid #eee;
+}
+.back-btn {
+  padding: 6px 14px;
+  background: #eee;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.back-btn:hover { background: #ddd; }
+
+/* 헤더 */
+.header {
+  background: #333;
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header h1 { margin: 0; font-size: 18px; }
+
+/* 탭 */
+.tabs { display: flex; background: #444; }
+.tab { padding: 12px 24px; color: #ccc; cursor: pointer; border: none; background: none; font-size: 14px; }
+.tab.active { background: #f5f5f5; color: #333; font-weight: bold; }
+
+/* 콘텐츠 */
+.content { padding: 24px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* 테이블 */
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+th { background: #f4f4f4; }
+input, select, textarea { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+textarea { resize: vertical; }
+
+/* 버튼 */
+.btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.btn-green { background: #4caf50; color: white; }
+.btn-red { background: #f44336; color: white; }
+.btn-blue { background: #2196f3; color: white; }
+.btn-gray { background: #888; color: white; }
+
+/* 폼 */
+.form-box { background: white; padding: 24px; border-radius: 8px; max-width: 700px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 14px; }
+.form-row { display: flex; gap: 10px; }
+
+/* 뱃지 */
+.badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+.badge-draft { background: #eee; color: #666; }
+.badge-published { background: #c8e6c9; color: #2e7d32; }

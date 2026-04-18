@@ -114,3 +114,33 @@ input:focus {
   margin-top: 18px;
   font-size: 0.9rem;
 }
+
+.signup-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.signup-btn {
+  padding: 10px 20px;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.signup-btn:hover {
+  opacity: 0.85;
+}
+
+.user-btn {
+  background: #333;
+  color: white;
+}
+
+.press-btn {
+  background: #1a73e8;
+  color: white;
+}

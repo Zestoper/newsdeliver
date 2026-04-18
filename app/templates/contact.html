@@ -8,13 +8,18 @@
 {% endblock %}
 
 {% block content %}
-  <header>
+  <header style="margin-top:50px;">
     <h1>News Delivery</h1>
 
     <div class="button-container">
       <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
-      {% if current_user %}
-        <span class="user-badge">{{ current_user }}님</span>
+        {% if current_user %}
+        <span class="user-badge">{{ current_user.name }}님</span>
+        {% if current_user.role == 'admin' %}
+          <a class="button-link" href="/static/admin.html">관리자 페이지</a>
+        {% elif current_user.role == 'press' %}
+          <a class="button-link" href="/press/news">언론사 페이지</a>
+        {% endif %}
         <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
       {% else %}
         <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>

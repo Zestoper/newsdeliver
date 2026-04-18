@@ -5,7 +5,7 @@
 {% block head %}
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/login.css') }}">
 {% endblock %}
-
+{% block back_btn %}{% endblock %}
 {% block content %}
   <div class="login-container">
     <div class="login-header">
@@ -28,7 +28,10 @@
 
     <div class="login-footer">
       <span>계정이 없으신가요?</span>
-      <a href="{{ request.url_for('signup_page') }}">회원가입</a>
+      <div class="signup-buttons">
+        <a href="{{ request.url_for('signup_page') }}" class="signup-btn user-btn">👤 일반 회원가입</a>
+        <a href="/press/signup" class="signup-btn press-btn">📰 언론사 회원가입</a>
+      </div>
     </div>
 
     <div class="helper-links">
