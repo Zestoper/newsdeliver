@@ -13,6 +13,7 @@ class NewsCreate(BaseModel):
     image_url: Optional[str] = ""
     source: Optional[str] = ""
     status: Optional[str] = "draft"
+    category_id: Optional[int] = None
 
 
 class NewsUpdate(BaseModel):
@@ -21,9 +22,9 @@ class NewsUpdate(BaseModel):
     image_url: Optional[str] = None
     source: Optional[str] = None
     status: Optional[str] = None
+    category_id: Optional[int] = None
 
 
-# 전체 조회
 @router.get("")
 def get_news():
     with engine.connect() as conn:
@@ -31,14 +32,13 @@ def get_news():
         return [dict(row._mapping) for row in result]
 
 
-# 추가
 @router.post("")
 def create_news(data: NewsCreate):
     with engine.connect() as conn:
         conn.execute(
             text("""
-                INSERT INTO news (title, content, image_url, source, status)
-                VALUES (:title, :content, :image_url, :source, :status)
+                INSERT INTO news (title, content, image_url, source, status, category_id)
+                VALUES (:title, :content, :image_url, :source, :status, :category_id)
             """),
             data.dict()
         )
@@ -46,7 +46,6 @@ def create_news(data: NewsCreate):
     return {"message": "등록 완료"}
 
 
-# 수정
 @router.put("/{news_id}")
 def update_news(news_id: int, data: NewsUpdate):
     fields = {k: v for k, v in data.dict().items() if v is not None}
@@ -60,7 +59,6 @@ def update_news(news_id: int, data: NewsUpdate):
     return {"message": "수정 완료"}
 
 
-# 삭제
 @router.delete("/{news_id}")
 def delete_news(news_id: int):
     with engine.connect() as conn:

@@ -19,21 +19,24 @@
         {% endif %}
         <p class="detail-content">{{ news.content }}</p>
 
-        <!-- 좋아요 / 구독 버튼 -->
         <div class="detail-actions">
-          <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
-            ❤️ <span id="like-count">{{ like_count }}</span>
-          </button>
-          {% if current_user %}
-            {% if subscribed %}
-              <button class="btn-subscribe subscribed" onclick="location.href='/subscribe'">✅ 구독 중</button>
-            {% else %}
-              <button class="btn-subscribe" onclick="location.href='/subscribe'">🔔 구독하기</button>
-            {% endif %}
+        <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
+          ❤️ <span id="like-count">{{ like_count }}</span>
+        </button>
+        {% if current_user %}
+          {% if subscribed %}
+            <button class="btn-subscribe subscribed" onclick="location.href='/subscribe'">✅ 구독 중</button>
           {% else %}
-            <button class="btn-subscribe" onclick="location.href='/login'">🔔 구독하기</button>
+            <button class="btn-subscribe" onclick="location.href='/subscribe'">🔔 구독하기</button>
           {% endif %}
-        </div>
+          {% if current_user.role == 'admin' or current_user.id == news.author_id %}
+            <a href="/news/{{ news.id }}/delete"
+              onclick="return confirm('삭제할까요?')"
+              class="btn-delete">🗑 삭제</a>
+          {% endif %}
+        {% else %}
+          <button class="btn-subscribe" onclick="location.href='/login'">🔔 구독하기</button>
+        {% endif %}
       </div>
 
       <!-- 댓글 -->

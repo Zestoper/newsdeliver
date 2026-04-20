@@ -9,9 +9,7 @@
 
 {% block content %}
   <header style="margin-top:50px;">
-    
     <h1>News Delivery</h1>
-
     <div class="button-container">
       <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
       {% if current_user %}
@@ -35,23 +33,44 @@
         <li><a href="{{ request.url_for('home') }}">Home</a></li>
         <li><a href="{{ request.url_for('news') }}">News</a></li>
         <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
+        <li><a href="/search">🔍 검색</a></li>
       </ul>
     </nav>
+
+    <!-- 카테고리 필터 -->
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0; justify-content:center;">      <a href="/news" style="padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; text-decoration:none;
+         background:{% if not selected_category %}#333{% else %}#f1f3f5{% endif %};
+         color:{% if not selected_category %}white{% else %}#495057{% endif %};">
+        전체
+      </a>
+      {% for cat in categories %}
+        <a href="/news?category={{ cat.name }}"
+           style="padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; text-decoration:none;
+           background:{% if selected_category == cat.name %}#333{% else %}#f1f3f5{% endif %};
+           color:{% if selected_category == cat.name %}white{% else %}#495057{% endif %};">
+          {{ cat.name }}
+        </a>
+      {% endfor %}
+    </div>
 
     <section class="news-section">
       <ul>
         {% for news in news_items %}
           <li class="news-card news-card-left">
-            <span class="news-category">{{ news.get('source', '기타') }}</span>
-            <h3>{{ news.get('title', '') }}</h3>
-            <p>{{ news.get('content', '')[:100] }}...</p>
+            <a href="/news/{{ news.id }}" style="text-decoration:none; color:inherit; display:block;">
+              {% if news.category_name %}
+                <span class="news-category-tag">{{ news.category_name }}</span>
+              {% endif %}
+              <span class="news-category">{{ news.get('source', '기타') }}</span>
+              <h3>{{ news.get('title', '') }}</h3>
+              <p>{{ news.get('content', '')[:100] }}...</p>
+            </a>
           </li>
         {% else %}
           <li>등록된 뉴스가 없습니다.</li>
         {% endfor %}
       </ul>
     </section>
-
     <hr>
   </header>
 

@@ -1,8 +1,6 @@
 from sqlalchemy import text
 from app.database import engine
 
-subscriptions = []
-
 
 def get_news_items() -> list[dict]:
     with engine.connect() as conn:
@@ -57,8 +55,19 @@ def get_user(*, user_id: str, password: str) -> dict | None:
         return dict(row._mapping) if row else None
 
 
-def is_duplicate_subscription(email: str) -> bool:
-    return email in subscriptions
+def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
+    with engine.connect() as conn:
+        if user_id:
+            result = conn.execute(
+                text("SELECT id FROM subscriptions WHERE user_id = :user_id AND is_active = 1"),
+                {"user_id": user_id}
+            )
+        else:
+            result = conn.execute(
+                text("SELECT id FROM subscriptions WHERE email = :email AND is_active = 1"),
+                {"email": email}
+            )
+        return result.fetchone() is not None
 
 
 def add_subscription(email: str, user_id: str) -> None:

@@ -34,6 +34,7 @@
         <li><a href="{{ request.url_for('home') }}">Home</a></li>
         <li><a href="{{ request.url_for('news') }}">News</a></li>
         <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
+        <li><a href="/search">🔍 검색</a></li>
       </ul>
     </nav>
 
@@ -45,20 +46,17 @@
         </p>
       {% endif %}
       <ul>
-        {% for news in news_items %}
-          <li class="news-card">
-            <a href="/news/{{ news.id }}" style="text-decoration:none; color:inherit; display:block;">
-              <span class="news-category">{{ news.source or '기타' }}</span>
-              <h3>{{ news.title }}</h3>
-              <p>{{ news.get('content', '')[:100] }}...</p>
-            </a>
-          </li>
-        {% else %}
-          <li style="color:#adb5bd; font-size:14px; padding:20px 0;">
-            구독한 카테고리의 뉴스가 없어요.
-            <a href="/subscribe" style="color:#333; font-weight:600;">카테고리 구독하기</a>
-          </li>
-        {% endfor %}
+      {% for news in news_items %}
+  <li class="news-card">
+    <a href="/news/{{ news.id }}" style="text-decoration:none; color:inherit; display:block;">
+      {% if news.category_name %}
+        <span class="news-category-tag">{{ news.category_name }}</span>
+      {% endif %}
+      <h3>{{ news.title }}</h3>
+      <p>{{ news.get('content', '')[:100] }}...</p>
+    </a>
+  </li>
+{% endfor %}
       </ul>
     </section>
 

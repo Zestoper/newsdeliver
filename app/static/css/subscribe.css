@@ -1,60 +1,180 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+
 .subscribe-container {
-  max-width: 600px;
-  margin: 70px auto 40px;
+  max-width: 640px;
+  margin: 80px auto 60px;
   padding: 0 24px;
   text-align: center;
 }
 
 .subscribe-container h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #212529;
-  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
 }
 
-.subscribe-container p {
+/* 탭 */
+.sub-tabs {
+  display: inline-flex;
+  gap: 0;
+  background: #e9ecef;
+  border-radius: 12px;
+  padding: 4px;
+  margin: 28px 0 32px;
+}
+
+.sub-tab {
+  padding: 10px 28px;
+  background: transparent;
+  color: #868e96;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.sub-tab.active {
+  background: white;
+  color: #1a1a2e;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.sub-tab:hover:not(.active) { color: #495057; }
+
+/* 섹션 */
+.sub-section { display: none; }
+.sub-section.active { display: block; }
+
+.sub-desc {
   font-size: 15px;
   color: #868e96;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
+/* 카테고리 */
 .category-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 20px;
 }
 
 .category-btn {
-  padding: 16px;
-  background: #f8f9fa;
+  padding: 22px 12px;
+  background: white;
   color: #495057;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
+  border: 2px solid transparent;
+  border-radius: 14px;
   cursor: pointer;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.2s;
 }
 
 .category-btn:hover {
-  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
 .category-btn.subscribed {
-  background: #d3f9d8;
+  background: #ebfbee;
   color: #2f9e44;
-  border-color: #8ce99a;
+  border-color: #69db7c;
 }
 
-.helper-link {
-  display: inline-block;
-  margin-top: 24px;
+/* 이메일 구독 */
+.email-section-box {
+  background: white;
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.email-section-box .sub-desc {
+  font-size: 15px;
+  color: #495057;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+.email-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.email-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 10px;
   font-size: 14px;
-  color: #868e96;
+  transition: border-color 0.2s;
+}
+
+.email-form input:focus {
+  outline: none;
+  border-color: #1a1a2e;
+}
+
+.btn-subscribe {
+  padding: 12px 24px;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition: all 0.2s;
+}
+
+.btn-subscribe:hover {
+  background: #2d2d4e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26,26,46,0.3);
+}
+
+/* 메시지 */
+.message {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+.message.success { background: #ebfbee; color: #2f9e44; }
+.message.error { background: #fff5f5; color: #fa5252; }
+
+/* 로그인 필요 */
+.login-required {
+  font-size: 14px;
+  color: #adb5bd;
+  margin: 24px 0;
+}
+.login-required a {
+  color: #1a1a2e;
+  font-weight: 700;
   text-decoration: none;
 }
+.login-required a:hover { text-decoration: underline; }
 
-.helper-link:hover {
-  color: #333;
+/* 메인으로 */
+.helper-link {
+  display: inline-block;
+  margin-top: 28px;
+  font-size: 13px;
+  color: #adb5bd;
+  text-decoration: none;
+  transition: color 0.2s;
 }
+.helper-link:hover { color: #495057; }

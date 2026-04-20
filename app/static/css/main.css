@@ -199,3 +199,14 @@ footer {
     flex-wrap: wrap;
   }
 }
+
+.news-category-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #e7f5ff;
+  color: #1971c2;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}

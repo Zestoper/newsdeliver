@@ -1,11 +1,10 @@
 from pathlib import Path
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
-from fastapi import APIRouter, Form, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+
 from app.database import engine
 from app.services.store import (
     add_subscription,
@@ -58,29 +57,22 @@ def render(
     }
     return templates.TemplateResponse(request, template_name, context)
 
+
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
-    user = get_current_user(request)
     with engine.connect() as conn:
-        if user:
-            # 구독한 카테고리 있으면 해당 뉴스만
-            result = conn.execute(
-                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
-                {"user_id": user["id"]}
-            )
-            subscribed_ids = [row.category_id for row in result]
-
-            if subscribed_ids:
-                placeholders = ",".join(str(i) for i in subscribed_ids)
-                news_items = [dict(row._mapping) for row in conn.execute(
-                    text(f"SELECT * FROM news WHERE status = 'published' AND category_id IN ({placeholders}) ORDER BY created_at ASC")
-                )]
-            else:
-                news_items = get_news_items()
-        else:
-            news_items = get_news_items()
-
+        result = conn.execute(
+            text("""
+                SELECT n.*, c.name as category_name
+                FROM news n
+                LEFT JOIN categories c ON n.category_id = c.id
+                WHERE n.status = 'published'
+                ORDER BY n.created_at ASC
+            """)
+        )
+        news_items = [dict(row._mapping) for row in result]
     return render(request, "main.html", news_items=news_items)
+
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, message: str | None = None) -> HTMLResponse:
@@ -94,7 +86,6 @@ async def login(
     password: str = Form(...),
 ) -> HTMLResponse:
     form_data = {"user_id": user_id}
-
     user = get_user(user_id=user_id, password=password)
     if user:
         response = RedirectResponse(url="/", status_code=303)
@@ -105,10 +96,8 @@ async def login(
             samesite="lax",
         )
         return response
-
     return render(
-        request,
-        "login.html",
+        request, "login.html",
         message="아이디 또는 비밀번호가 올바르지 않습니다.",
         message_type="error",
         form_data=form_data,
@@ -147,136 +136,185 @@ async def signup(
         "email": email,
         "phone": phone,
     }
-
     if len(password) < 8:
-        return render(
-            request,
-            "signup.html",
-            message="비밀번호는 8자 이상으로 입력해주세요.",
-            message_type="error",
-            form_data=form_data,
-        )
-
+        return render(request, "signup.html",
+                      message="비밀번호는 8자 이상으로 입력해주세요.",
+                      message_type="error", form_data=form_data)
     dup = is_duplicate_user(user_id=user_id, email=email)
-
     if dup["id"] and dup["email"]:
-        return render(
-            request, "signup.html",
-            message="이미 사용 중인 아이디와 이메일입니다. 둘 다 변경해주세요.",
-            message_type="error",
-            form_data=form_data,
-            focus="user_id",
-        )
+        return render(request, "signup.html",
+                      message="이미 사용 중인 아이디와 이메일입니다. 둘 다 변경해주세요.",
+                      message_type="error", form_data=form_data, focus="user_id")
     if dup["id"]:
-        return render(
-            request, "signup.html",
-            message="이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.",
-            message_type="error",
-            form_data=form_data,
-            focus="user_id",
-        )
+        return render(request, "signup.html",
+                      message="이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.",
+                      message_type="error", form_data=form_data, focus="user_id")
     if dup["email"]:
-        return render(
-            request, "signup.html",
-            message="이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.",
-            message_type="error",
-            form_data=form_data,
-            focus="email",
-        )
-
+        return render(request, "signup.html",
+                      message="이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.",
+                      message_type="error", form_data=form_data, focus="email")
     add_user({
-        "name": name,
-        "birth": birth,
-        "user_id": user_id,
-        "password": password,
-        "email": email,
-        "phone": phone,
+        "name": name, "birth": birth, "user_id": user_id,
+        "password": password, "email": email, "phone": phone,
     })
-    return render(
-        request, "signup.html",
-        message="회원가입이 완료되었습니다!",
-        message_type="success",
-    )
+    return render(request, "signup.html",
+                  message="회원가입이 완료되었습니다!", message_type="success")
 
 
 @router.get("/subscribe", response_class=HTMLResponse)
 async def subscribe_page(request: Request) -> HTMLResponse:
-    return render(request, "subscribe.html")
+    user = get_current_user(request)
+    with engine.connect() as conn:
+        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+        subscribed_ids = []
+        if user:
+            result = conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
+                {"user_id": user["id"]}
+            )
+            subscribed_ids = [row.category_id for row in result]
+    return render(request, "subscribe.html", categories=categories, subscribed_ids=subscribed_ids)
 
 
 @router.post("/subscribe", response_class=HTMLResponse)
 async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
     form_data = {"email": email}
     user = get_current_user(request)
-
     if not user:
-        return render(
-            request,
-            "subscribe.html",
-            message="로그인 후 구독할 수 있습니다.",
-            message_type="error",
-            form_data=form_data,
-        )
-
-    if is_duplicate_subscription(email):
-        return render(
-            request,
-            "subscribe.html",
-            message="이미 구독 중인 이메일입니다.",
-            message_type="error",
-            form_data=form_data,
-        )
-
+        with engine.connect() as conn:
+            categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+        return render(request, "subscribe.html",
+                      message="로그인 후 구독할 수 있습니다.",
+                      message_type="error", form_data=form_data,
+                      categories=categories, subscribed_ids=[])
+    if is_duplicate_subscription(email, user_id=user["id"]):
+        with engine.connect() as conn:
+            categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+            subscribed_ids = [row.category_id for row in conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
+                {"user_id": user["id"]}
+            )]
+        return render(request, "subscribe.html",
+                      message="이미 구독 중입니다.",
+                      message_type="error", form_data=form_data,
+                      categories=categories, subscribed_ids=subscribed_ids)
     add_subscription(email, user_id=user["id"])
-    return render(
-        request,
-        "subscribe.html",
-        message="구독이 완료되었습니다. 다음 뉴스레터부터 받아볼 수 있어요.",
-        message_type="success",
-    )
+    with engine.connect() as conn:
+        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+        subscribed_ids = [row.category_id for row in conn.execute(
+            text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
+            {"user_id": user["id"]}
+        )]
+    return render(request, "subscribe.html",
+                  message="구독이 완료되었습니다. 다음 뉴스레터부터 받아볼 수 있어요.",
+                  message_type="success",
+                  categories=categories, subscribed_ids=subscribed_ids)
 
 
 @router.get("/news", response_class=HTMLResponse)
-async def news(request: Request) -> HTMLResponse:
-    return render(request, "news.html", news_items=get_news_items())
+async def news(request: Request, category: str = "") -> HTMLResponse:
+    with engine.connect() as conn:
+        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+        if category:
+            result = conn.execute(
+                text("""
+                    SELECT n.*, c.name as category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published' AND c.name = :category
+                    ORDER BY n.created_at DESC
+                """),
+                {"category": category}
+            )
+        else:
+            result = conn.execute(
+                text("""
+                    SELECT n.*, c.name as category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published'
+                    ORDER BY n.created_at DESC
+                """)
+            )
+        news_items = [dict(row._mapping) for row in result]
+    return render(request, "news.html", news_items=news_items,
+                  categories=categories, selected_category=category)
+
 
 @router.get("/news/{news_id}", response_class=HTMLResponse)
 async def news_detail(request: Request, news_id: int) -> HTMLResponse:
     user = get_current_user(request)
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT * FROM news WHERE id = :id"),
-            {"id": news_id}
+            text("SELECT * FROM news WHERE id = :id"), {"id": news_id}
         ).fetchone()
         news = dict(row._mapping) if row else None
-
         like_count = conn.execute(
-            text("SELECT COUNT(*) FROM news_likes WHERE news_id = :id"),
-            {"id": news_id}
+            text("SELECT COUNT(*) FROM news_likes WHERE news_id = :id"), {"id": news_id}
         ).scalar()
-
         liked = False
         if user:
             liked = conn.execute(
                 text("SELECT id FROM news_likes WHERE news_id = :news_id AND user_id = :user_id"),
                 {"news_id": news_id, "user_id": user["id"]}
             ).fetchone() is not None
-
-        # 구독 여부
         subscribed = False
         if user:
             subscribed = conn.execute(
                 text("SELECT id FROM subscriptions WHERE user_id = :user_id AND is_active = 1"),
                 {"user_id": user["id"]}
             ).fetchone() is not None
-
     return render(request, "news_detail.html", news=news,
                   like_count=like_count, liked=liked, subscribed=subscribed)
+
+
+@router.get("/news/{news_id}/delete")
+async def delete_news_page(request: Request, news_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM news WHERE id = :id"), {"id": news_id}
+        ).fetchone()
+        if not row:
+            return RedirectResponse(url="/", status_code=303)
+        news = dict(row._mapping)
+        if user["id"] != news["author_id"] and user["role"] != "admin":
+            return RedirectResponse(url=f"/news/{news_id}", status_code=303)
+        conn.execute(text("DELETE FROM news WHERE id = :id"), {"id": news_id})
+        conn.commit()
+    return RedirectResponse(url="/", status_code=303)
+
+
+@router.get("/search", response_class=HTMLResponse)
+async def search_page(request: Request, q: str = "", source: str = "") -> HTMLResponse:
+    with engine.connect() as conn:
+        sources = [row.source for row in conn.execute(
+            text("SELECT DISTINCT source FROM news WHERE source IS NOT NULL AND source != '' ORDER BY source")
+        )]
+        conditions = ["status = 'published'"]
+        params = {}
+        if q:
+            conditions.append("(title LIKE :q OR content LIKE :q)")
+            params["q"] = f"%{q}%"
+        if source:
+            conditions.append("source = :source")
+            params["source"] = source
+        where = " AND ".join(conditions)
+        news_items = [dict(row._mapping) for row in conn.execute(
+            text(f"SELECT * FROM news WHERE {where} ORDER BY created_at DESC"),
+            params
+        )]
+    return render(request, "search.html", news_items=news_items,
+                  sources=sources, q=q, selected_source=source)
+
+
 @router.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request) -> HTMLResponse:
     return render(request, "contact.html")
 
-# 좋아요 토글
+
 @router.post("/news/{news_id}/like")
 async def toggle_like(request: Request, news_id: int):
     user = get_current_user(request)
@@ -307,7 +345,6 @@ async def toggle_like(request: Request, news_id: int):
     return JSONResponse({"success": True, "liked": liked, "count": count})
 
 
-# 댓글 목록 조회
 @router.get("/news/{news_id}/comments")
 async def get_comments(request: Request, news_id: int):
     with engine.connect() as conn:
@@ -328,7 +365,6 @@ async def get_comments(request: Request, news_id: int):
     return JSONResponse(comments)
 
 
-# 댓글 작성
 @router.post("/news/{news_id}/comments")
 async def add_comment(request: Request, news_id: int, content: str = Form(...)):
     user = get_current_user(request)
@@ -343,7 +379,6 @@ async def add_comment(request: Request, news_id: int, content: str = Form(...)):
     return JSONResponse({"success": True})
 
 
-# 댓글 삭제
 @router.delete("/news/{news_id}/comments/{comment_id}")
 async def delete_comment(request: Request, news_id: int, comment_id: int):
     user = get_current_user(request)
@@ -357,7 +392,7 @@ async def delete_comment(request: Request, news_id: int, comment_id: int):
         conn.commit()
     return JSONResponse({"success": True})
 
-# 카테고리 목록 조회
+
 @router.get("/categories")
 async def get_categories():
     with engine.connect() as conn:
@@ -365,7 +400,6 @@ async def get_categories():
         return JSONResponse([dict(row._mapping) for row in result])
 
 
-# 카테고리 구독 토글
 @router.post("/categories/{category_id}/subscribe")
 async def toggle_category_subscribe(request: Request, category_id: int):
     user = get_current_user(request)
@@ -392,7 +426,6 @@ async def toggle_category_subscribe(request: Request, category_id: int):
     return JSONResponse({"success": True, "subscribed": subscribed})
 
 
-# 내 구독 카테고리 조회
 @router.get("/my-subscriptions")
 async def my_subscriptions(request: Request):
     user = get_current_user(request)
@@ -409,20 +442,3 @@ async def my_subscriptions(request: Request):
             {"user_id": user["id"]}
         )
         return JSONResponse([dict(row._mapping) for row in result])
-    
-
-@router.get("/subscribe", response_class=HTMLResponse)
-async def subscribe_page(request: Request) -> HTMLResponse:
-    user = get_current_user(request)
-    with engine.connect() as conn:
-        # 전체 카테고리
-        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
-        # 내가 구독한 카테고리 id 목록
-        subscribed_ids = []
-        if user:
-            result = conn.execute(
-                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
-                {"user_id": user["id"]}
-            )
-            subscribed_ids = [row.category_id for row in result]
-    return render(request, "subscribe.html", categories=categories, subscribed_ids=subscribed_ids)
