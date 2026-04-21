@@ -42,6 +42,13 @@
                value="{{ form_data.get('email', '') }}" required>
         <button type="submit" class="btn-subscribe">구독하기</button>
       </form>
+      <form action="/unsubscribe" method="post" style="margin-top:12px;">
+        <button type="submit"
+                onclick="return confirm('구독을 취소할까요?')"
+                class="btn-unsubscribe">
+          구독 취소
+        </button>
+      </form>
     </div>
   {% else %}
     <p class="login-required">

@@ -211,6 +211,20 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                   categories=categories, subscribed_ids=subscribed_ids)
 
 
+@router.post("/unsubscribe")
+async def unsubscribe(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE subscriptions SET is_active = 0 WHERE user_id = :user_id"),
+            {"user_id": user["id"]}
+        )
+        conn.commit()
+    return RedirectResponse(url="/subscribe", status_code=303)
+
+
 @router.get("/news", response_class=HTMLResponse)
 async def news(request: Request, category: str = "") -> HTMLResponse:
     with engine.connect() as conn:
@@ -282,6 +296,9 @@ async def delete_news_page(request: Request, news_id: int):
         news = dict(row._mapping)
         if user["id"] != news["author_id"] and user["role"] != "admin":
             return RedirectResponse(url=f"/news/{news_id}", status_code=303)
+        conn.execute(text("DELETE FROM news_comments WHERE news_id = :id"), {"id": news_id})
+        conn.execute(text("DELETE FROM news_likes WHERE news_id = :id"), {"id": news_id})
+        conn.execute(text("DELETE FROM email_logs WHERE news_id = :id"), {"id": news_id})
         conn.execute(text("DELETE FROM news WHERE id = :id"), {"id": news_id})
         conn.commit()
     return RedirectResponse(url="/", status_code=303)

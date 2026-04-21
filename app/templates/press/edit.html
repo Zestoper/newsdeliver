@@ -1,0 +1,55 @@
+    {% extends "base.html" %}
+
+    {% block title %}뉴스 수정 - News Delivery{% endblock %}
+
+    {% block head %}
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}">
+    {% endblock %}
+
+    {% block content %}
+    <div class="write-container">
+    <h2>✏️ 뉴스 수정</h2>
+    <div class="write-box">
+        <form action="/press/edit/{{ news.id }}" method="post">
+        <div class="write-group">
+            <label>제목</label>
+            <input name="title" type="text" value="{{ news.title }}" required>
+        </div>
+        <div class="write-group">
+            <label>본문</label>
+            <textarea name="content" rows="12" required>{{ news.content }}</textarea>
+        </div>
+        <div class="write-group">
+            <label>이미지 URL</label>
+            <input name="image_url" type="text" value="{{ news.image_url or '' }}">
+        </div>
+        <div class="write-group">
+            <label>출처</label>
+            <input name="source" type="text" value="{{ news.source or '' }}">
+        </div>
+        <div class="write-group">
+            <label>발행 상태</label>
+            <select name="status">
+            <option value="draft" {% if news.status == 'draft' %}selected{% endif %}>임시저장</option>
+            <option value="published" {% if news.status == 'published' %}selected{% endif %}>발행</option>
+            </select>
+        </div>
+        <div class="write-group">
+            <label>카테고리</label>
+            <select name="category_id">
+            <option value="">선택 안함</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if category.id == news.category_id %}selected{% endif %}>
+                {{ category.name }}
+                </option>
+            {% endfor %}
+            </select>
+        </div>
+        <div class="write-btns">
+            <button type="submit" class="btn-submit">수정 완료</button>
+            <a href="/press/news" class="btn-back">목록으로</a>
+        </div>
+        </form>
+    </div>
+    </div>
+    {% endblock %}

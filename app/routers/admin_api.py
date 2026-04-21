@@ -9,37 +9,68 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 @router.post("/send-newsletter")
 def send_newsletter_api():
     with engine.connect() as conn:
-        # 최신 발행 뉴스 1개
-        news_result = conn.execute(
-            text("SELECT * FROM news WHERE status = 'published' ORDER BY created_at DESC LIMIT 1")
-        )
-        news = news_result.fetchone()
-        if not news:
-            return {"success": False, "message": "발행된 뉴스가 없습니다."}
-        news = dict(news._mapping)
+        # 구독자 목록
+        subs = conn.execute(
+            text("SELECT user_id, email FROM subscriptions WHERE is_active = 1")
+        ).fetchall()
 
-        # 구독자 이메일 목록
-        sub_result = conn.execute(
-            text("SELECT email FROM subscriptions WHERE is_active = 1")
-        )
-        emails = [row.email for row in sub_result]
-
-        if not emails:
+        if not subs:
             return {"success": False, "message": "구독자가 없습니다."}
 
-    count = send_newsletter(
-        to_emails=emails,
-        title=news["title"],
-        content=news["content"],
-        source=news.get("source", "")
-    )
+        total_sent = 0
+        last_news_id = None
 
-    # 발송 로그 저장
-    with engine.connect() as conn:
-        conn.execute(
-            text("INSERT INTO email_logs (news_id, recipient_count) VALUES (:news_id, :count)"),
-            {"news_id": news["id"], "count": count}
-        )
+        for sub in subs:
+            user_id = sub.user_id
+            email = sub.email
+
+            # 해당 유저가 구독한 카테고리 id 목록
+            cat_result = conn.execute(
+                text("""
+                    SELECT category_id FROM category_subscriptions
+                    WHERE user_id = :user_id
+                """),
+                {"user_id": user_id}
+            ).fetchall()
+
+            if not cat_result:
+                continue
+
+            category_ids = [row.category_id for row in cat_result]
+            placeholders = ",".join(str(i) for i in category_ids)
+
+            # 구독한 카테고리 전체에서 최신 뉴스 5개
+            news_rows = conn.execute(
+                text(f"""
+                    SELECT n.*, c.name as category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published' AND n.category_id IN ({placeholders})
+                    ORDER BY n.created_at DESC LIMIT 5
+                """)
+            ).fetchall()
+
+            if not news_rows:
+                continue
+
+            for news_row in news_rows:
+                news = dict(news_row._mapping)
+                send_newsletter(
+                    to_emails=[email],
+                    title=news["title"],
+                    content=news["content"],
+                    source=news.get("source", ""),
+                    category_name=news.get("category_name", "")
+                )
+                total_sent += 1
+                last_news_id = news["id"]
+
+        # 발송 로그
+        if last_news_id:
+            conn.execute(
+                text("INSERT INTO email_logs (news_id, recipient_count) VALUES (:news_id, :count)"),
+                {"news_id": last_news_id, "count": total_sent}
+            )
         conn.commit()
 
-    return {"success": True, "message": f"{count}명에게 발송 완료!"}
+    return {"success": True, "message": f"총 {total_sent}건 발송 완료!"}

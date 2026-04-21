@@ -161,7 +161,53 @@ async def press_write(
     return RedirectResponse(url="/press/news", status_code=303)
 
 
-# ── 내 뉴스 관리 ──
+@router.get("/edit/{news_id}", response_class=HTMLResponse)
+async def press_edit_page(request: Request, news_id: int) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user or user["role"] != "press":
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM news WHERE id = :id AND author_id = :author_id"),
+            {"id": news_id, "author_id": user["id"]}
+        ).fetchone()
+        if not row:
+            return RedirectResponse(url="/press/news", status_code=303)
+        news = dict(row._mapping)
+        categories = [dict(r._mapping) for r in conn.execute(text("SELECT * FROM categories"))]
+    return render(request, "press/edit.html", news=news, categories=categories)
+
+
+@router.post("/edit/{news_id}", response_class=HTMLResponse)
+async def press_edit(
+    request: Request,
+    news_id: int,
+    title: str = Form(...),
+    content: str = Form(...),
+    source: str = Form(""),
+    image_url: str = Form(""),
+    status: str = Form("draft"),
+    category_id: str = Form(""),
+) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user or user["role"] != "press":
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        conn.execute(
+            text("""
+                UPDATE news SET title=:title, content=:content, image_url=:image_url,
+                source=:source, status=:status, category_id=:category_id
+                WHERE id=:id AND author_id=:author_id
+            """),
+            {
+                "title": title, "content": content, "image_url": image_url,
+                "source": source, "status": status,
+                "category_id": int(category_id) if category_id else None,
+                "id": news_id, "author_id": user["id"]
+            }
+        )
+        conn.commit()
+    return RedirectResponse(url="/press/news", status_code=303)
 @router.get("/news", response_class=HTMLResponse)
 async def press_news_page(request: Request) -> HTMLResponse:
     user = get_current_user(request)
@@ -176,3 +222,19 @@ async def press_news_page(request: Request) -> HTMLResponse:
         news_list = [dict(row._mapping) for row in result]
 
     return render(request, "press/news.html", news_list=news_list)
+
+@router.get("/delete/{news_id}")
+async def press_delete(request: Request, news_id: int):
+    user = get_current_user(request)
+    if not user or user["role"] != "press":
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM news_comments WHERE news_id = :id"), {"id": news_id})
+        conn.execute(text("DELETE FROM news_likes WHERE news_id = :id"), {"id": news_id})
+        conn.execute(text("DELETE FROM email_logs WHERE news_id = :id"), {"id": news_id})
+        conn.execute(
+            text("DELETE FROM news WHERE id = :id AND author_id = :author_id"),
+            {"id": news_id, "author_id": user["id"]}
+        )
+        conn.commit()
+    return RedirectResponse(url="/press/news", status_code=303)

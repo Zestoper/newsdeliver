@@ -5,10 +5,10 @@ from email.mime.multipart import MIMEMultipart
 SMTP_HOST = "smtp.naver.com"
 SMTP_PORT = 587
 SMTP_USER = "zestoper@naver.com"
-SMTP_PASSWORD = "L3LMQD4XRY1M"
+SMTP_PASSWORD = "YVT68P7YPTJV"
 
 
-def send_newsletter(to_emails: list[str], title: str, content: str, source: str = "") -> int:
+def send_newsletter(to_emails: list[str], title: str, content: str, source: str = "", category_name: str = "") -> int:
     if not to_emails:
         return 0
 
@@ -18,7 +18,7 @@ def send_newsletter(to_emails: list[str], title: str, content: str, source: str 
         sent_count = 0
         for email in to_emails:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"[News Delivery] {title}"
+            msg["Subject"] = f"[News Delivery] {category_name} - {title}"
             msg["From"] = SMTP_USER
             msg["To"] = email
 
@@ -26,6 +26,7 @@ def send_newsletter(to_emails: list[str], title: str, content: str, source: str 
             <div style="max-width:600px; margin:0 auto; font-family:sans-serif;">
               <div style="background:#333; padding:20px 24px;">
                 <h1 style="color:white; margin:0; font-size:18px;">📰 News Delivery</h1>
+                {'<span style="background:#1971c2; color:white; padding:2px 10px; border-radius:20px; font-size:12px; margin-left:10px;">' + category_name + '</span>' if category_name else ''}
               </div>
               <div style="padding:32px 24px; background:white;">
                 <p style="font-size:12px; color:#868e96; margin-bottom:8px;">{source or '출처 없음'}</p>
