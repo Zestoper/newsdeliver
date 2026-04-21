@@ -57,23 +57,37 @@ def get_user(*, user_id: str, password: str) -> dict | None:
 
 def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
     with engine.connect() as conn:
+        # 다른 유저가 같은 이메일 사용하는지 체크
         if user_id:
-            result = conn.execute(
-                text("SELECT id FROM subscriptions WHERE user_id = :user_id AND is_active = 1"),
-                {"user_id": user_id}
+            email_result = conn.execute(
+                text("SELECT id FROM subscriptions WHERE email = :email AND user_id != :user_id"),
+                {"email": email, "user_id": user_id}
             )
         else:
-            result = conn.execute(
-                text("SELECT id FROM subscriptions WHERE email = :email AND is_active = 1"),
+            email_result = conn.execute(
+                text("SELECT id FROM subscriptions WHERE email = :email"),
                 {"email": email}
             )
-        return result.fetchone() is not None
+        if email_result.fetchone():
+            return True
+        return False
 
 
 def add_subscription(email: str, user_id: str) -> None:
     with engine.connect() as conn:
-        conn.execute(
-            text("INSERT INTO subscriptions (user_id, email, is_active) VALUES (:user_id, :email, 1)"),
-            {"user_id": user_id, "email": email}
-        )
+        # 이미 구독 이력이 있으면 UPDATE, 없으면 INSERT
+        existing = conn.execute(
+            text("SELECT id FROM subscriptions WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        ).fetchone()
+        if existing:
+            conn.execute(
+                text("UPDATE subscriptions SET email = :email, is_active = 1 WHERE user_id = :user_id"),
+                {"email": email, "user_id": user_id}
+            )
+        else:
+            conn.execute(
+                text("INSERT INTO subscriptions (user_id, email, is_active) VALUES (:user_id, :email, 1)"),
+                {"user_id": user_id, "email": email}
+            )
         conn.commit()

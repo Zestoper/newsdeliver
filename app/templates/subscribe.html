@@ -1,74 +1,67 @@
-{% extends "base.html" %}
-
-{% block title %}구독하기 - News Delivery{% endblock %}
-
-{% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}구독하기 - News Delivery{% endblock %} {% block head %}
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}" />
+{% endblock %} {% block content %}
 <div class="subscribe-container">
-  <h1>🔔 구독 서비스</h1>
-  <p class="sub-desc">관심 카테고리를 선택하고 이메일을 입력하세요.</p>
+    <h1>🔔 구독 서비스</h1>
+    <p class="sub-desc">관심 카테고리를 선택하고 이메일을 입력하세요.</p>
 
-  {% if message %}
+    {% if message %}
     <div class="message {{ message_type }}">{{ message }}</div>
-  {% endif %}
-
-  {% if current_user %}
+    {% endif %} {% if current_user %}
     <!-- 카테고리 선택 -->
     <div class="category-grid">
-      {% for category in categories %}
+        {% for category in categories %}
         <button
-          class="category-btn {% if category.id in subscribed_ids %}subscribed{% endif %}"
-          onclick="toggleCategory({{ category.id }}, this)">
-          {% if category.name == '정치' %}🏛
-          {% elif category.name == '경제' %}💰
-          {% elif category.name == 'IT' %}💻
-          {% elif category.name == '문화' %}🎭
-          {% elif category.name == '스포츠' %}⚽
-          {% endif %}
-          {{ category.name }}
+            class="category-btn {% if category.id in subscribed_ids %}subscribed{% endif %}"
+            onclick="toggleCategory({{ category.id }}, this)"
+        >
+            {% if category.name == '정치' %}🏛 {% elif category.name == '경제' %}💰 {% elif category.name == 'IT' %}💻
+            {% elif category.name == '문화' %}🎭 {% elif category.name == '스포츠' %}⚽ {% endif %} {{ category.name }}
         </button>
-      {% endfor %}
+        {% endfor %}
     </div>
-    <p id="sub-result" style="margin-top:12px; font-size:14px;"></p>
+    <p id="sub-result" style="margin-top: 12px; font-size: 14px"></p>
 
     <!-- 이메일 구독 -->
     <div class="email-section-box">
-      <p class="sub-desc">뉴스레터를 받을 이메일을 입력하세요.</p>
-      <form class="email-form" action="{{ request.url_for('subscribe') }}" method="post">
-        <input type="email" name="email" placeholder="example@email.com"
-               value="{{ form_data.get('email', '') }}" required>
-        <button type="submit" class="btn-subscribe">구독하기</button>
-      </form>
-      <form action="/unsubscribe" method="post" style="margin-top:12px;">
-        <button type="submit"
-                onclick="return confirm('구독을 취소할까요?')"
-                class="btn-unsubscribe">
-          구독 취소
-        </button>
-      </form>
+        <p class="sub-desc">뉴스레터를 받을 이메일을 입력하세요.</p>
+
+        {% if is_subscribed %}
+        <p style="font-size: 14px; color: #2f9e44; margin-bottom: 12px">
+            ✅ 현재 구독 중: <strong>{{ current_email }}</strong>
+        </p>
+        <form action="/unsubscribe" method="post">
+            <button type="submit" onclick="return confirm('구독을 취소할까요?');" class="btn-unsubscribe">
+                구독 취소
+            </button>
+        </form>
+        {% else %} {% if current_email %}
+        <p style="font-size: 13px; color: #adb5bd; margin-bottom: 12px">이전 구독 이메일: {{ current_email }}</p>
+        {% endif %}
+        <form class="email-form" action="{{ request.url_for('subscribe') }}" method="post">
+            <input
+                type="email"
+                name="email"
+                placeholder="example@email.com"
+                value="{{ current_email or form_data.get('email', '') }}"
+                required
+            />
+            <button type="submit" class="btn-subscribe">구독하기</button>
+        </form>
+        {% endif %}
     </div>
-  {% else %}
-    <p class="login-required">
-      <a href="/login">로그인</a> 후 구독할 수 있습니다.
-    </p>
-  {% endif %}
 
-  <a class="helper-link" href="{{ request.url_for('home') }}">메인으로 돌아가기</a>
+    <script>
+        async function toggleCategory(categoryId, btn) {
+            const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                btn.classList.toggle('subscribed', data.subscribed);
+                const result = document.getElementById('sub-result');
+                result.textContent = data.subscribed ? '✅ 구독했어요!' : '구독 해지했어요.';
+                result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
+            }
+        }
+    </script>
+    {% endif %} {% endblock %}
 </div>
-
-<script>
-  async function toggleCategory(categoryId, btn) {
-    const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
-      btn.classList.toggle('subscribed', data.subscribed);
-      const result = document.getElementById('sub-result');
-      result.textContent = data.subscribed ? '✅ 구독했어요!' : '구독 해지했어요.';
-      result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
-    }
-  }
-</script>
-{% endblock %}

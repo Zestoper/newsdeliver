@@ -63,8 +63,8 @@
 
   <script>
     const NEWS_ID = {{ news.id if news else 0 }};
-    const CURRENT_USER = {{ 'true' if current_user else 'false' }};
-
+const CURRENT_USER = "{{ 'true' if current_user else 'false' }}" === 'true';
+const CURRENT_USER_ID = "{{ current_user.id if current_user else '' }}";
     // 좋아요
     async function toggleLike(newsId) {
       if (!CURRENT_USER) {
@@ -81,27 +81,66 @@
       }
     }
 
-    // 댓글 불러오기
     async function loadComments() {
-      const res = await fetch(`/news/${NEWS_ID}/comments`);
-      const comments = await res.json();
-      const list = document.getElementById('comment-list');
-      list.innerHTML = '';
-      if (comments.length === 0) {
+    const res = await fetch(`/news/${NEWS_ID}/comments`);
+    const comments = await res.json();
+    const list = document.getElementById('comment-list');
+    list.innerHTML = '';
+    if (comments.length === 0) {
         list.innerHTML = '<p style="color:#adb5bd; font-size:14px;">첫 댓글을 남겨보세요!</p>';
         return;
-      }
-      comments.forEach(c => {
-        list.innerHTML += `
-          <div class="comment-item">
-            <div class="comment-header">
-              <span class="comment-author">${c.name}</span>
-              <span class="comment-date">${c.created_at}</span>
-            </div>
-            <p class="comment-content">${c.content}</p>
-          </div>`;
-      });
     }
+    comments.forEach(c => {
+        const isMyComment = CURRENT_USER_ID && c.user_id === CURRENT_USER_ID;
+        list.innerHTML += `
+        <div class="comment-item" id="comment-${c.id}">
+          <div class="comment-header">
+            <span class="comment-author">${c.name}</span>
+            <span class="comment-date">${c.created_at}</span>
+          </div>
+          <p class="comment-content" id="comment-content-${c.id}">${c.content}</p>
+          <div class="comment-edit-box" id="comment-edit-${c.id}" style="display:none;">
+            <textarea id="comment-edit-input-${c.id}" style="width:100%; padding:8px; border:1px solid #dee2e6; border-radius:6px; font-size:14px;">${c.content}</textarea>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <button onclick="saveComment(${c.id})" class="btn-comment" style="padding:4px 12px;">저장</button>
+              <button onclick="cancelEdit(${c.id})" style="padding:4px 12px; background:#f1f3f5; border:none; border-radius:6px; cursor:pointer;">취소</button>
+            </div>
+          </div>
+          ${isMyComment ? `
+          <div style="margin-top:6px; display:flex; gap:8px;">
+            <button onclick="editComment(${c.id})" style="padding:3px 10px; background:#f1f3f5; border:none; border-radius:4px; cursor:pointer; font-size:12px;">수정</button>
+            <button onclick="deleteComment(${c.id})" style="padding:3px 10px; background:#fff5f5; color:#fa5252; border:none; border-radius:4px; cursor:pointer; font-size:12px;">삭제</button>
+          </div>` : ''}
+        </div>`;
+    });
+}
+
+function editComment(id) {
+    document.getElementById(`comment-content-${id}`).style.display = 'none';
+    document.getElementById(`comment-edit-${id}`).style.display = 'block';
+}
+
+function cancelEdit(id) {
+    document.getElementById(`comment-content-${id}`).style.display = 'block';
+    document.getElementById(`comment-edit-${id}`).style.display = 'none';
+}
+
+async function saveComment(id) {
+    const content = document.getElementById(`comment-edit-input-${id}`).value;
+    const formData = new FormData();
+    formData.append('content', content);
+    await fetch(`/news/${NEWS_ID}/comments/${id}`, {
+        method: 'PUT',
+        body: formData,
+    });
+    loadComments();
+}
+
+async function deleteComment(id) {
+    if (!confirm('댓글을 삭제할까요?')) return;
+    await fetch(`/news/${NEWS_ID}/comments/${id}`, { method: 'DELETE' });
+    loadComments();
+}
 
     // 댓글 작성
     async function submitComment(e, newsId) {

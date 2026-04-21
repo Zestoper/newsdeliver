@@ -167,48 +167,70 @@ async def subscribe_page(request: Request) -> HTMLResponse:
     with engine.connect() as conn:
         categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
         subscribed_ids = []
+        current_email = None
+        is_subscribed = False
         if user:
             result = conn.execute(
                 text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
             )
             subscribed_ids = [row.category_id for row in result]
-    return render(request, "subscribe.html", categories=categories, subscribed_ids=subscribed_ids)
+            sub = conn.execute(
+                text("SELECT email, is_active FROM subscriptions WHERE user_id = :user_id"),
+                {"user_id": user["id"]}
+            ).fetchone()
+            if sub:
+                current_email = sub.email
+                is_subscribed = sub.is_active == 1
+    return render(request, "subscribe.html", categories=categories,
+                  subscribed_ids=subscribed_ids, current_email=current_email,
+                  is_subscribed=is_subscribed)
 
 
 @router.post("/subscribe", response_class=HTMLResponse)
 async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
     form_data = {"email": email}
     user = get_current_user(request)
-    if not user:
-        with engine.connect() as conn:
-            categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
-        return render(request, "subscribe.html",
-                      message="로그인 후 구독할 수 있습니다.",
-                      message_type="error", form_data=form_data,
-                      categories=categories, subscribed_ids=[])
-    if is_duplicate_subscription(email, user_id=user["id"]):
+
+    def get_subscribe_context():
         with engine.connect() as conn:
             categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
             subscribed_ids = [row.category_id for row in conn.execute(
                 text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
             )]
+            sub = conn.execute(
+                text("SELECT email, is_active FROM subscriptions WHERE user_id = :user_id"),
+                {"user_id": user["id"]}
+            ).fetchone()
+            current_email = sub.email if sub else None
+            is_subscribed = sub.is_active == 1 if sub else False
+        return categories, subscribed_ids, current_email, is_subscribed
+
+    if not user:
+        with engine.connect() as conn:
+            categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
         return render(request, "subscribe.html",
-                      message="이미 구독 중입니다.",
+                      message="로그인 후 구독할 수 있습니다.",
                       message_type="error", form_data=form_data,
-                      categories=categories, subscribed_ids=subscribed_ids)
+                      categories=categories, subscribed_ids=[],
+                      current_email=None, is_subscribed=False)
+
+    if is_duplicate_subscription(email, user_id=user["id"]):
+        categories, subscribed_ids, current_email, is_subscribed = get_subscribe_context()
+        return render(request, "subscribe.html",
+                      message="이미 다른 사용자가 사용 중인 이메일입니다.",
+                      message_type="error", form_data=form_data,
+                      categories=categories, subscribed_ids=subscribed_ids,
+                      current_email=current_email, is_subscribed=is_subscribed)
+
     add_subscription(email, user_id=user["id"])
-    with engine.connect() as conn:
-        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
-        subscribed_ids = [row.category_id for row in conn.execute(
-            text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
-            {"user_id": user["id"]}
-        )]
+    categories, subscribed_ids, current_email, is_subscribed = get_subscribe_context()
     return render(request, "subscribe.html",
                   message="구독이 완료되었습니다. 다음 뉴스레터부터 받아볼 수 있어요.",
                   message_type="success",
-                  categories=categories, subscribed_ids=subscribed_ids)
+                  categories=categories, subscribed_ids=subscribed_ids,
+                  current_email=current_email, is_subscribed=is_subscribed)
 
 
 @router.post("/unsubscribe")
@@ -367,7 +389,7 @@ async def get_comments(request: Request, news_id: int):
     with engine.connect() as conn:
         result = conn.execute(
             text("""
-                SELECT c.id, c.content, c.created_at, u.name
+                SELECT c.id, c.content, c.created_at, c.user_id, u.name
                 FROM news_comments c
                 JOIN news_users u ON c.user_id = u.id
                 WHERE c.news_id = :news_id
@@ -391,6 +413,20 @@ async def add_comment(request: Request, news_id: int, content: str = Form(...)):
         conn.execute(
             text("INSERT INTO news_comments (news_id, user_id, content) VALUES (:news_id, :user_id, :content)"),
             {"news_id": news_id, "user_id": user["id"], "content": content}
+        )
+        conn.commit()
+    return JSONResponse({"success": True})
+
+
+@router.put("/news/{news_id}/comments/{comment_id}")
+async def update_comment(request: Request, news_id: int, comment_id: int, content: str = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE news_comments SET content = :content WHERE id = :id AND user_id = :user_id"),
+            {"content": content, "id": comment_id, "user_id": user["id"]}
         )
         conn.commit()
     return JSONResponse({"success": True})
