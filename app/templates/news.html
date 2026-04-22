@@ -4,77 +4,114 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/nav.css') }}">
 {% endblock %}
 
+{% block back_btn %}{% endblock %}
+
 {% block content %}
-  <header style="margin-top:50px;">
-    <h1>News Delivery</h1>
-    <div class="button-container">
-      <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
+
+<!-- 헤더 -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo">
+      <a href="/">📰 News Delivery</a>
+    </div>
+    <div class="header-actions">
       {% if current_user %}
-        <span class="user-badge">{{ current_user.name }}님</span>
+        <span class="user-name">{{ current_user.name }}님</span>
         {% if current_user.role == 'admin' %}
-          <a class="button-link" href="/static/admin.html">관리자 페이지</a>
+          <a href="/static/admin.html" class="header-btn">관리자</a>
         {% elif current_user.role == 'press' %}
-          <a class="button-link" href="/press/news">언론사 페이지</a>
+          <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
-        <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
       {% else %}
-        <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
       {% endif %}
     </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/">홈</a></li>
+      <li><a href="/news" class="active">뉴스</a></li>
+      <li><a href="/search">검색</a></li>
+      <li><a href="/subscribe">구독</a></li>
+      <li><a href="/contact">문의</a></li>
+    </ul>
+  </nav>
+</header>
 
-    <h2>뉴스 목록</h2>
-    <hr>
+<!-- 콘텐츠 -->
+<main class="main-content">
 
-    <nav class="main-nav">
-      <ul>
-        <li><a href="{{ request.url_for('home') }}">Home</a></li>
-        <li><a href="{{ request.url_for('news') }}">News</a></li>
-        <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
-        <li><a href="/search">🔍 검색</a></li>
-      </ul>
-    </nav>
+  <!-- 페이지 타이틀 -->
+  <div class="page-title-bar">
+    <h2>📰 뉴스 목록</h2>
+    {% if selected_category %}
+      <span class="cat-badge">{{ selected_category }}</span>
+    {% endif %}
+  </div>
 
-    <!-- 카테고리 필터 -->
-<div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0; justify-content:center;">      <a href="/news" style="padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; text-decoration:none;
-         background:{% if not selected_category %}#333{% else %}#f1f3f5{% endif %};
-         color:{% if not selected_category %}white{% else %}#495057{% endif %};">
-        전체
+  <!-- 카테고리 필터 -->
+  <div class="category-tabs" style="margin-bottom:24px;">
+    <a href="/news" class="cat-tab {% if not selected_category %}active{% endif %}">전체</a>
+    {% for cat in categories %}
+      <a href="/news?category={{ cat.name }}"
+         class="cat-tab {% if selected_category == cat.name %}active{% endif %}">
+        {% if cat.name == '정치' %}🏛
+        {% elif cat.name == '경제' %}💰
+        {% elif cat.name == 'IT' %}💻
+        {% elif cat.name == '문화' %}🎭
+        {% elif cat.name == '스포츠' %}⚽
+        {% elif cat.name == '예술' %}🎨
+        {% endif %}
+        {{ cat.name }}
       </a>
-      {% for cat in categories %}
-        <a href="/news?category={{ cat.name }}"
-           style="padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; text-decoration:none;
-           background:{% if selected_category == cat.name %}#333{% else %}#f1f3f5{% endif %};
-           color:{% if selected_category == cat.name %}white{% else %}#495057{% endif %};">
-          {{ cat.name }}
-        </a>
-      {% endfor %}
-    </div>
+    {% endfor %}
+  </div>
 
-    <section class="news-section">
-      <ul>
-        {% for news in news_items %}
-          <li class="news-card news-card-left">
-            <a href="/news/{{ news.id }}" style="text-decoration:none; color:inherit; display:block;">
-              {% if news.category_name %}
-                <span class="news-category-tag">{{ news.category_name }}</span>
-              {% endif %}
-              <span class="news-category">{{ news.get('source', '기타') }}</span>
-              <h3>{{ news.get('title', '') }}</h3>
-              <p>{{ news.get('content', '')[:100] }}...</p>
-            </a>
-          </li>
+  <!-- 뉴스 그리드 -->
+  {% if news_items %}
+  <div class="news-grid">
+    {% for news in news_items %}
+      <a href="/news/{{ news.id }}" class="news-card">
+        {% if news.image_url %}
+          <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
         {% else %}
-          <li>등록된 뉴스가 없습니다.</li>
-        {% endfor %}
-      </ul>
-    </section>
-    <hr>
-  </header>
+          <div class="card-img no-img"></div>
+        {% endif %}
+        <div class="card-body">
+          {% if news.category_name %}
+            <span class="cat-badge">{{ news.category_name }}</span>
+          {% endif %}
+          <h3 class="card-title">{{ news.get('title', '') }}</h3>
+          <p class="card-desc">{{ news.get('content', '')[:80] }}...</p>
+          <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <p>등록된 뉴스가 없습니다.</p>
+    </div>
+  {% endif %}
 
-  <footer>
-    <p>&copy; 2026 News Delivery. All rights reserved.</p>
-  </footer>
+</main>
+
+<!-- 푸터 -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">📰 News Delivery</div>
+    <p class="footer-desc">카테고리 기반 뉴스 큐레이션 플랫폼</p>
+    <div class="footer-links">
+      <a href="/contact">문의하기</a>
+      <a href="/subscribe">구독하기</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
+  </div>
+</footer>
+
 {% endblock %}
