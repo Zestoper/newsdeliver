@@ -4,41 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}News Delivery{% endblock %}</title>
-  {% block head %}{% endblock %}
+  
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
   <style>
+    /* 기본 레이아웃 초기화 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; }
+
+    /* 뒤로가기 버튼 스타일: 
+       main.html에서 block을 비우지 않았을 때만 상단에 나타남 */
     .back-btn-wrap {
-      position: fixed;
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
-      text-align: center;
-      padding: 12px 0;
-      background: white;
-      z-index: 999;
+      width: 100%;
+      text-align: left;
+      padding: 10px 24px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #ddd;
+      z-index: 1000;
     }
     .back-btn {
       display: inline-block;
       padding: 6px 14px;
-      background: #eee;
-      color: #333;
+      background: #333;
+      color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       text-decoration: none;
     }
-    .back-btn:hover {
-      background: #ddd;
-    }
+    .back-btn:hover { background: #555; }
   </style>
+
+  {% block head %}{% endblock %}
 </head>
 <body>
+
   {% block back_btn %}
   <div class="back-btn-wrap">
-    <button class="back-btn" onclick="history.back()">← 뒤로</button>
+    <button class="back-btn" onclick="history.back()">← 뒤로가기</button>
   </div>
   {% endblock %}
   
-  {% block content %}{% endblock %}
+  <div class="app-container">
+    {% block content %}{% endblock %}
+  </div>
+
 </body>
 </html>

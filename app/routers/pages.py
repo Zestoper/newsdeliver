@@ -67,7 +67,7 @@ async def home(request: Request) -> HTMLResponse:
                 FROM news n
                 LEFT JOIN categories c ON n.category_id = c.id
                 WHERE n.status = 'published'
-                ORDER BY n.created_at ASC
+                ORDER BY n.created_at DESC
             """)
         )
         news_items = [dict(row._mapping) for row in result]

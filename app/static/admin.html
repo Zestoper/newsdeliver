@@ -90,6 +90,24 @@
       <tbody></tbody>
     </table>
   </div>
+  <!-- 뉴스 가져오기 -->
+  <div id="email" class="section">
+    <h2>📧 이메일 발송</h2>
+    <div class="form-box" style="margin-bottom:20px;">
+      <p style="margin-bottom:16px; font-size:14px; color:#495057;">
+        네이버 뉴스 API로 카테고리별 최신 뉴스를 가져옵니다.
+      </p>
+      <button class="btn btn-blue" onclick="fetchNews()">📰 뉴스 가져오기</button>
+      <p id="fetch-result" style="margin-top:16px; font-size:14px;"></p>
+    </div>
+    <div class="form-box">
+      <p style="margin-bottom:16px; font-size:14px; color:#495057;">
+        최신 발행된 뉴스를 전체 구독자에게 발송합니다.
+      </p>
+      <button class="btn btn-blue" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
+      <p id="send-result" style="margin-top:16px; font-size:14px;"></p>
+    </div>
+  </div>
 
   <!-- 이메일 발송 -->
   <div id="email" class="section">
@@ -267,7 +285,13 @@
       select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
     });
   }
-
+  async function fetchNews() {
+    const res = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
+    const data = await res.json();
+    const result = document.getElementById('fetch-result');
+    result.textContent = data.message;
+    result.style.color = data.success ? '#2f9e44' : '#fa5252';
+}
   // 초기 로드
   loadUsers();
   loadCategories();

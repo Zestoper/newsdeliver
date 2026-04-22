@@ -74,3 +74,13 @@ def send_newsletter_api():
         conn.commit()
 
     return {"success": True, "message": f"총 {total_sent}건 발송 완료!"}
+
+from app.services.naver_news import fetch_and_save_news
+
+@router.post("/fetch-news")
+def fetch_news_api():
+    try:
+        count = fetch_and_save_news()
+        return {"success": True, "message": f"{count}개 뉴스를 가져왔습니다!"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
