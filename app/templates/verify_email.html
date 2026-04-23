@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}이메일 인증 - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
+{% endblock %}
+
+{% block back_btn %}{% endblock %}
+
+{% block content %}
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="main-content" style="display:flex; justify-content:center; align-items:center; min-height:60vh;">
+  <div style="background:white; border-radius:10px; padding:48px; box-shadow:0 2px 12px rgba(0,0,0,0.08); text-align:center; max-width:480px; width:100%;">
+    {% if valid %}
+      <div style="font-size:48px; margin-bottom:20px;">✅</div>
+      <h2 style="font-size:22px; font-weight:800; color:#1a1a1a; margin-bottom:12px;">이메일 인증 확인</h2>
+      <p style="font-size:15px; color:#555; margin-bottom:8px;">구독 이메일: <strong>{{ email }}</strong></p>
+      <p style="font-size:14px; color:#888; margin-bottom:32px;">아래 버튼을 클릭하면 인증이 완료됩니다.</p>
+      <form action="/verify-email/confirm" method="post">
+        <input type="hidden" name="token" value="{{ token }}">
+        <button type="submit"
+                style="padding:14px 32px; background:#c00; color:white; border:none; border-radius:6px; font-size:15px; font-weight:700; cursor:pointer;">
+          인증 완료하기
+        </button>
+      </form>
+    {% else %}
+      <div style="font-size:48px; margin-bottom:20px;">❌</div>
+      <h2 style="font-size:22px; font-weight:800; color:#1a1a1a; margin-bottom:12px;">유효하지 않은 링크</h2>
+      <p style="font-size:14px; color:#888; margin-bottom:32px;">인증 링크가 만료되었거나 올바르지 않습니다.</p>
+      <a href="/subscribe"
+         style="padding:14px 32px; background:#c00; color:white; border-radius:6px; font-size:15px; font-weight:700; text-decoration:none;">
+        구독 페이지로 이동
+      </a>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

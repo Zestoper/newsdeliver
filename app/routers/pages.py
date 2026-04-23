@@ -1,4 +1,6 @@
 from pathlib import Path
+import secrets
+from app.services.naver_news import extract_press_name
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -14,6 +16,7 @@ from app.services.store import (
     is_duplicate_subscription,
     is_duplicate_user,
 )
+from app.services.email import send_verify_email
 
 router = APIRouter()
 
@@ -169,6 +172,7 @@ async def subscribe_page(request: Request) -> HTMLResponse:
         subscribed_ids = []
         current_email = None
         is_subscribed = False
+        is_verified = False
         if user:
             result = conn.execute(
                 text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
@@ -176,15 +180,16 @@ async def subscribe_page(request: Request) -> HTMLResponse:
             )
             subscribed_ids = [row.category_id for row in result]
             sub = conn.execute(
-                text("SELECT email, is_active FROM subscriptions WHERE user_id = :user_id"),
+                text("SELECT email, is_active, is_verified FROM subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
             ).fetchone()
             if sub:
                 current_email = sub.email
                 is_subscribed = sub.is_active == 1
+                is_verified = sub.is_verified == 1
     return render(request, "subscribe.html", categories=categories,
                   subscribed_ids=subscribed_ids, current_email=current_email,
-                  is_subscribed=is_subscribed)
+                  is_subscribed=is_subscribed, is_verified=is_verified)
 
 
 @router.post("/subscribe", response_class=HTMLResponse)
@@ -200,12 +205,13 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                 {"user_id": user["id"]}
             )]
             sub = conn.execute(
-                text("SELECT email, is_active FROM subscriptions WHERE user_id = :user_id"),
+                text("SELECT email, is_active, is_verified FROM subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
             ).fetchone()
             current_email = sub.email if sub else None
             is_subscribed = sub.is_active == 1 if sub else False
-        return categories, subscribed_ids, current_email, is_subscribed
+            is_verified = sub.is_verified == 1 if sub else False
+        return categories, subscribed_ids, current_email, is_subscribed, is_verified
 
     if not user:
         with engine.connect() as conn:
@@ -214,24 +220,68 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       message="로그인 후 구독할 수 있습니다.",
                       message_type="error", form_data=form_data,
                       categories=categories, subscribed_ids=[],
-                      current_email=None, is_subscribed=False)
+                      current_email=None, is_subscribed=False, is_verified=False)
 
     if is_duplicate_subscription(email, user_id=user["id"]):
-        categories, subscribed_ids, current_email, is_subscribed = get_subscribe_context()
+        categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
         return render(request, "subscribe.html",
                       message="이미 다른 사용자가 사용 중인 이메일입니다.",
                       message_type="error", form_data=form_data,
                       categories=categories, subscribed_ids=subscribed_ids,
-                      current_email=current_email, is_subscribed=is_subscribed)
+                      current_email=current_email, is_subscribed=is_subscribed,
+                      is_verified=is_verified)
 
-    add_subscription(email, user_id=user["id"])
-    categories, subscribed_ids, current_email, is_subscribed = get_subscribe_context()
+    try:
+        token = add_subscription(email, user_id=user["id"])
+    except ValueError as e:
+        categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
+        return render(request, "subscribe.html",
+                      message=str(e), message_type="error",
+                      categories=categories, subscribed_ids=subscribed_ids,
+                      current_email=current_email, is_subscribed=is_subscribed,
+                      is_verified=is_verified)
+    try:
+        send_verify_email(email, token)
+        message = "구독 완료! 이메일로 인증 링크를 발송했어요."
+    except:
+        message = "구독 완료! (이메일 인증 발송 실패)"
+
+    categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
     return render(request, "subscribe.html",
-                  message="구독이 완료되었습니다. 다음 뉴스레터부터 받아볼 수 있어요.",
-                  message_type="success",
+                  message=message, message_type="success",
                   categories=categories, subscribed_ids=subscribed_ids,
-                  current_email=current_email, is_subscribed=is_subscribed)
+                  current_email=current_email, is_subscribed=is_subscribed,
+                  is_verified=is_verified)
 
+
+@router.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_page(request: Request, token: str = ""):
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM subscriptions WHERE verify_token = :token"),
+            {"token": token}
+        ).fetchone()
+    if not row:
+        return render(request, "verify_email.html", valid=False, email="", token="")
+    return render(request, "verify_email.html", valid=True,
+                  email=dict(row._mapping)["email"], token=token)
+
+
+@router.post("/verify-email/confirm", response_class=HTMLResponse)
+async def verify_email_confirm(request: Request, token: str = Form(...)):
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM subscriptions WHERE verify_token = :token"),
+            {"token": token}
+        ).fetchone()
+        if not row:
+            return render(request, "verify_email.html", valid=False, email="", token="")
+        conn.execute(
+            text("UPDATE subscriptions SET is_verified = 1 WHERE verify_token = :token"),
+            {"token": token}
+        )
+        conn.commit()
+    return RedirectResponse(url="/subscribe?verified=1", status_code=303)
 
 @router.post("/unsubscribe")
 async def unsubscribe(request: Request):
@@ -245,6 +295,59 @@ async def unsubscribe(request: Request):
         )
         conn.commit()
     return RedirectResponse(url="/subscribe", status_code=303)
+
+
+@router.get("/mypage", response_class=HTMLResponse)
+async def mypage(request: Request) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        sub = conn.execute(
+            text("SELECT email, is_active, is_verified FROM subscriptions WHERE user_id = :user_id"),
+            {"user_id": user["id"]}
+        ).fetchone()
+        cat_result = conn.execute(
+            text("""
+                SELECT c.name FROM category_subscriptions cs
+                JOIN categories c ON cs.category_id = c.id
+                WHERE cs.user_id = :user_id
+            """),
+            {"user_id": user["id"]}
+        ).fetchall()
+        liked_news_result = conn.execute(
+            text("""
+                SELECT n.id, n.title, n.created_at FROM news_likes l
+                JOIN news n ON l.news_id = n.id
+                WHERE l.user_id = :user_id
+                ORDER BY n.created_at DESC
+            """),
+            {"user_id": user["id"]}
+        ).fetchall()
+    subscription = dict(sub._mapping) if sub else None
+    categories = [row.name for row in cat_result]
+    liked_news = [dict(row._mapping) for row in liked_news_result]
+    return render(request, "mypage.html", subscription=subscription,
+                  categories=categories, liked_news=liked_news)
+
+
+@router.post("/mypage", response_class=HTMLResponse)
+async def mypage_update(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    tel: str = Form(""),
+) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE news_users SET name=:name, email=:email, tel=:tel WHERE id=:id"),
+            {"name": name, "email": email, "tel": tel, "id": user["id"]}
+        )
+        conn.commit()
+    return RedirectResponse(url="/mypage", status_code=303)
 
 
 @router.get("/news", response_class=HTMLResponse)
@@ -294,14 +397,8 @@ async def news_detail(request: Request, news_id: int) -> HTMLResponse:
                 text("SELECT id FROM news_likes WHERE news_id = :news_id AND user_id = :user_id"),
                 {"news_id": news_id, "user_id": user["id"]}
             ).fetchone() is not None
-        subscribed = False
-        if user:
-            subscribed = conn.execute(
-                text("SELECT id FROM subscriptions WHERE user_id = :user_id AND is_active = 1"),
-                {"user_id": user["id"]}
-            ).fetchone() is not None
     return render(request, "news_detail.html", news=news,
-                  like_count=like_count, liked=liked, subscribed=subscribed)
+                  like_count=like_count, liked=liked)
 
 
 @router.get("/news/{news_id}/delete")
@@ -328,10 +425,18 @@ async def delete_news_page(request: Request, news_id: int):
 
 @router.get("/search", response_class=HTMLResponse)
 async def search_page(request: Request, q: str = "", source: str = "") -> HTMLResponse:
+    # 실제 수집하는 언론사만 필터에 노출
+    from app.services.naver_news import extract_press_name
+    domain_map = {
+        "chosun": "조선일보", "joongang": "중앙일보", "donga": "동아일보",
+        "hani": "한겨레", "khan": "경향신문", "ohmynews": "오마이뉴스",
+        "yonhap": "연합뉴스", "yna": "연합뉴스", "newsis": "뉴시스",
+        "news1": "뉴스1", "mt": "머니투데이", "mk": "매일경제",
+        "hankyung": "한국경제", "sedaily": "서울경제", "etnews": "전자신문",
+        "zdnet": "ZDNet", "itworld": "IT World", "bloter": "블로터",
+    }
+    sources = list(domain_map.values())
     with engine.connect() as conn:
-        sources = [row.source for row in conn.execute(
-            text("SELECT DISTINCT source FROM news WHERE source IS NOT NULL AND source != '' ORDER BY source")
-        )]
         conditions = ["status = 'published'"]
         params = {}
         if q:

@@ -35,9 +35,12 @@ def update_user(user_id: str, data: UserUpdate, db: Session = Depends(get_db)):
     return {"message": "수정 완료"}
 
 
-# 삭제
 @router.delete("/{user_id}")
 def delete_user(user_id: str, db: Session = Depends(get_db)):
+    db.execute(text("DELETE FROM news_comments WHERE user_id = :id"), {"id": user_id})
+    db.execute(text("DELETE FROM news_likes WHERE user_id = :id"), {"id": user_id})
+    db.execute(text("DELETE FROM category_subscriptions WHERE user_id = :id"), {"id": user_id})
+    db.execute(text("DELETE FROM subscriptions WHERE user_id = :id"), {"id": user_id})
     db.execute(text("DELETE FROM news_users WHERE id = :id"), {"id": user_id})
     db.commit()
     return {"message": "삭제 완료"}

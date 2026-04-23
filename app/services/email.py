@@ -44,3 +44,39 @@ def send_newsletter(to_emails: list[str], title: str, content: str, source: str 
             sent_count += 1
 
     return sent_count
+
+
+def send_verify_email(to_email: str, token: str) -> None:
+    verify_url = f"http://127.0.0.1:8000/verify-email?token={token}"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "[News Delivery] 이메일 인증을 완료해주세요"
+    msg["From"] = SMTP_USER
+    msg["To"] = to_email
+
+    html_body = f"""
+    <div style="max-width:600px; margin:0 auto; font-family:sans-serif;">
+      <div style="background:#c00; padding:20px 24px;">
+        <h1 style="color:white; margin:0; font-size:18px;">📰 News Delivery</h1>
+      </div>
+      <div style="padding:32px 24px; background:white;">
+        <h2 style="font-size:20px; color:#1a1a1a; margin-bottom:16px;">이메일 인증</h2>
+        <p style="font-size:15px; color:#555; line-height:1.8; margin-bottom:24px;">
+          아래 버튼을 클릭하여 이메일 인증을 완료해주세요.
+        </p>
+        <a href="{verify_url}"
+           style="display:inline-block; padding:14px 28px; background:#c00; color:white;
+                  text-decoration:none; border-radius:6px; font-weight:700; font-size:15px;">
+          이메일 인증하기
+        </a>
+      </div>
+      <div style="padding:16px 24px; background:#f8f9fa; text-align:center;">
+        <p style="font-size:12px; color:#adb5bd;">© 2026 News Delivery</p>
+      </div>
+    </div>
+    """
+    msg.attach(MIMEText(html_body, "html"))
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, to_email, msg.as_string())

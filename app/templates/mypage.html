@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}마이페이지 - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
+{% endblock %}
+
+{% block back_btn %}{% endblock %}
+
+{% block content %}
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% endif %}
+    </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/">홈</a></li>
+      <li><a href="/news">뉴스</a></li>
+      <li><a href="/search">검색</a></li>
+      <li><a href="/subscribe">구독</a></li>
+      <li><a href="/contact">문의</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="main-content">
+  <div class="page-title-bar">
+    <h2>👤 마이페이지</h2>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+    <!-- 내 정보 수정 -->
+    <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">내 정보</h3>
+      <form action="/mypage" method="post">
+        <div class="input-group" style="margin-bottom:14px;">
+          <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">이름</label>
+          <input name="name" type="text" value="{{ current_user.name }}"
+                 style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;">
+        </div>
+        <div class="input-group" style="margin-bottom:14px;">
+          <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">이메일</label>
+          <input name="email" type="email" value="{{ current_user.email or '' }}"
+                 style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;">
+        </div>
+        <div class="input-group" style="margin-bottom:20px;">
+          <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">전화번호</label>
+          <input name="tel" type="tel" value="{{ current_user.tel or '' }}"
+                 style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;">
+        </div>
+        <button type="submit"
+                style="width:100%; padding:12px; background:#c00; color:white; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer;">
+          정보 수정
+        </button>
+      </form>
+    </div>
+
+    <!-- 구독 정보 -->
+    <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">구독 정보</h3>
+
+      <div style="margin-bottom:20px;">
+        <p style="font-size:13px; font-weight:600; color:#333; margin-bottom:8px;">이메일 구독</p>
+        {% if subscription and subscription.is_active %}
+          <p style="font-size:14px; color:#2f9e44;">
+            ✅ {{ subscription.email }}
+            {% if subscription.is_verified %}
+              <span style="background:#d3f9d8; color:#2f9e44; padding:2px 8px; border-radius:10px; font-size:11px;">인증완료</span>
+            {% else %}
+              <span style="background:#fff3cd; color:#856404; padding:2px 8px; border-radius:10px; font-size:11px;">인증 필요</span>
+            {% endif %}
+          </p>
+        {% else %}
+          <p style="font-size:14px; color:#aaa;">구독 중이 아닙니다. <a href="/subscribe" style="color:#c00;">구독하기</a></p>
+        {% endif %}
+      </div>
+
+      <div>
+        <p style="font-size:13px; font-weight:600; color:#333; margin-bottom:8px;">구독 카테고리</p>
+        {% if categories %}
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            {% for cat in categories %}
+              <span style="padding:4px 12px; background:#c00; color:white; border-radius:20px; font-size:12px; font-weight:600;">{{ cat }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="font-size:14px; color:#aaa;">구독한 카테고리가 없습니다. <a href="/subscribe" style="color:#c00;">구독하기</a></p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 좋아요한 뉴스 -->
+  <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">❤️ 좋아요한 뉴스</h3>
+    {% if liked_news %}
+      <div style="display:flex; flex-direction:column; gap:0;">
+        {% for news in liked_news %}
+          <a href="/news/{{ news.id }}"
+             style="display:flex; justify-content:space-between; padding:14px 0; border-bottom:1px solid #f0f0f0; text-decoration:none; color:inherit;">
+            <span style="font-size:14px; font-weight:600; color:#1a1a1a;">{{ news.title }}</span>
+            <span style="font-size:12px; color:#aaa; flex-shrink:0; margin-left:16px;">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="font-size:14px; color:#aaa;">좋아요한 뉴스가 없습니다.</p>
+    {% endif %}
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">📰 News Delivery</div>
+    <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
+  </div>
+</footer>
+
+{% endblock %}

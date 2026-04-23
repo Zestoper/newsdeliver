@@ -9,9 +9,9 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 @router.post("/send-newsletter")
 def send_newsletter_api():
     with engine.connect() as conn:
-        # 구독자 목록
+        # 인증된 구독자만 발송
         subs = conn.execute(
-            text("SELECT user_id, email FROM subscriptions WHERE is_active = 1")
+            text("SELECT user_id, email FROM subscriptions WHERE is_active = 1 AND is_verified = 1")
         ).fetchall()
 
         if not subs:

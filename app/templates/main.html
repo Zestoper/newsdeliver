@@ -1,147 +1,143 @@
-{% extends "base.html" %}
-
-{% block title %}News Delivery{% endblock %}
-
-{% block head %}
-  <link rel="stylesheet" href="/static/css/main.css?v=1.1">
-{% endblock %}
-
-{% block back_btn %}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
+<link rel="stylesheet" href="/static/css/main.css?v=1.1" />
+{% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
 <header class="site-header">
-  <div class="header-top">
-    <div class="header-date">{{ now if now else '' }}</div>
-    <div class="header-logo">
-      <a href="/">📰 News Delivery</a>
-    </div>
-    <div class="header-actions">
-      {% if current_user %}
-        <span class="user-name">{{ current_user.name }}님</span>
-        {% if current_user.role == 'admin' %}
-          <a href="/static/admin.html" class="header-btn">관리자</a>
-        {% elif current_user.role == 'press' %}
-          <a href="/press/news" class="header-btn">언론사</a>
-        {% endif %}
-        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
-      {% else %}
-        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
-        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
-      {% endif %}
-    </div>
-  </div>
+    <div class="header-top">
+        <div class="header-date">{{ now if now else '' }}</div>
+        <div class="header-logo">
+            <a href="/">📰 News Delivery</a>
+        </div>
+        <div class="header-actions">
+            {% if current_user %}
+            <span class="user-name">{{ current_user.name }}님</span>
+            <a href="/mypage" class="header-btn outline">마이페이지</a>
 
-  <!-- 네비게이션 -->
-  <nav class="main-nav">
-    <ul>
-      <li><a href="/" class="active">홈</a></li>
-      <li><a href="/news">뉴스</a></li>
-      <li><a href="/search">검색</a></li>
-      <li><a href="/subscribe">구독</a></li>
-      <li><a href="/contact">문의</a></li>
-    </ul>
-  </nav>
+            {% endif %} {% if current_user %} {% if current_user.role == 'admin' %}
+            <a href="/static/admin.html" class="header-btn">관리자</a>
+            {% elif current_user.role == 'press' %}
+            <a href="/press/news" class="header-btn">언론사</a>
+            {% endif %}
+            <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+            {% else %}
+            <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+            <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 네비게이션 -->
+    <nav class="main-nav">
+        <ul>
+            <li><a href="/" class="active">홈</a></li>
+            <li><a href="/news">뉴스</a></li>
+            <li><a href="/search">검색</a></li>
+            <li><a href="/subscribe">구독</a></li>
+            <li><a href="/contact">문의</a></li>
+        </ul>
+    </nav>
 </header>
 
 <!-- 메인 콘텐츠 -->
 <main class="main-content">
-
-  <!-- 헤드라인 뉴스 (첫 번째 뉴스) -->
-  {% if news_items %}
-  <section class="headline-section">
-    {% set top = news_items[0] %}
-    <a href="/news/{{ top.id }}" class="headline-card">
-      {% if top.image_url %}
-        <div class="headline-img" style="background-image:url('{{ top.image_url }}')"></div>
-      {% else %}
-        <div class="headline-img no-img"></div>
-      {% endif %}
-      <div class="headline-info">
-        {% if top.category_name %}
-          <span class="cat-badge">{{ top.category_name }}</span>
-        {% endif %}
-        <h1 class="headline-title">{{ top.title }}</h1>
-        <p class="headline-desc">{{ top.get('content', '')[:150] }}...</p>
-        <span class="headline-date">{{ top.created_at.strftime('%Y.%m.%d') if top.created_at else '' }}</span>
-      </div>
-    </a>
-  </section>
-
-  <!-- 뉴스 그리드 -->
-  <section class="news-grid-section">
-    <div class="section-header">
-      <h2>최신 뉴스</h2>
-      <a href="/news" class="more-link">전체보기 →</a>
-    </div>
-    <div class="news-grid">
-      {% for news in news_items[1:7] %}
-        <a href="/news/{{ news.id }}" class="news-card">
-          {% if news.image_url %}
-            <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
-          {% else %}
-            <div class="card-img no-img"></div>
-          {% endif %}
-          <div class="card-body">
-            {% if news.category_name %}
-              <span class="cat-badge">{{ news.category_name }}</span>
+    <!-- 헤드라인 뉴스 (첫 번째 뉴스) -->
+    {% if news_items %}
+    <section class="headline-section">
+        {% set top = news_items[0] %}
+        <a href="/news/{{ top.id }}" class="headline-card">
+            {% if top.image_url and top.image_url.startswith('http') and not top.image_url.endswith('.html') and not
+            top.image_url.endswith('.nhn') %}
+            <div class="headline-img" style="background-image:url('{{ top.image_url }}')"></div>
+            {% else %}
+            <div class="headline-img no-img">📰</div>
             {% endif %}
-            <h3 class="card-title">{{ news.title }}</h3>
-            <p class="card-desc">{{ news.get('content', '')[:80] }}...</p>
-            <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
-          </div>
+            <div class="headline-info">
+                {% if top.category_name %}
+                <span class="cat-badge">{{ top.category_name }}</span>
+                {% endif %}
+                <h1 class="headline-title">{{ top.title }}</h1>
+                <p class="headline-desc">{{ top.get('content', '')[:150] }}...</p>
+                <span class="headline-date">{{ top.created_at.strftime('%Y.%m.%d') if top.created_at else '' }}</span>
+            </div>
         </a>
-      {% endfor %}
-    </div>
-  </section>
+    </section>
 
-  <!-- 카테고리별 뉴스 -->
-  <section class="category-section">
-    <div class="section-header">
-      <h2>카테고리별 뉴스</h2>
-    </div>
-    <div class="category-tabs">
-      <a href="/news" class="cat-tab">전체</a>
-      <a href="/news?category=정치" class="cat-tab">🏛 정치</a>
-      <a href="/news?category=경제" class="cat-tab">💰 경제</a>
-      <a href="/news?category=IT" class="cat-tab">💻 IT</a>
-      <a href="/news?category=문화" class="cat-tab">🎭 문화</a>
-      <a href="/news?category=스포츠" class="cat-tab">⚽ 스포츠</a>
-      <a href="/news?category=예술" class="cat-tab">🎨 예술</a>
-    </div>
-    <div class="news-list">
-      {% for news in news_items[7:15] %}
-        <a href="/news/{{ news.id }}" class="news-list-item">
-          <div class="list-info">
-            {% if news.category_name %}
-              <span class="cat-badge small">{{ news.category_name }}</span>
-            {% endif %}
-            <h4 class="list-title">{{ news.title }}</h4>
-            <span class="list-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
-          </div>
-          {% if news.image_url %}
-            <div class="list-img" style="background-image:url('{{ news.image_url }}')"></div>
-          {% endif %}
-        </a>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
+    <!-- 뉴스 그리드 -->
+    <section class="news-grid-section">
+        <div class="section-header">
+            <h2>최신 뉴스</h2>
+            <a href="/news" class="more-link">전체보기 →</a>
+        </div>
+        <div class="news-grid">
+            {% for news in news_items[1:7] %}
+            <a href="/news/{{ news.id }}" class="news-card">
+                {% if news.image_url and news.image_url.startswith('http') and not news.image_url.endswith('.html') and
+                not news.image_url.endswith('.nhn') %}
+                <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
+                {% else %}
+                <div class="card-img no-img">📰</div>
+                {% endif %}
+                <div class="card-body">
+                    {% if news.category_name %}
+                    <span class="cat-badge">{{ news.category_name }}</span>
+                    {% endif %}
+                    <h3 class="card-title">{{ news.title }}</h3>
+                    <p class="card-desc">{{ news.get('content', '')[:80] }}...</p>
+                    <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
 
+    <!-- 카테고리별 뉴스 -->
+    <section class="category-section">
+        <div class="section-header">
+            <h2>카테고리별 뉴스</h2>
+        </div>
+        <div class="category-tabs">
+            <a href="/news" class="cat-tab">전체</a>
+            <a href="/news?category=정치" class="cat-tab">🏛 정치</a>
+            <a href="/news?category=경제" class="cat-tab">💰 경제</a>
+            <a href="/news?category=IT" class="cat-tab">💻 IT</a>
+            <a href="/news?category=문화" class="cat-tab">🎭 문화</a>
+            <a href="/news?category=스포츠" class="cat-tab">⚽ 스포츠</a>
+            <a href="/news?category=예술" class="cat-tab">🎨 예술</a>
+        </div>
+        <div class="news-list">
+            {% for news in news_items[7:15] %}
+            <a href="/news/{{ news.id }}" class="news-list-item">
+                <div class="list-info">
+                    {% if news.category_name %}
+                    <span class="cat-badge small">{{ news.category_name }}</span>
+                    {% endif %}
+                    <h4 class="list-title">{{ news.title }}</h4>
+                    <span class="list-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+                </div>
+                {% if news.image_url and news.image_url.startswith('http') and 'naver' not in news.image_url %}
+                <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
+                {% else %}
+                <div class="card-img no-img">📰</div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </main>
 
 <!-- 푸터 -->
 <footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-logo">📰 News Delivery</div>
-    <p class="footer-desc">카테고리 기반 뉴스 큐레이션 플랫폼</p>
-    <div class="footer-links">
-      <a href="/contact">문의하기</a>
-      <a href="/subscribe">구독하기</a>
+    <div class="footer-inner">
+        <div class="footer-logo">📰 News Delivery</div>
+        <p class="footer-desc">카테고리 기반 뉴스 큐레이션 플랫폼</p>
+        <div class="footer-links">
+            <a href="/contact">문의하기</a>
+            <a href="/subscribe">구독하기</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
     </div>
-    <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
-  </div>
 </footer>
 
 {% endblock %}

@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from app.database import engine
-
+import secrets
 
 def get_news_items() -> list[dict]:
     with engine.connect() as conn:
@@ -57,20 +57,28 @@ def get_user(*, user_id: str, password: str) -> dict | None:
 
 def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
     with engine.connect() as conn:
-        # 다른 유저가 같은 이메일 사용하는지 체크
         if user_id:
-            email_result = conn.execute(
-                text("SELECT id FROM subscriptions WHERE email = :email AND user_id != :user_id"),
+            result = conn.execute(
+                text("""
+                    SELECT id FROM subscriptions 
+                    WHERE email = :email 
+                    AND user_id != :user_id 
+                    AND is_active = 1
+                    AND is_verified = 1
+                """),
                 {"email": email, "user_id": user_id}
             )
         else:
-            email_result = conn.execute(
-                text("SELECT id FROM subscriptions WHERE email = :email"),
+            result = conn.execute(
+                text("""
+                    SELECT id FROM subscriptions 
+                    WHERE email = :email 
+                    AND is_active = 1 
+                    AND is_verified = 1
+                """),
                 {"email": email}
             )
-        if email_result.fetchone():
-            return True
-        return False
+        return result.fetchone() is not None
 
 
 def add_subscription(email: str, user_id: str) -> None:
@@ -91,3 +99,23 @@ def add_subscription(email: str, user_id: str) -> None:
                 {"user_id": user_id, "email": email}
             )
         conn.commit()
+
+def add_subscription(email: str, user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT id FROM subscriptions WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        ).fetchone()
+        if existing:
+            conn.execute(
+                text("UPDATE subscriptions SET email=:email, is_active=1, is_verified=0, verify_token=:token WHERE user_id=:user_id"),
+                {"email": email, "user_id": user_id, "token": token}
+            )
+        else:
+            conn.execute(
+                text("INSERT INTO subscriptions (user_id, email, is_active, is_verified, verify_token) VALUES (:user_id, :email, 1, 0, :token)"),
+                {"user_id": user_id, "email": email, "token": token}
+            )
+        conn.commit()
+    return token
