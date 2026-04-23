@@ -99,6 +99,33 @@
     </div>
   {% endif %}
 
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% set cat_qs = '&category=' ~ selected_category if selected_category else '' %}
+    {% if page > 1 %}
+      <a href="/news?page={{ page - 1 }}{{ cat_qs }}" class="page-btn">← 이전</a>
+    {% else %}
+      <span class="page-btn disabled">← 이전</span>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+        <span class="page-btn active">{{ p }}</span>
+      {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+        <a href="/news?page={{ p }}{{ cat_qs }}" class="page-btn">{{ p }}</a>
+      {% elif p == page - 3 or p == page + 3 %}
+        <span class="page-btn ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+      <a href="/news?page={{ page + 1 }}{{ cat_qs }}" class="page-btn">다음 →</a>
+    {% else %}
+      <span class="page-btn disabled">다음 →</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
 </main>
 
 <!-- 푸터 -->

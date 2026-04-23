@@ -3,7 +3,7 @@
 {% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=4" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=6" />
 {% endblock %}
 
 {% block content %}
@@ -21,14 +21,29 @@
     {% endif %}
 
     <div class="detail-content-wrap">
-      <p class="detail-content" id="detail-content">{{ news.content }}</p>
+      <div class="detail-content" id="detail-content">
+        {% for para in news.content.split('\n') if para.strip() %}
+        <p>{{ para.strip() }}</p>
+        {% endfor %}
+      </div>
       <button class="btn-read-more" id="btn-read-more" onclick="expandContent()" style="display:none;">더보기 ▼</button>
+    </div>
+
+    <div class="detail-meta">
+      <span class="meta-item">♥ {{ like_count }}</span>
+      <span class="meta-item">👁 {{ news.view_count or 0 }}</span>
     </div>
 
     <div class="detail-actions">
       <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
         ♥ <span id="like-count">{{ like_count }}</span>
       </button>
+      <button class="btn-share" onclick="copyUrl()">🔗 URL 복사</button>
+      {% if current_user %}
+      <button class="btn-bookmark {% if bookmarked %}saved{% endif %}" id="btn-bookmark" onclick="toggleBookmark({{ news.id }})">
+        🔖 <span id="bookmark-label">{% if bookmarked %}저장됨{% else %}스크랩{% endif %}</span>
+      </button>
+      {% endif %}
 
       {% if current_user %}
         {% if current_user.role == 'admin' or current_user.id == news.author_id %}
@@ -87,6 +102,28 @@
     <div id="comment-list"></div>
   </div>
 
+  {% if related_news %}
+  <div class="related-box">
+    <h3>📰 관련 뉴스</h3>
+    <div class="related-grid">
+      {% for r in related_news %}
+      <a href="/news/{{ r.id }}" class="related-card">
+        {% if r.image_url and r.image_url.startswith('http') and not r.image_url.endswith('.html') %}
+        <div class="related-img" style="background-image:url('{{ r.image_url }}')"></div>
+        {% else %}
+        <div class="related-img related-no-img">📰</div>
+        {% endif %}
+        <div class="related-info">
+          {% if r.category_name %}<span class="related-cat">{{ r.category_name }}</span>{% endif %}
+          <p class="related-title">{{ r.title }}</p>
+          <span class="related-meta">👁 {{ r.view_count or 0 }} · {{ r.created_at.strftime('%Y.%m.%d') if r.created_at else '' }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% else %}
   <p class="detail-empty">뉴스를 찾을 수 없습니다.</p>
   {% endif %}
@@ -97,6 +134,54 @@
   const NEWS_ID = {{ news.id if news else 0 }};
   const CURRENT_USER = "{{ 'true' if current_user else 'false' }}" === 'true';
   const CURRENT_USER_ID = "{{ current_user.id if current_user else '' }}";
+
+  function copyUrl() {
+    navigator.clipboard.writeText(location.href).then(() => {
+      const btn = document.querySelector('.btn-share');
+      const orig = btn.textContent;
+      btn.textContent = '✅ 복사됨!';
+      btn.style.background = '#d3f9d8';
+      btn.style.color = '#2f9e44';
+      btn.style.borderColor = '#8ce99a';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1800);
+    });
+  }
+
+  function openReportModal() {
+    document.getElementById('report-modal').style.display = 'flex';
+  }
+  function closeReportModal() {
+    document.getElementById('report-modal').style.display = 'none';
+    document.getElementById('report-reason').value = '';
+  }
+  function setReason(text) {
+    document.getElementById('report-reason').value = text;
+  }
+  async function submitReport() {
+    const reason = document.getElementById('report-reason').value.trim();
+    const formData = new FormData();
+    formData.append('reason', reason);
+    const res = await fetch(`/news/${NEWS_ID}/report`, { method: 'POST', body: formData });
+    const data = await res.json();
+    closeReportModal();
+    alert(data.message || (data.success ? '신고가 접수되었습니다.' : '오류가 발생했습니다.'));
+  }
+
+  async function toggleBookmark(newsId) {
+    if (!CURRENT_USER) { alert('로그인이 필요합니다.'); location.href = '/login'; return; }
+    const res = await fetch(`/news/${newsId}/bookmark`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      const btn = document.getElementById('btn-bookmark');
+      btn.classList.toggle('saved', data.saved);
+      document.getElementById('bookmark-label').textContent = data.saved ? '저장됨' : '스크랩';
+    }
+  }
 
   async function toggleLike(newsId) {
     if (!CURRENT_USER) { alert('로그인이 필요합니다.'); location.href = '/login'; return; }

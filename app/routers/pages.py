@@ -93,6 +93,14 @@ async def home(request: Request) -> HTMLResponse:
             ORDER BY like_count DESC
             LIMIT 5
         """))]
+        top_viewed = [dict(r._mapping) for r in conn.execute(text("""
+            SELECT n.id, n.title, n.view_count, c.name as category_name
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.status = 'published'
+            ORDER BY COALESCE(n.view_count, 0) DESC
+            LIMIT 10
+        """))]
         # BIG5 언론사별 최신 기사 1건씩 (최대 6건)
         big5_sources = ['조선일보', '중앙일보', '동아일보', '한겨레', '연합뉴스', '경향신문']
         big5_news = []
@@ -102,13 +110,13 @@ async def home(request: Request) -> HTMLResponse:
                 FROM news n
                 LEFT JOIN categories c ON n.category_id = c.id
                 WHERE n.status = 'published' AND n.source = :src
-                ORDER BY n.created_at DESC LIMIT 1
+                ORDER BY COALESCE(n.view_count, 0) DESC LIMIT 1
             """), {"src": src}).fetchone()
             if row:
                 big5_news.append(dict(row._mapping))
     return render(request, "main.html", news_items=news_items,
                   top_commented=top_commented, top_liked=top_liked,
-                  big5_news=big5_news)
+                  big5_news=big5_news, top_viewed=top_viewed)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -198,7 +206,7 @@ async def signup(
 
 
 @router.get("/subscribe", response_class=HTMLResponse)
-async def subscribe_page(request: Request, verified: str = "") -> HTMLResponse:
+async def subscribe_page(request: Request, verified: str = "", mail_sent: str = "") -> HTMLResponse:
     user = get_current_user(request)
     with engine.connect() as conn:
         categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
@@ -224,12 +232,17 @@ async def subscribe_page(request: Request, verified: str = "") -> HTMLResponse:
                 if not is_verified and sub.verify_token:
                     base = str(request.base_url).rstrip('/')
                     verify_link = f"{base}/verify-email?token={sub.verify_token}"
-    verify_message = "✅ 이메일 인증이 완료되었습니다! 구독이 활성화되었어요." if verified == "1" else None
+    if verified == "1":
+        notify = ("✅ 이메일 인증이 완료되었습니다! 구독이 활성화되었어요.", "success")
+    elif mail_sent == "1":
+        notify = ("📧 인증 메일을 발송했어요. 이메일을 확인해 인증을 완료해주세요.", "success")
+    else:
+        notify = (None, "success")
     return render(request, "subscribe.html", categories=categories,
                   subscribed_ids=subscribed_ids, current_email=current_email,
                   is_subscribed=is_subscribed, is_verified=is_verified,
                   verify_link=verify_link,
-                  message=verify_message, message_type="success")
+                  message=notify[0], message_type=notify[1])
 
 
 @router.post("/subscribe", response_class=HTMLResponse)
@@ -282,21 +295,12 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       current_email=current_email, is_subscribed=is_subscribed,
                       is_verified=is_verified, verify_link=None)
 
-    base = str(request.base_url).rstrip('/')
-    verify_link = f"{base}/verify-email?token={token}"
-
     try:
         send_verify_email(email, token, base_url=str(request.base_url))
-        message = "인증 메일을 발송했어요. 이메일을 확인하거나 아래 링크를 직접 클릭하세요."
-    except:
-        message = "이메일 발송에 실패했어요. 아래 링크를 직접 클릭해서 인증을 완료하세요."
+    except Exception:
+        pass
 
-    categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
-    return render(request, "subscribe.html",
-                  message=message, message_type="success",
-                  categories=categories, subscribed_ids=subscribed_ids,
-                  current_email=current_email, is_subscribed=is_subscribed,
-                  is_verified=is_verified, verify_link=verify_link)
+    return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
 
 def _do_verify(token: str) -> bool:
@@ -381,11 +385,23 @@ async def mypage(request: Request) -> HTMLResponse:
             """),
             {"user_id": user["id"]}
         ).fetchall()
+        bookmarked_news_result = conn.execute(
+            text("""
+                SELECT n.id, n.title, n.created_at, b.created_at as saved_at
+                FROM bookmarks b
+                JOIN news n ON b.news_id = n.id
+                WHERE b.user_id = :user_id
+                ORDER BY b.created_at DESC
+            """),
+            {"user_id": user["id"]}
+        ).fetchall()
     subscription = dict(sub._mapping) if sub else None
     categories = [row.name for row in cat_result]
     liked_news = [dict(row._mapping) for row in liked_news_result]
+    bookmarked_news = [dict(row._mapping) for row in bookmarked_news_result]
     return render(request, "mypage.html", subscription=subscription,
-                  categories=categories, liked_news=liked_news)
+                  categories=categories, liked_news=liked_news,
+                  bookmarked_news=bookmarked_news)
 
 
 @router.post("/mypage", response_class=HTMLResponse)
@@ -436,11 +452,21 @@ async def change_password(
     return RedirectResponse(url="/mypage?pw_success=1", status_code=303)
 
 
+_NEWS_PAGE_SIZE = 20
+
 @router.get("/news", response_class=HTMLResponse)
-async def news(request: Request, category: str = "") -> HTMLResponse:
+async def news(request: Request, category: str = "", page: int = 1) -> HTMLResponse:
+    page = max(1, page)
+    offset = (page - 1) * _NEWS_PAGE_SIZE
     with engine.connect() as conn:
         categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
         if category:
+            total_count = conn.execute(
+                text("""SELECT COUNT(*) FROM news n
+                        LEFT JOIN categories c ON n.category_id = c.id
+                        WHERE n.status = 'published' AND c.name = :category"""),
+                {"category": category}
+            ).scalar() or 0
             result = conn.execute(
                 text("""
                     SELECT n.*, c.name as category_name
@@ -448,10 +474,14 @@ async def news(request: Request, category: str = "") -> HTMLResponse:
                     LEFT JOIN categories c ON n.category_id = c.id
                     WHERE n.status = 'published' AND c.name = :category
                     ORDER BY n.created_at DESC
+                    LIMIT :limit OFFSET :offset
                 """),
-                {"category": category}
+                {"category": category, "limit": _NEWS_PAGE_SIZE, "offset": offset}
             )
         else:
+            total_count = conn.execute(
+                text("SELECT COUNT(*) FROM news WHERE status = 'published'")
+            ).scalar() or 0
             result = conn.execute(
                 text("""
                     SELECT n.*, c.name as category_name
@@ -459,11 +489,15 @@ async def news(request: Request, category: str = "") -> HTMLResponse:
                     LEFT JOIN categories c ON n.category_id = c.id
                     WHERE n.status = 'published'
                     ORDER BY n.created_at DESC
-                """)
+                    LIMIT :limit OFFSET :offset
+                """),
+                {"limit": _NEWS_PAGE_SIZE, "offset": offset}
             )
         news_items = [dict(row._mapping) for row in result]
+    total_pages = max(1, (total_count + _NEWS_PAGE_SIZE - 1) // _NEWS_PAGE_SIZE)
     return render(request, "news.html", news_items=news_items,
-                  categories=categories, selected_category=category)
+                  categories=categories, selected_category=category,
+                  page=page, total_pages=total_pages)
 
 
 @router.get("/news/{news_id}", response_class=HTMLResponse)
@@ -474,14 +508,27 @@ async def news_detail(request: Request, news_id: int) -> HTMLResponse:
             text("SELECT * FROM news WHERE id = :id"), {"id": news_id}
         ).fetchone()
         news = dict(row._mapping) if row else None
+        # 조회수 증가
+        if news:
+            conn.execute(
+                text("UPDATE news SET view_count = COALESCE(view_count, 0) + 1 WHERE id = :id"),
+                {"id": news_id}
+            )
+            conn.commit()
+            news["view_count"] = (news.get("view_count") or 0) + 1
         like_count = conn.execute(
             text("SELECT COUNT(*) FROM news_likes WHERE news_id = :id"), {"id": news_id}
         ).scalar()
         liked = False
+        bookmarked = False
         subscribed = False
         if user:
             liked = conn.execute(
                 text("SELECT id FROM news_likes WHERE news_id = :news_id AND user_id = :user_id"),
+                {"news_id": news_id, "user_id": user["id"]}
+            ).fetchone() is not None
+            bookmarked = conn.execute(
+                text("SELECT id FROM bookmarks WHERE news_id = :news_id AND user_id = :user_id"),
                 {"news_id": news_id, "user_id": user["id"]}
             ).fetchone() is not None
             sub = conn.execute(
@@ -489,8 +536,26 @@ async def news_detail(request: Request, news_id: int) -> HTMLResponse:
                 {"user_id": user["id"]}
             ).fetchone()
             subscribed = bool(sub and sub.is_active)
+        # 관련 뉴스 (같은 카테고리, 조회수 높은 순)
+        related_news = []
+        if news and news.get("category_id"):
+            related_rows = conn.execute(
+                text("""
+                    SELECT n.*, c.name as category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published'
+                      AND n.category_id = :cat_id
+                      AND n.id != :news_id
+                    ORDER BY COALESCE(n.view_count, 0) DESC
+                    LIMIT 4
+                """),
+                {"cat_id": news["category_id"], "news_id": news_id}
+            ).fetchall()
+            related_news = [dict(r._mapping) for r in related_rows]
     return render(request, "news_detail.html", news=news,
-                  like_count=like_count, liked=liked, subscribed=subscribed)
+                  like_count=like_count, liked=liked, bookmarked=bookmarked,
+                  subscribed=subscribed, related_news=related_news)
 
 
 @router.get("/news/{news_id}/delete")
@@ -526,8 +591,9 @@ async def search_page(request: Request, q: str = "", source: str = "") -> HTMLRe
         "news1": "뉴스1", "mt": "머니투데이", "mk": "매일경제",
         "hankyung": "한국경제", "sedaily": "서울경제", "etnews": "전자신문",
         "zdnet": "ZDNet", "itworld": "IT World", "bloter": "블로터",
+        "newsworks": "뉴스웍스", "nocutnews": "노컷뉴스", "straightnews": "스트레이트뉴스",
     }
-    sources = list(domain_map.values())
+    sources = sorted(set(domain_map.values()))
     with engine.connect() as conn:
         conditions = ["status = 'published'"]
         params = {}
@@ -549,6 +615,32 @@ async def search_page(request: Request, q: str = "", source: str = "") -> HTMLRe
 @router.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request) -> HTMLResponse:
     return render(request, "contact.html")
+
+
+@router.post("/news/{news_id}/bookmark")
+async def toggle_bookmark(request: Request, news_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT id FROM bookmarks WHERE news_id = :news_id AND user_id = :user_id"),
+            {"news_id": news_id, "user_id": user["id"]}
+        ).fetchone()
+        if existing:
+            conn.execute(
+                text("DELETE FROM bookmarks WHERE news_id = :news_id AND user_id = :user_id"),
+                {"news_id": news_id, "user_id": user["id"]}
+            )
+            saved = False
+        else:
+            conn.execute(
+                text("INSERT INTO bookmarks (news_id, user_id) VALUES (:news_id, :user_id)"),
+                {"news_id": news_id, "user_id": user["id"]}
+            )
+            saved = True
+        conn.commit()
+    return JSONResponse({"success": True, "saved": saved})
 
 
 @router.post("/news/{news_id}/like")

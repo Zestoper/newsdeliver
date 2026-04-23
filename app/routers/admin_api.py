@@ -24,18 +24,13 @@ def send_newsletter_api(request: Request):
             return {"success": False, "message": "구독자가 없습니다."}
 
         total_sent = 0
-        last_news_id = None
 
         for sub in subs:
             user_id = sub.user_id
             email = sub.email
 
-            # 해당 유저가 구독한 카테고리 id 목록
             cat_result = conn.execute(
-                text("""
-                    SELECT category_id FROM category_subscriptions
-                    WHERE user_id = :user_id
-                """),
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
                 {"user_id": user_id}
             ).fetchall()
 
@@ -45,7 +40,6 @@ def send_newsletter_api(request: Request):
             category_ids = [row.category_id for row in cat_result]
             placeholders = ",".join(str(i) for i in category_ids)
 
-            # 구독한 카테고리 전체에서 최신 뉴스 5개
             news_rows = conn.execute(
                 text(f"""
                     SELECT n.*, c.name as category_name
@@ -59,31 +53,14 @@ def send_newsletter_api(request: Request):
             if not news_rows:
                 continue
 
-            for news_row in news_rows:
-                news = dict(news_row._mapping)
-                send_newsletter(
-                    to_emails=[email],
-                    title=news["title"],
-                    content=news["content"],
-                    source=news.get("source", ""),
-                    category_name=news.get("category_name", ""),
-                    image_url=news.get("image_url", ""),
-                    article_link=news.get("link", ""),
-                    news_id=news["id"],
-                    base_url=base_url,
-                )
+            articles = [dict(row._mapping) for row in news_rows]
+            ok = send_newsletter(to_email=email, articles=articles, base_url=base_url)
+            if ok:
                 total_sent += 1
-                last_news_id = news["id"]
 
-        # 발송 로그
-        if last_news_id:
-            conn.execute(
-                text("INSERT INTO email_logs (news_id, recipient_count) VALUES (:news_id, :count)"),
-                {"news_id": last_news_id, "count": total_sent}
-            )
         conn.commit()
 
-    return {"success": True, "message": f"총 {total_sent}건 발송 완료!"}
+    return {"success": True, "message": f"총 {total_sent}명에게 발송 완료!"}
 
 from app.services.naver_news import fetch_and_save_news, extract_full_content, clean_article_text
 
@@ -102,10 +79,10 @@ def recrawl_content_api():
     failed = 0
     with engine.connect() as conn:
         rows = conn.execute(
-            text("SELECT id, link, content FROM news WHERE link IS NOT NULL AND link != '' ORDER BY id DESC LIMIT 100")
+            text("SELECT id, link, content FROM news WHERE link IS NOT NULL AND link != '' ORDER BY id DESC")
         ).fetchall()
         for row in rows:
-            if row.content and len(row.content) >= 300:
+            if row.content and len(row.content) >= 1000:
                 continue
             new_content = extract_full_content(row.link)
             if new_content and len(new_content) > len(row.content or ""):
@@ -148,6 +125,29 @@ async def upload_image(file: UploadFile = File(...)):
     dest.write_bytes(await file.read())
     return {"success": True, "url": f"/static/uploads/{filename}"}
 
+@router.get("/subscribers")
+def get_subscribers():
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT s.id, s.user_id, u.name, s.email,
+                   s.is_active, s.is_verified, s.created_at,
+                   GROUP_CONCAT(c.name ORDER BY c.name SEPARATOR ', ') AS categories
+            FROM subscriptions s
+            LEFT JOIN news_users u ON s.user_id = u.id
+            LEFT JOIN category_subscriptions cs ON cs.user_id = s.user_id
+            LEFT JOIN categories c ON cs.category_id = c.id
+            GROUP BY s.id
+            ORDER BY s.created_at DESC
+        """)).fetchall()
+    result = []
+    for row in rows:
+        d = dict(row._mapping)
+        if d["created_at"]:
+            d["created_at"] = d["created_at"].strftime("%Y-%m-%d")
+        result.append(d)
+    return result
+
+
 @router.get("/reports")
 def get_reports():
     with engine.connect() as conn:
@@ -185,3 +185,53 @@ def delete_report(report_id: int):
         conn.execute(text("DELETE FROM reports WHERE id=:id"), {"id": report_id})
         conn.commit()
     return {"success": True}
+
+
+@router.get("/stats")
+def get_stats():
+    with engine.connect() as conn:
+        total_users = conn.execute(text("SELECT COUNT(*) FROM news_users")).scalar() or 0
+        total_news = conn.execute(text("SELECT COUNT(*) FROM news WHERE status='published'")).scalar() or 0
+        total_views = conn.execute(text("SELECT COALESCE(SUM(view_count),0) FROM news WHERE status='published'")).scalar() or 0
+        total_subs = conn.execute(text("SELECT COUNT(*) FROM subscriptions WHERE is_active=1 AND is_verified=1")).scalar() or 0
+
+        by_category = [
+            dict(row._mapping) for row in conn.execute(text("""
+                SELECT c.name as category, COUNT(*) as count
+                FROM news n
+                JOIN categories c ON n.category_id = c.id
+                WHERE n.status = 'published'
+                GROUP BY c.name ORDER BY count DESC
+            """))
+        ]
+
+        top_news = [
+            dict(row._mapping) for row in conn.execute(text("""
+                SELECT id, title, view_count, source
+                FROM news WHERE status='published'
+                ORDER BY view_count DESC LIMIT 5
+            """))
+        ]
+
+        daily_news = [
+            dict(row._mapping) for row in conn.execute(text("""
+                SELECT DATE(created_at) as day, COUNT(*) as count
+                FROM news WHERE status='published'
+                  AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                GROUP BY day ORDER BY day
+            """))
+        ]
+
+        # news_users에 created_at 컬럼 없음 — 빈 리스트
+        daily_users = []
+
+    return {
+        "total_users": total_users,
+        "total_news": total_news,
+        "total_views": int(total_views),
+        "total_subs": total_subs,
+        "by_category": by_category,
+        "top_news": top_news,
+        "daily_news": [{"day": str(r["day"]), "count": r["count"]} for r in daily_news],
+        "daily_users": [{"day": str(r["day"]), "count": r["count"]} for r in daily_users],
+    }

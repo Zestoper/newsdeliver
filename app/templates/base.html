@@ -34,9 +34,9 @@
 </head>
 <body>
 
+  {% block back_btn %}
   <button class="site-back-btn" onclick="history.back()">← 뒤로가기</button>
-
-  {% block back_btn %}{% endblock %}
+  {% endblock %}
 
   <div class="app-container">
     {% block content %}{% endblock %}

@@ -81,9 +81,12 @@ def extract_full_content(url):
                 raw = html[tag_end + 1:tag_end + 200_000]
                 # script/style 태그 제거
                 raw = re.sub(r'<(script|style)[^>]*>[\s\S]*?</(script|style)>', '', raw, flags=re.IGNORECASE)
-                # 나머지 HTML 태그 제거
+                # 블록 태그를 줄바꿈으로 변환 후 나머지 태그 제거
+                raw = re.sub(r'<br\s*/?>', '\n', raw, flags=re.IGNORECASE)
+                raw = re.sub(r'</(p|div|li|h[1-6])>', '\n', raw, flags=re.IGNORECASE)
                 text = re.sub(r'<[^>]+>', '', raw)
-                text = re.sub(r'\s+', ' ', text).strip()
+                text = re.sub(r'\n{3,}', '\n\n', text)
+                text = re.sub(r'[ \t]+', ' ', text).strip()
                 text = clean_article_text(text)
                 if len(text) > 100:
                     return text
@@ -121,6 +124,7 @@ def extract_press_name(url: str) -> str:
         "news1": "뉴스1", "mt": "머니투데이", "mk": "매일경제",
         "hankyung": "한국경제", "sedaily": "서울경제", "etnews": "전자신문",
         "zdnet": "ZDNet", "itworld": "IT World", "bloter": "블로터",
+        "newsworks": "뉴스웍스", "nocutnews": "노컷뉴스", "straightnews": "스트레이트뉴스",
     }
     for key, name in domain_map.items():
         if key in url:
@@ -186,10 +190,10 @@ def fetch_and_save_news():
                 # 4. 이미지 URL 추출
                 actual_image_url = extract_image_from_url(naver_link)
 
-                # 5. 데이터베이스 저장
+                # 5. 데이터베이스 저장 (INSERT IGNORE로 중복 제목 무시)
                 conn.execute(
                     text("""
-                        INSERT INTO news (title, content, source, image_url, link, status, category_id)
+                        INSERT IGNORE INTO news (title, content, source, image_url, link, status, category_id)
                         VALUES (:title, :content, :source, :image_url, :link, 'published', :category_id)
                     """),
                     {

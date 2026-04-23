@@ -19,6 +19,7 @@ try:
         from sqlalchemy import text
         migrations = [
             ("ALTER TABLE news ADD COLUMN link VARCHAR(500)", "news.link"),
+            ("ALTER TABLE news ADD COLUMN view_count INT DEFAULT 0", "news.view_count"),
             ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
             ("ALTER TABLE subscriptions ADD COLUMN verify_token VARCHAR(100)", "subscriptions.verify_token"),
             ("ALTER TABLE subscriptions DROP INDEX unique_email", "subscriptions.unique_email 제약 제거"),
@@ -42,6 +43,22 @@ try:
         except Exception:
             pass
 
+        # bookmarks 테이블 생성
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS bookmarks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id VARCHAR(50) NOT NULL,
+                    news_id INT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_bookmark (user_id, news_id)
+                )
+            """))
+            conn.commit()
+            print("✅ bookmarks 테이블")
+        except Exception:
+            pass
+
         # comment_likes 테이블 생성 (없을 때만)
         try:
             conn.execute(text("""
@@ -56,6 +73,14 @@ try:
             print("✅ comment_likes 테이블")
         except Exception:
             pass
+        # news.title 중복 방지 UNIQUE 인덱스
+        try:
+            conn.execute(text("ALTER TABLE news ADD UNIQUE INDEX unique_title (title(191))"))
+            conn.commit()
+            print("✅ news.title unique index")
+        except Exception:
+            pass
+
         for sql, col in migrations:
             try:
                 conn.execute(text(sql))
