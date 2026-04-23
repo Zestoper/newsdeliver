@@ -46,8 +46,8 @@ def send_newsletter(to_emails: list[str], title: str, content: str, source: str 
     return sent_count
 
 
-def send_verify_email(to_email: str, token: str) -> None:
-    verify_url = f"http://127.0.0.1:8000/verify-email?token={token}"
+def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0.1:8000") -> None:
+    verify_url = f"{base_url.rstrip('/')}/verify-email?token={token}"
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "[News Delivery] 이메일 인증을 완료해주세요"
     msg["From"] = SMTP_USER

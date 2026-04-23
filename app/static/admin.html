@@ -2,31 +2,220 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>관리자 페이지</title>
-<link rel="stylesheet" href="/static/css/admin.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 페이지 - News Delivery</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+  /* ── 헤더 ── */
+  .site-header {
+    background: white;
+    border-bottom: 3px solid #c00;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .header-top {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-logo a {
+    font-size: 26px;
+    font-weight: 900;
+    color: #c00;
+    text-decoration: none;
+    letter-spacing: -1px;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .header-back {
+    padding: 7px 16px;
+    background: white;
+    color: #c00;
+    border: 1.5px solid #c00;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .header-back:hover { background: #fff0f0; }
+
+  /* ── 탭 ── */
+  .tabs {
+    display: flex;
+    background: #1a1a1a;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 14px 22px;
+    color: #aaa;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: white; border-bottom-color: #c00; }
+  .tab:hover:not(.active) { color: #ddd; }
+
+  /* ── 콘텐츠 ── */
+  .content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #1a1a1a;
+  }
+
+  /* ── 테이블 ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  th {
+    background: #f8f9fa;
+    color: #495057;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 13px 16px;
+    text-align: left;
+    border-bottom: 2px solid #e9ecef;
+  }
+  td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f3f5;
+    color: #333;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  /* ── 입력 ── */
+  input, select, textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a1a;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #c00;
+  }
+  textarea { resize: vertical; }
+
+  /* ── 버튼 ── */
+  .btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: #c00; color: white; }
+  .btn-primary:hover { background: #a00; }
+  .btn-green { background: #51cf66; color: white; }
+  .btn-green:hover { background: #40c057; }
+  .btn-red { background: #fa5252; color: white; }
+  .btn-red:hover { background: #e03131; }
+  .btn-gray { background: #dee2e6; color: #495057; }
+  .btn-gray:hover { background: #ced4da; }
+
+  /* ── 폼 ── */
+  .form-box {
+    background: white;
+    padding: 28px 32px;
+    border-radius: 8px;
+    max-width: 700px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+  }
+  .form-desc {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #495057;
+  }
+  .form-row { display: flex; gap: 10px; margin-top: 8px; }
+
+  /* ── 뱃지 ── */
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-published { background: #fff0f0; color: #c00; }
+  .badge-draft { background: #f1f3f5; color: #868e96; }
+
+  /* ── 결과 메시지 ── */
+  .result-msg { margin-top: 16px; font-size: 14px; font-weight: 500; }
+</style>
 </head>
 <body>
 
-<div class="back-btn-wrap">
-  <button onclick="history.back()" class="back-btn">← 뒤로</button>
+<!-- 헤더 -->
+<div class="site-header">
+  <div class="header-top">
+    <a href="/" class="header-logo">📰 News Delivery</a>
+    <span class="header-title">🛠 관리자 페이지</span>
+    <button class="header-back" onclick="history.back()">← 뒤로가기</button>
+  </div>
 </div>
 
-<div class="header" style="margin-top:50px;">
-  <h1>🛠 관리자 페이지</h1>
-</div>
-
+<!-- 탭 -->
 <div class="tabs">
-  <button class="tab active" onclick="showTab('users')">👤 회원 관리</button>
-  <button class="tab" onclick="showTab('write')">📰 뉴스 글쓰기</button>
-  <button class="tab" onclick="showTab('newsList')">📚 뉴스 관리</button>
-  <button class="tab" onclick="showTab('email')">📧 이메일 발송</button>
+  <button class="tab active" onclick="showTab('users', this)">👤 회원 관리</button>
+  <button class="tab" onclick="showTab('write', this)">📰 뉴스 글쓰기</button>
+  <button class="tab" onclick="showTab('newsList', this)">📚 뉴스 관리</button>
+  <button class="tab" onclick="showTab('email', this)">📧 이메일 발송</button>
 </div>
 
 <div class="content">
 
   <!-- 회원 관리 -->
   <div id="users" class="section active">
-    <h2>👤 회원 관리</h2>
+    <div class="section-title">👤 회원 관리</div>
     <table id="userTable">
       <thead>
         <tr>
@@ -40,7 +229,7 @@
 
   <!-- 뉴스 글쓰기 -->
   <div id="write" class="section">
-    <h2>📰 뉴스 글쓰기</h2>
+    <div class="section-title">📰 뉴스 글쓰기</div>
     <div class="form-box">
       <div class="form-group">
         <label>제목</label>
@@ -72,7 +261,7 @@
         </select>
       </div>
       <div class="form-row">
-        <button class="btn btn-green" onclick="submitNews()">저장</button>
+        <button class="btn btn-primary" onclick="submitNews()">저장</button>
         <button class="btn btn-gray" onclick="clearForm()">초기화</button>
       </div>
     </div>
@@ -80,7 +269,7 @@
 
   <!-- 뉴스 관리 -->
   <div id="newsList" class="section">
-    <h2>📚 뉴스 관리</h2>
+    <div class="section-title">📚 뉴스 관리</div>
     <table id="newsTable">
       <thead>
         <tr>
@@ -90,49 +279,37 @@
       <tbody></tbody>
     </table>
   </div>
-  <!-- 뉴스 가져오기 -->
-  <div id="email" class="section">
-    <h2>📧 이메일 발송</h2>
-    <div class="form-box" style="margin-bottom:20px;">
-      <p style="margin-bottom:16px; font-size:14px; color:#495057;">
-        네이버 뉴스 API로 카테고리별 최신 뉴스를 가져옵니다.
-      </p>
-      <button class="btn btn-blue" onclick="fetchNews()">📰 뉴스 가져오기</button>
-      <p id="fetch-result" style="margin-top:16px; font-size:14px;"></p>
-    </div>
-    <div class="form-box">
-      <p style="margin-bottom:16px; font-size:14px; color:#495057;">
-        최신 발행된 뉴스를 전체 구독자에게 발송합니다.
-      </p>
-      <button class="btn btn-blue" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
-      <p id="send-result" style="margin-top:16px; font-size:14px;"></p>
-    </div>
-  </div>
 
   <!-- 이메일 발송 -->
   <div id="email" class="section">
-    <h2>📧 이메일 발송</h2>
+    <div class="section-title">📧 이메일 발송</div>
     <div class="form-box">
-      <p style="margin-bottom:16px; font-size:14px; color:#495057;">
-        최신 발행된 뉴스 1개를 전체 구독자에게 발송합니다.
-      </p>
-      <button class="btn btn-blue" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
-      <p id="send-result" style="margin-top:16px; font-size:14px;"></p>
+      <p class="form-desc">네이버 뉴스 API로 카테고리별 최신 뉴스를 가져옵니다.</p>
+      <div class="form-row">
+        <button class="btn btn-primary" onclick="fetchNews()">📰 뉴스 가져오기</button>
+        <button class="btn btn-gray" onclick="recrawlContent()">🔄 본문 재수집</button>
+      </div>
+      <p id="fetch-result" class="result-msg"></p>
+    </div>
+    <div class="form-box">
+      <p class="form-desc">최신 발행된 뉴스를 전체 구독자에게 발송합니다.</p>
+      <button class="btn btn-primary" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
+      <p id="send-result" class="result-msg"></p>
     </div>
   </div>
 
 </div>
 
 <script>
-  const USER_API = 'http://127.0.0.1:8000/api/users';
-  const NEWS_API = 'http://127.0.0.1:8000/api/news';
+  const USER_API  = 'http://127.0.0.1:8000/api/users';
+  const NEWS_API  = 'http://127.0.0.1:8000/api/news';
   const ADMIN_API = 'http://127.0.0.1:8000/api/admin';
 
-  function showTab(name) {
+  function showTab(name, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(name).classList.add('active');
-    event.target.classList.add('active');
+    el.classList.add('active');
     if (name === 'users') loadUsers();
     if (name === 'newsList') loadNews();
   }
@@ -147,36 +324,35 @@
       tbody.innerHTML += `
         <tr id="row-${u.id}">
           <td>${u.id}</td>
-          <td><input id="name-${u.id}" value="${u.name || ''}"></td>
+          <td><input id="name-${u.id}" value="${u.name || ''}" style="width:90px;"></td>
           <td>${u.birth || ''}</td>
-          <td><input id="email-${u.id}" value="${u.email || ''}"></td>
-          <td><input id="tel-${u.id}" value="${u.tel || ''}"></td>
+          <td><input id="email-${u.id}" value="${u.email || ''}" style="width:160px;"></td>
+          <td><input id="tel-${u.id}" value="${u.tel || ''}" style="width:120px;"></td>
           <td>
-            <select id="role-${u.id}" style="width:auto;">
+            <select id="role-${u.id}" style="width:80px;">
               <option value="admin" ${u.role==='admin'?'selected':''}>관리자</option>
               <option value="press" ${u.role==='press'?'selected':''}>기자</option>
-              <option value="user" ${u.role==='user'?'selected':''}>사용자</option>
+              <option value="user"  ${u.role==='user' ?'selected':''}>사용자</option>
             </select>
           </td>
-          <td>
+          <td style="white-space:nowrap;">
             <button class="btn btn-green" onclick="updateUser('${u.id}')">수정</button>
-            <button class="btn btn-red" onclick="deleteUser('${u.id}')">삭제</button>
+            <button class="btn btn-red"   onclick="deleteUser('${u.id}')">삭제</button>
           </td>
         </tr>`;
     });
   }
 
   async function updateUser(id) {
-    const data = {
-      name: document.getElementById(`name-${id}`).value,
-      email: document.getElementById(`email-${id}`).value,
-      tel: document.getElementById(`tel-${id}`).value,
-      role: document.getElementById(`role-${id}`).value,
-    };
     await fetch(`${USER_API}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        name:  document.getElementById(`name-${id}`).value,
+        email: document.getElementById(`email-${id}`).value,
+        tel:   document.getElementById(`tel-${id}`).value,
+        role:  document.getElementById(`role-${id}`).value,
+      }),
     });
     alert('수정 완료!');
     loadUsers();
@@ -192,17 +368,14 @@
   // ── 뉴스 글쓰기 ──
   async function submitNews() {
     const data = {
-      title: document.getElementById('news-title').value,
-      content: document.getElementById('news-content').value,
-      image_url: document.getElementById('news-image').value,
-      source: document.getElementById('news-source').value,
-      status: document.getElementById('news-status').value,
+      title:       document.getElementById('news-title').value,
+      content:     document.getElementById('news-content').value,
+      image_url:   document.getElementById('news-image').value,
+      source:      document.getElementById('news-source').value,
+      status:      document.getElementById('news-status').value,
       category_id: document.getElementById('news-category').value || null,
     };
-    if (!data.title || !data.content) {
-      alert('제목과 본문을 입력해주세요.');
-      return;
-    }
+    if (!data.title || !data.content) { alert('제목과 본문을 입력해주세요.'); return; }
     await fetch(NEWS_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,10 +386,7 @@
   }
 
   function clearForm() {
-    document.getElementById('news-title').value = '';
-    document.getElementById('news-content').value = '';
-    document.getElementById('news-image').value = '';
-    document.getElementById('news-source').value = '';
+    ['news-title','news-content','news-image','news-source'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('news-status').value = 'draft';
     document.getElementById('news-category').value = '';
   }
@@ -224,11 +394,11 @@
   // ── 뉴스 관리 ──
   async function loadNews() {
     const res = await fetch(NEWS_API);
-    const newsList = await res.json();
+    const list = await res.json();
     const tbody = document.querySelector('#newsTable tbody');
     tbody.innerHTML = '';
-    newsList.forEach(n => {
-      const date = n.created_at ? n.created_at.substring(0, 10) : '';
+    list.forEach(n => {
+      const date  = n.created_at ? n.created_at.substring(0, 10) : '';
       const badge = n.status === 'published'
         ? `<span class="badge badge-published">발행</span>`
         : `<span class="badge badge-draft">임시저장</span>`;
@@ -239,8 +409,8 @@
           <td>${n.source || ''}</td>
           <td>${badge}</td>
           <td>${date}</td>
-          <td>
-            <button class="btn btn-blue" onclick="toggleStatus(${n.id}, '${n.status}')">
+          <td style="white-space:nowrap;">
+            <button class="btn btn-gray" onclick="toggleStatus(${n.id},'${n.status}')">
               ${n.status === 'published' ? '임시저장으로' : '발행'}
             </button>
             <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
@@ -250,11 +420,10 @@
   }
 
   async function toggleStatus(id, current) {
-    const newStatus = current === 'published' ? 'draft' : 'published';
     await fetch(`${NEWS_API}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status: current === 'published' ? 'draft' : 'published' }),
     });
     loadNews();
   }
@@ -269,30 +438,39 @@
   // ── 이메일 발송 ──
   async function sendNewsletter() {
     if (!confirm('최신 뉴스를 전체 구독자에게 발송할까요?')) return;
-    const res = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
+    const res  = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
     const data = await res.json();
-    const result = document.getElementById('send-result');
-    result.textContent = data.message;
-    result.style.color = data.success ? '#2f9e44' : '#fa5252';
+    const el   = document.getElementById('send-result');
+    el.textContent = data.message;
+    el.style.color = data.success ? '#2f9e44' : '#fa5252';
   }
 
-  // ── 카테고리 로드 ──
+  async function fetchNews() {
+    const res  = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
+    const data = await res.json();
+    const el   = document.getElementById('fetch-result');
+    el.textContent = data.message;
+    el.style.color = data.success ? '#2f9e44' : '#fa5252';
+  }
+
+  async function recrawlContent() {
+    const el = document.getElementById('fetch-result');
+    el.textContent = '본문 재수집 중...';
+    el.style.color = '#888';
+    const res  = await fetch(`${ADMIN_API}/recrawl-content`, { method: 'POST' });
+    const data = await res.json();
+    el.textContent = data.message;
+    el.style.color = data.success ? '#2f9e44' : '#fa5252';
+  }
+
+  // ── 초기 로드 ──
   async function loadCategories() {
     const res = await fetch('/categories');
-    const categories = await res.json();
-    const select = document.getElementById('news-category');
-    categories.forEach(c => {
-      select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-    });
+    const cats = await res.json();
+    const sel = document.getElementById('news-category');
+    cats.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
   }
-  async function fetchNews() {
-    const res = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
-    const data = await res.json();
-    const result = document.getElementById('fetch-result');
-    result.textContent = data.message;
-    result.style.color = data.success ? '#2f9e44' : '#fa5252';
-}
-  // 초기 로드
+
   loadUsers();
   loadCategories();
 </script>

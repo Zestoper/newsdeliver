@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}구독하기 - News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}?v=2" />
 {% endblock %} {% block content %}
 <div class="subscribe-container">
     <h1>🔔 구독 서비스</h1>
@@ -30,13 +30,9 @@
         <p style="font-size: 14px; color: #2f9e44; margin-bottom: 8px">
             ✅ 현재 구독 중: <strong>{{ current_email }}</strong>
             {% if is_verified %}
-            <span style="background: #d3f9d8; color: #2f9e44; padding: 2px 8px; border-radius: 10px; font-size: 12px"
-                >인증완료</span
-            >
+            <span style="background: #d3f9d8; color: #2f9e44; padding: 2px 8px; border-radius: 10px; font-size: 12px">인증완료</span>
             {% else %}
-            <span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 12px"
-                >⚠️ 인증 필요 — 이메일을 확인해주세요</span
-            >
+            <span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 12px">⚠️ 인증 필요 — 이메일을 확인해주세요</span>
             {% endif %}
         </p>
         <form action="/unsubscribe" method="post" style="margin-top: 12px">
@@ -46,19 +42,17 @@
         </form>
         {% else %} {% if current_email and not is_verified %}
         <!-- 이메일 입력했지만 인증 안 된 상태 -->
-        <p
-            style="
-                font-size: 14px;
-                color: #856404;
-                background: #fff3cd;
-                padding: 12px 16px;
-                border-radius: 6px;
-                margin-bottom: 16px;
-            "
-        >
+        <p style="font-size: 14px; color: #856404; background: #fff3cd; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
             ⚠️ <strong>{{ current_email }}</strong> 으로 인증 메일을 발송했어요.<br />
             이메일을 확인하고 인증을 완료해주세요.
         </p>
+        {% if verify_link %}
+        <a href="{{ verify_link }}"
+           style="display:inline-block; margin-bottom:14px; padding:10px 24px; background:#c00; color:white;
+                  border-radius:6px; font-size:14px; font-weight:700; text-decoration:none;">
+            ✅ 여기를 클릭해서 바로 인증하기
+        </a>
+        {% endif %}
         <form action="/unsubscribe" method="post">
             <button type="submit" class="btn-unsubscribe" style="margin-bottom: 12px">
                 다른 이메일로 변경 (구독 취소)
@@ -94,5 +88,27 @@
             }
         }
     </script>
-    {% endif %} {% endblock %}
+    {% else %}
+    <!-- 비로그인 상태 -->
+    <div class="email-section-box" style="text-align:center; padding: 48px 32px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+        <h2 style="font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px;">로그인이 필요한 서비스입니다</h2>
+        <p style="font-size: 14px; color: #777; margin-bottom: 28px; line-height: 1.7;">
+            뉴스레터 구독과 카테고리 설정을 이용하려면<br>먼저 로그인해주세요.
+        </p>
+        <a href="{{ request.url_for('login_page') }}"
+           style="display:inline-block; padding:12px 32px; background:#c00; color:white;
+                  border-radius:6px; font-size:15px; font-weight:700; text-decoration:none;
+                  transition:background 0.2s;"
+           onmouseover="this.style.background='#a00'" onmouseout="this.style.background='#c00'">
+            로그인하기
+        </a>
+        <p style="margin-top:16px; font-size:13px; color:#adb5bd;">
+            계정이 없으신가요?
+            <a href="{{ request.url_for('signup_page') }}"
+               style="color:#c00; font-weight:600; text-decoration:none;">회원가입</a>
+        </p>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}

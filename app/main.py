@@ -16,6 +16,20 @@ BASE_DIR = Path(__file__).resolve().parent
 try:
     with engine.connect() as conn:
         print("✅ DB 연결 성공!")
+        from sqlalchemy import text
+        migrations = [
+            ("ALTER TABLE news ADD COLUMN link VARCHAR(500)", "news.link"),
+            ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
+            ("ALTER TABLE subscriptions ADD COLUMN verify_token VARCHAR(100)", "subscriptions.verify_token"),
+            ("ALTER TABLE subscriptions DROP INDEX unique_email", "subscriptions.unique_email 제약 제거"),
+        ]
+        for sql, col in migrations:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+                print(f"✅ {col}")
+            except Exception:
+                pass  # 이미 처리됨
 except Exception as e:
     print(f"❌ DB 연결 실패: {e}")
 

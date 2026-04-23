@@ -75,7 +75,7 @@ def send_newsletter_api():
 
     return {"success": True, "message": f"총 {total_sent}건 발송 완료!"}
 
-from app.services.naver_news import fetch_and_save_news
+from app.services.naver_news import fetch_and_save_news, extract_full_content
 
 @router.post("/fetch-news")
 def fetch_news_api():
@@ -84,3 +84,27 @@ def fetch_news_api():
         return {"success": True, "message": f"{count}개 뉴스를 가져왔습니다!"}
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+@router.post("/recrawl-content")
+def recrawl_content_api():
+    updated = 0
+    failed = 0
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT id, link, content FROM news WHERE link IS NOT NULL AND link != '' ORDER BY id DESC LIMIT 100")
+        ).fetchall()
+        for row in rows:
+            if row.content and len(row.content) >= 300:
+                continue
+            new_content = extract_full_content(row.link)
+            if new_content and len(new_content) > len(row.content or ""):
+                conn.execute(
+                    text("UPDATE news SET content = :content WHERE id = :id"),
+                    {"content": new_content, "id": row.id}
+                )
+                updated += 1
+            else:
+                failed += 1
+        conn.commit()
+    return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패"}

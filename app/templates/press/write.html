@@ -1,12 +1,36 @@
 {% extends "base.html" %}
-
 {% block title %}뉴스 작성 - News Delivery{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}">
+<link rel="stylesheet" href="/static/css/main.css?v=1.1">
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}?v=2">
 {% endblock %}
 
+{% block back_btn %}{% endblock %}
+
 {% block content %}
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% endif %}
+    </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/">홈</a></li>
+      <li><a href="/news">뉴스</a></li>
+      <li><a href="/press/news">내 뉴스 관리</a></li>
+      <li><a href="/press/write" class="active">뉴스 작성</a></li>
+    </ul>
+  </nav>
+</header>
+
 <div class="write-container">
   <h2>📰 뉴스 작성</h2>
   <div class="write-box">
@@ -50,4 +74,11 @@
     </form>
   </div>
 </div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">📰 News Delivery</div>
+    <p class="footer-copy">© 2026 News Delivery. All rights reserved.</p>
+  </div>
+</footer>
 {% endblock %}

@@ -1,151 +1,167 @@
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; color: #333; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
 
-    .press-container {
-    max-width: 900px;
-    margin: 70px auto 40px;
-    padding: 0 24px;
-    }
+/* ── 언론사 뉴스 관리 ── */
+.press-container {
+  max-width: 960px;
+  margin: 40px auto 60px;
+  padding: 0 24px;
+}
 
-    .press-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    }
+.press-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #1a1a1a;
+}
 
-    .press-header h2 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #212529;
-    }
+.press-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
 
-    .btn-new {
-    padding: 10px 20px;
-    background: #333;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    }
-    .btn-new:hover { background: #555; }
+.btn-new {
+  padding: 10px 20px;
+  background: #c00;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+.btn-new:hover { background: #a00; }
 
-    /* 테이블 */
-    .press-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .press-table th {
-    background: #f8f9fa;
-    color: #495057;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid #e9ecef;
-    }
-    .press-table td {
-    padding: 12px 16px;
-    font-size: 14px;
-    border-bottom: 1px solid #f1f3f5;
-    color: #333;
-    }
-    .press-table tr:last-child td { border-bottom: none; }
-    .press-table tr:hover td { background: #f8f9fa; }
+/* 테이블 */
+.press-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.press-table th {
+  background: #f8f9fa;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 13px 16px;
+  text-align: left;
+  border-bottom: 2px solid #e9ecef;
+}
+.press-table td {
+  padding: 13px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f3f5;
+  color: #333;
+}
+.press-table tr:last-child td { border-bottom: none; }
+.press-table tr:hover td { background: #fafafa; }
 
-    /* 뱃지 */
-    .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-    .badge-published { background: #d3f9d8; color: #2f9e44; }
-    .badge-draft { background: #f1f3f5; color: #868e96; }
+/* 뱃지 */
+.badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-published { background: #fff0f0; color: #c00; }
+.badge-draft { background: #f1f3f5; color: #868e96; }
 
-    /* 버튼 */
-    .btn-edit {
-    padding: 5px 12px;
-    background: #74c0fc;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 13px;
-    margin-right: 4px;
-    }
-    .btn-edit:hover { background: #4dabf7; }
-    .btn-del {
-    padding: 5px 12px;
-    background: #ff6b6b;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 13px;
-    }
-    .btn-del:hover { background: #fa5252; }
-    .empty { text-align: center; padding: 24px; color: #adb5bd; font-size: 14px; }
+/* 액션 버튼 */
+.btn-edit {
+  padding: 5px 12px;
+  background: #e7f5ff;
+  color: #1971c2;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 4px;
+  transition: background 0.2s;
+}
+.btn-edit:hover { background: #d0ebff; }
+.btn-del {
+  padding: 5px 12px;
+  background: #fff5f5;
+  color: #fa5252;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.btn-del:hover { background: #ffe3e3; }
+.empty { text-align: center; padding: 32px; color: #adb5bd; font-size: 14px; }
 
-    /* 뉴스 작성 폼 */
-    .write-container {
-    max-width: 700px;
-    margin: 70px auto 40px;
-    padding: 0 24px;
-    }
-    .write-container h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 24px;
-    color: #212529;
-    }
-    .write-box {
-    background: white;
-    padding: 28px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .write-group { margin-bottom: 18px; }
-    .write-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #495057;
-    }
-    .write-group input,
-    .write-group textarea,
-    .write-group select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #333;
-    }
-    .write-group input:focus,
-    .write-group textarea:focus,
-    .write-group select:focus {
-    outline: none;
-    border-color: #adb5bd;
-    }
-    .write-group textarea { resize: vertical; }
-    .write-btns { display: flex; gap: 10px; margin-top: 8px; }
-    .btn-submit {
-    padding: 10px 24px;
-    background: #333;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    }
-    .btn-submit:hover { background: #555; }
-    .btn-back {
-    padding: 10px 24px;
-    background: #f1f3f5;
-    color: #495057;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 14px;
-    }
-    .btn-back:hover { background: #e9ecef; }
+/* ── 뉴스 작성/수정 폼 ── */
+.write-container {
+  max-width: 720px;
+  margin: 40px auto 60px;
+  padding: 0 24px;
+}
+.write-container h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #1a1a1a;
+}
+.write-box {
+  background: white;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.write-group { margin-bottom: 20px; }
+.write-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #495057;
+}
+.write-group input,
+.write-group textarea,
+.write-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1a1a1a;
+  transition: border-color 0.2s;
+}
+.write-group input:focus,
+.write-group textarea:focus,
+.write-group select:focus {
+  outline: none;
+  border-color: #c00;
+}
+.write-group textarea { resize: vertical; }
+.write-btns { display: flex; gap: 10px; margin-top: 8px; }
+.btn-submit {
+  padding: 11px 28px;
+  background: #c00;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.btn-submit:hover { background: #a00; }
+.btn-back {
+  padding: 11px 24px;
+  background: #f1f3f5;
+  color: #495057;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.btn-back:hover { background: #e9ecef; }

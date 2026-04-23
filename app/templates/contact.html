@@ -1,55 +1,171 @@
 {% extends "base.html" %}
 
-{% block title %}Contact - News Delivery{% endblock %}
+{% block title %}문의하기 - News Delivery{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/nav.css') }}">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .contact-wrap {
+      max-width: 760px;
+      margin: 48px auto 80px;
+      padding: 0 24px;
+    }
+    .contact-title-bar {
+      padding-bottom: 14px;
+      margin-bottom: 32px;
+      border-bottom: 2px solid #1a1a1a;
+    }
+    .contact-title-bar h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1a1a;
+    }
+    .contact-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .contact-card {
+      background: white;
+      border-radius: 10px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .contact-card-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .contact-card h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .contact-card p {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.7;
+    }
+    .contact-card a {
+      color: #c00;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .contact-card a:hover { text-decoration: underline; }
+    .contact-notice {
+      background: white;
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .contact-notice h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 14px;
+    }
+    .contact-notice ul {
+      padding-left: 20px;
+    }
+    .contact-notice li {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.8;
+    }
+    @media (max-width: 600px) {
+      .contact-cards { grid-template-columns: 1fr; }
+    }
+  </style>
 {% endblock %}
 
-{% block content %}
-  <header style="margin-top:50px;">
-    <h1>News Delivery</h1>
+{% block back_btn %}{% endblock %}
 
-    <div class="button-container">
-      <a class="button-link subscribe-button" href="{{ request.url_for('subscribe_page') }}">구독</a>
-        {% if current_user %}
-        <span class="user-badge">{{ current_user.name }}님</span>
+{% block content %}
+
+<!-- 헤더 -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo">
+      <a href="/">📰 News Delivery</a>
+    </div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
         {% if current_user.role == 'admin' %}
-          <a class="button-link" href="/static/admin.html">관리자 페이지</a>
+          <a href="/static/admin.html" class="header-btn">관리자</a>
         {% elif current_user.role == 'press' %}
-          <a class="button-link" href="/press/news">언론사 페이지</a>
+          <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
-        <a class="button-link logout-button" href="{{ request.url_for('logout') }}">Logout</a>
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
       {% else %}
-        <a class="button-link login-button" href="{{ request.url_for('login_page') }}">Login</a>
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
       {% endif %}
     </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/">홈</a></li>
+      <li><a href="/news">뉴스</a></li>
+      <li><a href="/search">검색</a></li>
+      <li><a href="/subscribe">구독</a></li>
+      <li><a href="/contact" class="active">문의</a></li>
+    </ul>
+  </nav>
+</header>
 
-    <h2>문의하기</h2>
-    <hr>
+<!-- 본문 -->
+<div class="contact-wrap">
+  <div class="contact-title-bar">
+    <h2>📬 문의하기</h2>
+  </div>
 
-    <nav class="main-nav">
-      <ul>
-        <li><a href="{{ request.url_for('home') }}">Home</a></li>
-        <li><a href="{{ request.url_for('news') }}">News</a></li>
-        <li><a href="{{ request.url_for('contact') }}">Contact</a></li>
-      </ul>
-    </nav>
+  <div class="contact-cards">
+    <div class="contact-card">
+      <div class="contact-card-icon">✉️</div>
+      <h3>이메일 문의</h3>
+      <p>
+        궁금한 점은 아래 이메일로 연락 주세요.<br>
+        <a href="mailto:zestoper@naver.com">zestoper@naver.com</a>
+      </p>
+    </div>
+    <div class="contact-card">
+      <div class="contact-card-icon">🕐</div>
+      <h3>운영 시간</h3>
+      <p>
+        평일 09:00 – 18:00<br>
+        주말 및 공휴일 휴무
+      </p>
+    </div>
+  </div>
 
-    <section class="page-section">
-      <div class="contact-card">
-        <h3>News Delivery Contact</h3>
-        <p>문의사항이 있다면 아래 메일로 연락해주세요.</p>
-        <p><strong>Email:</strong> zestoper@naver.com</p>
-        <p><strong>Hours:</strong> Mon-Fri 09:00 - 18:00</p>
-      </div>
-    </section>
+  <div class="contact-notice">
+    <h3>📋 문의 안내</h3>
+    <ul>
+      <li>뉴스 구독 및 해지 관련 문의는 이메일로 연락해주세요.</li>
+      <li>뉴스 콘텐츠 오류 신고는 제목에 [오류신고]를 포함해 보내주세요.</li>
+      <li>언론사 제휴 문의는 제목에 [제휴문의]를 포함해 보내주세요.</li>
+      <li>회신은 영업일 기준 1~2일 내로 드립니다.</li>
+    </ul>
+  </div>
+</div>
 
-    <hr>
-  </header>
+<!-- 푸터 -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">📰 News Delivery</div>
+    <p class="footer-desc">맞춤 뉴스 구독 서비스</p>
+    <div class="footer-links">
+      <a href="/">홈</a>
+      <a href="/news">뉴스</a>
+      <a href="/subscribe">구독</a>
+      <a href="/contact">문의</a>
+    </div>
+    <p class="footer-copy">© 2026 News Delivery. All rights reserved.</p>
+  </div>
+</footer>
 
-  <footer>
-    <p>&copy; 2026 News Delivery. All rights reserved.</p>
-  </footer>
 {% endblock %}

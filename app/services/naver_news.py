@@ -15,22 +15,44 @@ CATEGORY_KEYWORDS = {
     "예술": "예술 뉴스",
 }
 
+def extract_full_content(url):
+    try:
+        with httpx.Client(timeout=5, follow_redirects=True) as client:
+            res = client.get(url)
+            if res.status_code != 200:
+                return None
+
+            html = res.text
+            for div_id in ['dic_area', 'articleBodyContents', 'articleBody']:
+                idx = html.find(f'id="{div_id}"')
+                if idx == -1:
+                    continue
+                tag_end = html.find('>', idx)
+                if tag_end == -1:
+                    continue
+                # Extract up to 15000 chars after the opening tag — avoids stopping at first nested </div>
+                raw = html[tag_end + 1:tag_end + 15000]
+                raw = re.sub(r'<(script|style)[^>]*>[\s\S]*?</(script|style)>', '', raw)
+                text = re.sub(r'<[^>]+>', '', raw)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 100:
+                    return text
+    except Exception as e:
+        print(f"본문 추출 중 오류 발생: {e}")
+    return None
+
 def extract_image_from_url(url):
     """
     bs4 없이 정규표현식(re)만 사용하여 og:image를 추출합니다.
     """
     try:
-        # follow_redirects=True를 설정해야 네이버 뉴스 등 리다이렉트 페이지 대응이 가능합니다.
         with httpx.Client(timeout=5, follow_redirects=True) as client:
             res = client.get(url)
             if res.status_code != 200:
                 return None
             
-            # HTML 소스 내 <meta property="og:image" content="..."> 추출
-            # 정규식 설명: property가 og:image인 meta 태그의 content 주소를 찾습니다.
             match = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', res.text)
             if not match:
-                # 속성 순서가 반대인 경우(content가 먼저 나오는 경우) 대응
                 match = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', res.text)
             
             if match:
@@ -65,7 +87,6 @@ def fetch_and_save_news():
     }
 
     with engine.connect() as conn:
-        # 카테고리 id 가져오기
         categories = conn.execute(text("SELECT * FROM categories")).fetchall()
         category_map = {row.name: row.id for row in categories}
 
@@ -76,7 +97,6 @@ def fetch_and_save_news():
             if not category_id:
                 continue
 
-            # display 개수를 조절하여 수집량을 정할 수 있습니다.
             url = f"https://openapi.naver.com/v1/search/news.json?query={keyword}&display=5&sort=date"
 
             with httpx.Client() as client:
@@ -86,34 +106,48 @@ def fetch_and_save_news():
                 data = res.json()
 
             for item in data.get("items", []):
-                # 1. 텍스트 정제
+                # 1. 기본 정보 정제
                 title = item["title"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-                content = item["description"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
                 source = extract_press_name(item.get("originallink", ""))
-                link = item.get("link", "")
+                link = item.get("originallink", "") or item.get("link", "")
+                naver_link = item.get("link", "")
 
-                # 2. 중복 체크
+                # 2. 중복 체크 — 기존 기사의 본문이 짧으면 업데이트
                 existing = conn.execute(
-                    text("SELECT id FROM news WHERE title = :title"),
+                    text("SELECT id, content FROM news WHERE title = :title"),
                     {"title": title}
                 ).fetchone()
                 if existing:
+                    existing_content = existing.content or ""
+                    if len(existing_content) < 300 and naver_link:
+                        full_content = extract_full_content(naver_link)
+                        if full_content and len(full_content) > len(existing_content):
+                            conn.execute(
+                                text("UPDATE news SET content = :content, link = :link WHERE id = :id"),
+                                {"content": full_content, "link": link, "id": existing.id}
+                            )
                     continue
 
-                # 3. 정규표현식으로 이미지 URL 추출 (bs4 필요 없음)
-                actual_image_url = extract_image_from_url(link)
+                # 3. 본문 전체 추출
+                full_content = extract_full_content(naver_link)
+                if not full_content:
+                    full_content = item["description"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
 
-                # 4. 데이터베이스 저장
+                # 4. 이미지 URL 추출
+                actual_image_url = extract_image_from_url(naver_link)
+
+                # 5. 데이터베이스 저장
                 conn.execute(
                     text("""
-                        INSERT INTO news (title, content, source, image_url, status, category_id)
-                        VALUES (:title, :content, :source, :image_url, 'published', :category_id)
+                        INSERT INTO news (title, content, source, image_url, link, status, category_id)
+                        VALUES (:title, :content, :source, :image_url, :link, 'published', :category_id)
                     """),
                     {
                         "title": title,
-                        "content": content,
+                        "content": full_content,
                         "source": source,
-                        "image_url": actual_image_url, 
+                        "image_url": actual_image_url,
+                        "link": link,
                         "category_id": category_id,
                     }
                 )

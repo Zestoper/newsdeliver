@@ -160,12 +160,11 @@ async def signup(
         "name": name, "birth": birth, "user_id": user_id,
         "password": password, "email": email, "phone": phone,
     })
-    return render(request, "signup.html",
-                  message="회원가입이 완료되었습니다!", message_type="success")
+    return RedirectResponse(url="/", status_code=303)
 
 
 @router.get("/subscribe", response_class=HTMLResponse)
-async def subscribe_page(request: Request) -> HTMLResponse:
+async def subscribe_page(request: Request, verified: str = "") -> HTMLResponse:
     user = get_current_user(request)
     with engine.connect() as conn:
         categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
@@ -173,6 +172,7 @@ async def subscribe_page(request: Request) -> HTMLResponse:
         current_email = None
         is_subscribed = False
         is_verified = False
+        verify_link = None
         if user:
             result = conn.execute(
                 text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
@@ -180,16 +180,22 @@ async def subscribe_page(request: Request) -> HTMLResponse:
             )
             subscribed_ids = [row.category_id for row in result]
             sub = conn.execute(
-                text("SELECT email, is_active, is_verified FROM subscriptions WHERE user_id = :user_id"),
+                text("SELECT email, is_active, is_verified, verify_token FROM subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
             ).fetchone()
             if sub:
                 current_email = sub.email
                 is_subscribed = sub.is_active == 1
                 is_verified = sub.is_verified == 1
+                if not is_verified and sub.verify_token:
+                    base = str(request.base_url).rstrip('/')
+                    verify_link = f"{base}/verify-email?token={sub.verify_token}"
+    verify_message = "✅ 이메일 인증이 완료되었습니다! 구독이 활성화되었어요." if verified == "1" else None
     return render(request, "subscribe.html", categories=categories,
                   subscribed_ids=subscribed_ids, current_email=current_email,
-                  is_subscribed=is_subscribed, is_verified=is_verified)
+                  is_subscribed=is_subscribed, is_verified=is_verified,
+                  verify_link=verify_link,
+                  message=verify_message, message_type="success")
 
 
 @router.post("/subscribe", response_class=HTMLResponse)
@@ -220,7 +226,8 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       message="로그인 후 구독할 수 있습니다.",
                       message_type="error", form_data=form_data,
                       categories=categories, subscribed_ids=[],
-                      current_email=None, is_subscribed=False, is_verified=False)
+                      current_email=None, is_subscribed=False, is_verified=False,
+                      verify_link=None)
 
     if is_duplicate_subscription(email, user_id=user["id"]):
         categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
@@ -229,7 +236,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       message_type="error", form_data=form_data,
                       categories=categories, subscribed_ids=subscribed_ids,
                       current_email=current_email, is_subscribed=is_subscribed,
-                      is_verified=is_verified)
+                      is_verified=is_verified, verify_link=None)
 
     try:
         token = add_subscription(email, user_id=user["id"])
@@ -239,49 +246,65 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       message=str(e), message_type="error",
                       categories=categories, subscribed_ids=subscribed_ids,
                       current_email=current_email, is_subscribed=is_subscribed,
-                      is_verified=is_verified)
+                      is_verified=is_verified, verify_link=None)
+
+    base = str(request.base_url).rstrip('/')
+    verify_link = f"{base}/verify-email?token={token}"
+
     try:
-        send_verify_email(email, token)
-        message = "구독 완료! 이메일로 인증 링크를 발송했어요."
+        send_verify_email(email, token, base_url=str(request.base_url))
+        message = "인증 메일을 발송했어요. 이메일을 확인하거나 아래 링크를 직접 클릭하세요."
     except:
-        message = "구독 완료! (이메일 인증 발송 실패)"
+        message = "이메일 발송에 실패했어요. 아래 링크를 직접 클릭해서 인증을 완료하세요."
 
     categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
     return render(request, "subscribe.html",
                   message=message, message_type="success",
                   categories=categories, subscribed_ids=subscribed_ids,
                   current_email=current_email, is_subscribed=is_subscribed,
-                  is_verified=is_verified)
+                  is_verified=is_verified, verify_link=verify_link)
+
+
+def _do_verify(token: str) -> bool:
+    """토큰으로 구독 인증 처리. 성공 여부 반환."""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT id FROM subscriptions WHERE verify_token = :token"),
+            {"token": token}
+        ).fetchone()
+        if not row:
+            return False
+        conn.execute(
+            text("UPDATE subscriptions SET is_verified = 1, is_active = 1 WHERE verify_token = :token"),
+            {"token": token}
+        )
+        conn.commit()
+    return True
 
 
 @router.get("/verify-email", response_class=HTMLResponse)
 async def verify_email_page(request: Request, token: str = ""):
+    if not token:
+        return render(request, "verify_email.html", valid=False, email="", token="")
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT * FROM subscriptions WHERE verify_token = :token"),
+            text("SELECT email FROM subscriptions WHERE verify_token = :token"),
             {"token": token}
         ).fetchone()
     if not row:
         return render(request, "verify_email.html", valid=False, email="", token="")
-    return render(request, "verify_email.html", valid=True,
-                  email=dict(row._mapping)["email"], token=token)
+    # 링크 클릭 즉시 인증 완료
+    _do_verify(token)
+    return RedirectResponse(url="/subscribe?verified=1", status_code=303)
 
 
 @router.post("/verify-email/confirm", response_class=HTMLResponse)
 async def verify_email_confirm(request: Request, token: str = Form(...)):
-    with engine.connect() as conn:
-        row = conn.execute(
-            text("SELECT * FROM subscriptions WHERE verify_token = :token"),
-            {"token": token}
-        ).fetchone()
-        if not row:
-            return render(request, "verify_email.html", valid=False, email="", token="")
-        conn.execute(
-            text("UPDATE subscriptions SET is_verified = 1 WHERE verify_token = :token"),
-            {"token": token}
-        )
-        conn.commit()
+    success = _do_verify(token)
+    if not success:
+        return render(request, "verify_email.html", valid=False, email="", token="")
     return RedirectResponse(url="/subscribe?verified=1", status_code=303)
+
 
 @router.post("/unsubscribe")
 async def unsubscribe(request: Request):
@@ -392,13 +415,19 @@ async def news_detail(request: Request, news_id: int) -> HTMLResponse:
             text("SELECT COUNT(*) FROM news_likes WHERE news_id = :id"), {"id": news_id}
         ).scalar()
         liked = False
+        subscribed = False
         if user:
             liked = conn.execute(
                 text("SELECT id FROM news_likes WHERE news_id = :news_id AND user_id = :user_id"),
                 {"news_id": news_id, "user_id": user["id"]}
             ).fetchone() is not None
+            sub = conn.execute(
+                text("SELECT is_active FROM subscriptions WHERE user_id = :user_id"),
+                {"user_id": user["id"]}
+            ).fetchone()
+            subscribed = bool(sub and sub.is_active)
     return render(request, "news_detail.html", news=news,
-                  like_count=like_count, liked=liked)
+                  like_count=like_count, liked=liked, subscribed=subscribed)
 
 
 @router.get("/news/{news_id}/delete")
