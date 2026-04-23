@@ -45,7 +45,16 @@
       </div>
       <div class="write-group">
         <label>이미지 URL</label>
-        <input name="image_url" type="text" placeholder="https://...">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input name="image_url" id="image_url" type="text" placeholder="https://... 또는 아래 버튼으로 업로드">
+          <label style="flex-shrink:0; padding:8px 14px; background:#f1f3f5; color:#495057;
+                        border:1.5px solid #dee2e6; border-radius:6px; font-size:13px;
+                        font-weight:600; cursor:pointer; white-space:nowrap;">
+            📁 파일 선택
+            <input type="file" accept="image/*" style="display:none;" onchange="uploadImage(this)">
+          </label>
+        </div>
+        <p id="upload-status" style="font-size:12px; color:#868e96; margin-top:4px;"></p>
       </div>
       <div class="write-group">
         <label>출처</label>
@@ -74,6 +83,29 @@
     </form>
   </div>
 </div>
+
+<script>
+  async function uploadImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const status = document.getElementById('upload-status');
+    status.textContent = '업로드 중...';
+    status.style.color = '#868e96';
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/admin/upload-image', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('image_url').value = data.url;
+      status.textContent = '✅ 업로드 완료!';
+      status.style.color = '#2f9e44';
+    } else {
+      status.textContent = `❌ ${data.message}`;
+      status.style.color = '#fa5252';
+    }
+    input.value = '';
+  }
+</script>
 
 <footer class="site-footer">
   <div class="footer-inner">

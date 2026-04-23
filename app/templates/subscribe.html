@@ -16,7 +16,9 @@
             onclick="toggleCategory({{ category.id }}, this)"
         >
             {% if category.name == '정치' %}🏛 {% elif category.name == '경제' %}💰 {% elif category.name == 'IT' %}💻
-            {% elif category.name == '문화' %}🎭 {% elif category.name == '스포츠' %}⚽ {% endif %} {{ category.name }}
+            {% elif category.name == '문화' %}🎭 {% elif category.name == '스포츠' %}⚽ {% elif category.name == '예술' %}🎨
+            {% elif category.name == '연예' %}🌟 {% elif category.name == '국제' %}🌍 {% elif category.name == '사회' %}🏘
+            {% endif %} {{ category.name }}
         </button>
         {% endfor %}
     </div>

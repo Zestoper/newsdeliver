@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=1.1" />
+<link rel="stylesheet" href="/static/css/main.css?v=1.3" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
@@ -41,29 +41,45 @@
 
 <!-- 메인 콘텐츠 -->
 <main class="main-content">
-    <!-- 헤드라인 뉴스 (첫 번째 뉴스) -->
-    {% if news_items %}
-    <section class="headline-section">
-        {% set top = news_items[0] %}
-        <a href="/news/{{ top.id }}" class="headline-card">
-            {% if top.image_url and top.image_url.startswith('http') and not top.image_url.endswith('.html') and not
-            top.image_url.endswith('.nhn') %}
-            <div class="headline-img" style="background-image:url('{{ top.image_url }}')"></div>
-            {% else %}
-            <div class="headline-img no-img">📰</div>
-            {% endif %}
-            <div class="headline-info">
-                {% if top.category_name %}
-                <span class="cat-badge">{{ top.category_name }}</span>
+
+    <!-- BIG5 슬라이더 -->
+    {% if big5_news %}
+    <section class="big5-slider-section">
+        <div class="big5-label">📺 BIG5 언론사 주요뉴스</div>
+        <div class="big5-slider" id="big5Slider">
+            {% for news in big5_news %}
+            <a href="/news/{{ news.id }}" class="big5-slide {% if loop.first %}active{% endif %}">
+                {% if news.image_url and news.image_url.startswith('http') and not news.image_url.endswith('.html') %}
+                <div class="big5-bg" style="background-image:url('{{ news.image_url }}')"></div>
+                {% else %}
+                <div class="big5-bg big5-no-img"></div>
                 {% endif %}
-                <h1 class="headline-title">{{ top.title }}</h1>
-                <p class="headline-desc">{{ top.get('content', '')[:150] }}...</p>
-                <span class="headline-date">{{ top.created_at.strftime('%Y.%m.%d') if top.created_at else '' }}</span>
-            </div>
-        </a>
+                <div class="big5-overlay"></div>
+                <div class="big5-content">
+                    <span class="big5-source">{{ news.source }}</span>
+                    {% if news.category_name %}
+                    <span class="big5-cat">{{ news.category_name }}</span>
+                    {% endif %}
+                    <h2 class="big5-title">{{ news.title }}</h2>
+                    <p class="big5-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <!-- 화살표 -->
+        <button class="big5-arrow big5-prev" onclick="big5Move(-1)">&#8249;</button>
+        <button class="big5-arrow big5-next" onclick="big5Move(1)">&#8250;</button>
+        <!-- 점 네비게이션 -->
+        <div class="big5-dots">
+            {% for news in big5_news %}
+            <span class="big5-dot {% if loop.first %}active{% endif %}" onclick="big5Go({{ loop.index0 }})"></span>
+            {% endfor %}
+        </div>
     </section>
+    {% endif %}
 
     <!-- 뉴스 그리드 -->
+    {% if news_items %}
     <section class="news-grid-section">
         <div class="section-header">
             <h2>최신 뉴스</h2>
@@ -91,41 +107,95 @@
         </div>
     </section>
 
-    <!-- 카테고리별 뉴스 -->
+    <!-- 인기 뉴스 2열 -->
     <section class="category-section">
-        <div class="section-header">
-            <h2>카테고리별 뉴스</h2>
-        </div>
-        <div class="category-tabs">
-            <a href="/news" class="cat-tab">전체</a>
-            <a href="/news?category=정치" class="cat-tab">🏛 정치</a>
-            <a href="/news?category=경제" class="cat-tab">💰 경제</a>
-            <a href="/news?category=IT" class="cat-tab">💻 IT</a>
-            <a href="/news?category=문화" class="cat-tab">🎭 문화</a>
-            <a href="/news?category=스포츠" class="cat-tab">⚽ 스포츠</a>
-            <a href="/news?category=예술" class="cat-tab">🎨 예술</a>
-        </div>
-        <div class="news-list">
-            {% for news in news_items[7:15] %}
-            <a href="/news/{{ news.id }}" class="news-list-item">
-                <div class="list-info">
-                    {% if news.category_name %}
-                    <span class="cat-badge small">{{ news.category_name }}</span>
-                    {% endif %}
-                    <h4 class="list-title">{{ news.title }}</h4>
-                    <span class="list-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+        <div class="popular-grid">
+
+            <!-- 왼쪽: 좋아요 많은 순 -->
+            <div class="popular-col">
+                <div class="section-header">
+                    <h2>❤️ 좋아요 많은 뉴스</h2>
                 </div>
-                {% if news.image_url and news.image_url.startswith('http') and 'naver' not in news.image_url %}
-                <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
-                {% else %}
-                <div class="card-img no-img">📰</div>
-                {% endif %}
-            </a>
-            {% endfor %}
+                <div class="news-list">
+                    {% for news in top_liked %}
+                    <a href="/news/{{ news.id }}" class="news-list-item">
+                        <div class="list-info">
+                            {% if news.category_name %}
+                            <span class="cat-badge small">{{ news.category_name }}</span>
+                            {% endif %}
+                            <h4 class="list-title">{{ news.title }}</h4>
+                            <span class="list-date">
+                                ❤️ {{ news.like_count }}
+                                &nbsp;·&nbsp;
+                                {{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 오른쪽: 댓글 많은 순 -->
+            <div class="popular-col">
+                <div class="section-header">
+                    <h2>💬 댓글 많은 뉴스</h2>
+                </div>
+                <div class="news-list">
+                    {% for news in top_commented %}
+                    <a href="/news/{{ news.id }}" class="news-list-item">
+                        <div class="list-info">
+                            {% if news.category_name %}
+                            <span class="cat-badge small">{{ news.category_name }}</span>
+                            {% endif %}
+                            <h4 class="list-title">{{ news.title }}</h4>
+                            <span class="list-date">
+                                💬 {{ news.comment_count }}
+                                &nbsp;·&nbsp;
+                                {{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
         </div>
     </section>
     {% endif %}
 </main>
+
+<script>
+(function () {
+  const slides = document.querySelectorAll('.big5-slide');
+  const dots   = document.querySelectorAll('.big5-dot');
+  if (!slides.length) return;
+
+  let cur = 0;
+  let timer = null;
+
+  function go(idx) {
+    slides[cur].classList.remove('active');
+    dots[cur] && dots[cur].classList.remove('active');
+    cur = (idx + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    dots[cur] && dots[cur].classList.add('active');
+  }
+
+  function autoPlay() {
+    timer = setInterval(() => go(cur + 1), 5000);
+  }
+
+  function resetTimer() {
+    clearInterval(timer);
+    autoPlay();
+  }
+
+  window.big5Move = function (dir) { go(cur + dir); resetTimer(); };
+  window.big5Go   = function (idx) { go(idx);        resetTimer(); };
+
+  autoPlay();
+})();
+</script>
 
 <!-- 푸터 -->
 <footer class="site-footer">

@@ -64,17 +64,51 @@ def render(
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
     with engine.connect() as conn:
-        result = conn.execute(
-            text("""
+        news_items = [dict(r._mapping) for r in conn.execute(text("""
+            SELECT n.*, c.name as category_name
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.status = 'published'
+            ORDER BY n.created_at DESC
+        """))]
+        top_commented = [dict(r._mapping) for r in conn.execute(text("""
+            SELECT n.*, c.name as category_name,
+                   COUNT(nc.id) AS comment_count
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            LEFT JOIN news_comments nc ON n.id = nc.news_id
+            WHERE n.status = 'published'
+            GROUP BY n.id
+            ORDER BY comment_count DESC
+            LIMIT 5
+        """))]
+        top_liked = [dict(r._mapping) for r in conn.execute(text("""
+            SELECT n.*, c.name as category_name,
+                   COUNT(nl.id) AS like_count
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            LEFT JOIN news_likes nl ON n.id = nl.news_id
+            WHERE n.status = 'published'
+            GROUP BY n.id
+            ORDER BY like_count DESC
+            LIMIT 5
+        """))]
+        # BIG5 언론사별 최신 기사 1건씩 (최대 6건)
+        big5_sources = ['조선일보', '중앙일보', '동아일보', '한겨레', '연합뉴스', '경향신문']
+        big5_news = []
+        for src in big5_sources:
+            row = conn.execute(text("""
                 SELECT n.*, c.name as category_name
                 FROM news n
                 LEFT JOIN categories c ON n.category_id = c.id
-                WHERE n.status = 'published'
-                ORDER BY n.created_at DESC
-            """)
-        )
-        news_items = [dict(row._mapping) for row in result]
-    return render(request, "main.html", news_items=news_items)
+                WHERE n.status = 'published' AND n.source = :src
+                ORDER BY n.created_at DESC LIMIT 1
+            """), {"src": src}).fetchone()
+            if row:
+                big5_news.append(dict(row._mapping))
+    return render(request, "main.html", news_items=news_items,
+                  top_commented=top_commented, top_liked=top_liked,
+                  big5_news=big5_news)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -373,6 +407,35 @@ async def mypage_update(
     return RedirectResponse(url="/mypage", status_code=303)
 
 
+@router.post("/mypage/change-password")
+async def change_password(
+    request: Request,
+    current_pw: str = Form(...),
+    new_pw: str = Form(...),
+    new_pw_confirm: str = Form(...),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    if new_pw != new_pw_confirm:
+        return RedirectResponse(url="/mypage?pw_error=confirm", status_code=303)
+    if len(new_pw) < 8:
+        return RedirectResponse(url="/mypage?pw_error=short", status_code=303)
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT id FROM news_users WHERE id=:id AND pw=:pw"),
+            {"id": user["id"], "pw": current_pw}
+        ).fetchone()
+        if not row:
+            return RedirectResponse(url="/mypage?pw_error=wrong", status_code=303)
+        conn.execute(
+            text("UPDATE news_users SET pw=:pw WHERE id=:id"),
+            {"pw": new_pw, "id": user["id"]}
+        )
+        conn.commit()
+    return RedirectResponse(url="/mypage?pw_success=1", status_code=303)
+
+
 @router.get("/news", response_class=HTMLResponse)
 async def news(request: Request, category: str = "") -> HTMLResponse:
     with engine.connect() as conn:
@@ -520,33 +583,82 @@ async def toggle_like(request: Request, news_id: int):
 
 @router.get("/news/{news_id}/comments")
 async def get_comments(request: Request, news_id: int):
+    user = get_current_user(request)
+    uid = user["id"] if user else None
     with engine.connect() as conn:
         result = conn.execute(
             text("""
-                SELECT c.id, c.content, c.created_at, c.user_id, u.name
+                SELECT c.id, c.content, c.created_at, c.user_id, c.parent_id, u.name,
+                       COUNT(cl.id) AS like_count
                 FROM news_comments c
                 JOIN news_users u ON c.user_id = u.id
+                LEFT JOIN comment_likes cl ON cl.comment_id = c.id
                 WHERE c.news_id = :news_id
-                ORDER BY c.created_at ASC
+                GROUP BY c.id
+                ORDER BY COALESCE(c.parent_id, c.id), c.id ASC
             """),
             {"news_id": news_id}
         )
         comments = [dict(row._mapping) for row in result]
+        # 현재 유저가 좋아요한 댓글 id 목록
+        liked_ids = set()
+        if uid:
+            rows = conn.execute(
+                text("SELECT comment_id FROM comment_likes WHERE user_id = :uid"),
+                {"uid": uid}
+            ).fetchall()
+            liked_ids = {r.comment_id for r in rows}
     for c in comments:
         if c["created_at"]:
             c["created_at"] = c["created_at"].strftime("%Y-%m-%d %H:%M")
+        c["liked"] = c["id"] in liked_ids
     return JSONResponse(comments)
 
 
+@router.post("/news/{news_id}/comments/{comment_id}/like")
+async def toggle_comment_like(request: Request, news_id: int, comment_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT id FROM comment_likes WHERE comment_id=:cid AND user_id=:uid"),
+            {"cid": comment_id, "uid": user["id"]}
+        ).fetchone()
+        if existing:
+            conn.execute(
+                text("DELETE FROM comment_likes WHERE comment_id=:cid AND user_id=:uid"),
+                {"cid": comment_id, "uid": user["id"]}
+            )
+            liked = False
+        else:
+            conn.execute(
+                text("INSERT INTO comment_likes (comment_id, user_id) VALUES (:cid, :uid)"),
+                {"cid": comment_id, "uid": user["id"]}
+            )
+            liked = True
+        conn.commit()
+        count = conn.execute(
+            text("SELECT COUNT(*) FROM comment_likes WHERE comment_id=:cid"),
+            {"cid": comment_id}
+        ).scalar()
+    return JSONResponse({"success": True, "liked": liked, "count": count})
+
+
 @router.post("/news/{news_id}/comments")
-async def add_comment(request: Request, news_id: int, content: str = Form(...)):
+async def add_comment(
+    request: Request,
+    news_id: int,
+    content: str = Form(...),
+    parent_id: int | None = Form(None),
+):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
     with engine.connect() as conn:
         conn.execute(
-            text("INSERT INTO news_comments (news_id, user_id, content) VALUES (:news_id, :user_id, :content)"),
-            {"news_id": news_id, "user_id": user["id"], "content": content}
+            text("INSERT INTO news_comments (news_id, user_id, content, parent_id) VALUES (:news_id, :user_id, :content, :parent_id)"),
+            {"news_id": news_id, "user_id": user["id"], "content": content, "parent_id": parent_id}
         )
         conn.commit()
     return JSONResponse({"success": True})
@@ -578,6 +690,26 @@ async def delete_comment(request: Request, news_id: int, comment_id: int):
         )
         conn.commit()
     return JSONResponse({"success": True})
+
+
+@router.post("/news/{news_id}/report")
+async def report_news(request: Request, news_id: int, reason: str = Form("")):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT id FROM reports WHERE news_id=:nid AND reporter_id=:uid"),
+            {"nid": news_id, "uid": user["id"]}
+        ).fetchone()
+        if existing:
+            return JSONResponse({"success": False, "message": "이미 신고한 게시글입니다."})
+        conn.execute(
+            text("INSERT INTO reports (news_id, reporter_id, reporter_name, reason) VALUES (:nid, :uid, :name, :reason)"),
+            {"nid": news_id, "uid": user["id"], "name": user["name"], "reason": reason}
+        )
+        conn.commit()
+    return JSONResponse({"success": True, "message": "신고가 접수되었습니다."})
 
 
 @router.get("/categories")

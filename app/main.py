@@ -22,7 +22,40 @@ try:
             ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
             ("ALTER TABLE subscriptions ADD COLUMN verify_token VARCHAR(100)", "subscriptions.verify_token"),
             ("ALTER TABLE subscriptions DROP INDEX unique_email", "subscriptions.unique_email 제약 제거"),
+            ("ALTER TABLE news_comments ADD COLUMN parent_id INT DEFAULT NULL", "news_comments.parent_id"),
         ]
+        # reports 테이블 생성
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS reports (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    news_id INT NOT NULL,
+                    reporter_id VARCHAR(50) NOT NULL,
+                    reporter_name VARCHAR(100) NOT NULL,
+                    reason VARCHAR(500) DEFAULT '',
+                    status VARCHAR(20) DEFAULT 'pending',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            conn.commit()
+            print("✅ reports 테이블")
+        except Exception:
+            pass
+
+        # comment_likes 테이블 생성 (없을 때만)
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS comment_likes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    comment_id INT NOT NULL,
+                    user_id VARCHAR(50) NOT NULL,
+                    UNIQUE KEY unique_comment_like (comment_id, user_id)
+                )
+            """))
+            conn.commit()
+            print("✅ comment_likes 테이블")
+        except Exception:
+            pass
         for sql, col in migrations:
             try:
                 conn.execute(text(sql))
@@ -30,6 +63,16 @@ try:
                 print(f"✅ {col}")
             except Exception:
                 pass  # 이미 처리됨
+
+        # 새 카테고리 추가
+        new_cats = ["연예", "국제", "사회"]
+        for cat in new_cats:
+            try:
+                conn.execute(text("INSERT IGNORE INTO categories (name) VALUES (:name)"), {"name": cat})
+                conn.commit()
+                print(f"✅ 카테고리 추가: {cat}")
+            except Exception:
+                pass
 except Exception as e:
     print(f"❌ DB 연결 실패: {e}")
 

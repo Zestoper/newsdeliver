@@ -26,6 +26,9 @@
     align-items: center;
     justify-content: space-between;
   }
+  .header-logo {
+    text-decoration: none;
+  }
   .header-logo a {
     font-size: 26px;
     font-weight: 900;
@@ -58,6 +61,7 @@
     display: flex;
     background: #1a1a1a;
     flex-wrap: wrap;
+    justify-content: center;
   }
   .tab {
     padding: 14px 22px;
@@ -165,7 +169,7 @@
     border-radius: 8px;
     max-width: 700px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    margin-bottom: 20px;
+    margin: 0 auto 20px;
   }
   .form-desc {
     font-size: 14px;
@@ -190,6 +194,36 @@
 
   /* ── 결과 메시지 ── */
   .result-msg { margin-top: 16px; font-size: 14px; font-weight: 500; }
+
+  /* ── 필터 바 ── */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  #write .section-title,
+  #email .section-title {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .filter-bar input, .filter-bar select {
+    padding: 8px 12px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a1a;
+    background: white;
+    transition: border-color 0.2s;
+    width: auto;
+  }
+  .filter-bar input:focus, .filter-bar select:focus {
+    outline: none;
+    border-color: #c00;
+  }
 </style>
 </head>
 <body>
@@ -209,6 +243,7 @@
   <button class="tab" onclick="showTab('write', this)">📰 뉴스 글쓰기</button>
   <button class="tab" onclick="showTab('newsList', this)">📚 뉴스 관리</button>
   <button class="tab" onclick="showTab('email', this)">📧 이메일 발송</button>
+  <button class="tab" onclick="showTab('reports', this)">🚨 신고 관리</button>
 </div>
 
 <div class="content">
@@ -216,6 +251,15 @@
   <!-- 회원 관리 -->
   <div id="users" class="section active">
     <div class="section-title">👤 회원 관리</div>
+    <div class="filter-bar">
+      <input type="text" id="user-search" placeholder="아이디 / 이름 / 이메일 검색..." oninput="filterUsers()" style="width:300px;">
+      <select id="user-role-filter" onchange="filterUsers()" style="width:120px;">
+        <option value="">전체 권한</option>
+        <option value="admin">관리자</option>
+        <option value="press">기자</option>
+        <option value="user">사용자</option>
+      </select>
+    </div>
     <table id="userTable">
       <thead>
         <tr>
@@ -241,7 +285,14 @@
       </div>
       <div class="form-group">
         <label>이미지 URL</label>
-        <input id="news-image" type="text" placeholder="https://...">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="news-image" type="text" placeholder="https://... 또는 아래 버튼으로 업로드">
+          <label class="btn btn-gray" style="cursor:pointer; white-space:nowrap; padding:8px 14px;">
+            📁 파일 선택
+            <input type="file" id="news-image-file" accept="image/*" style="display:none;" onchange="uploadImage(this)">
+          </label>
+        </div>
+        <p id="upload-status" style="font-size:12px; color:#868e96; margin-top:4px;"></p>
       </div>
       <div class="form-group">
         <label>출처</label>
@@ -270,6 +321,12 @@
   <!-- 뉴스 관리 -->
   <div id="newsList" class="section">
     <div class="section-title">📚 뉴스 관리</div>
+    <div class="filter-bar">
+      <input type="text" id="news-search" placeholder="제목 검색..." oninput="filterNews()" style="width:300px;">
+      <select id="news-source-filter" onchange="filterNews()" style="width:160px;">
+        <option value="">전체 언론사</option>
+      </select>
+    </div>
     <table id="newsTable">
       <thead>
         <tr>
@@ -288,6 +345,7 @@
       <div class="form-row">
         <button class="btn btn-primary" onclick="fetchNews()">📰 뉴스 가져오기</button>
         <button class="btn btn-gray" onclick="recrawlContent()">🔄 본문 재수집</button>
+        <button class="btn btn-gray" onclick="cleanContent()">🧹 JS 쓰레기 정리</button>
       </div>
       <p id="fetch-result" class="result-msg"></p>
     </div>
@@ -296,6 +354,20 @@
       <button class="btn btn-primary" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
       <p id="send-result" class="result-msg"></p>
     </div>
+  </div>
+
+  <!-- 신고 관리 -->
+  <div id="reports" class="section">
+    <div class="section-title">🚨 신고 관리</div>
+    <table id="reportTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>뉴스 제목</th><th>신고자 이름</th><th>신고자 ID</th>
+          <th>사유</th><th>상태</th><th>신고일</th><th>관리</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
 </div>
@@ -312,6 +384,7 @@
     el.classList.add('active');
     if (name === 'users') loadUsers();
     if (name === 'newsList') loadNews();
+    if (name === 'reports') loadReports();
   }
 
   // ── 회원 관리 ──
@@ -340,6 +413,34 @@
             <button class="btn btn-red"   onclick="deleteUser('${u.id}')">삭제</button>
           </td>
         </tr>`;
+    });
+  }
+
+  // ── 회원 검색/필터 ──
+  function filterUsers() {
+    const search = document.getElementById('user-search').value.toLowerCase();
+    const role   = document.getElementById('user-role-filter').value;
+    document.querySelectorAll('#userTable tbody tr').forEach(row => {
+      const id    = row.cells[0]?.textContent.toLowerCase() || '';
+      const name  = row.querySelector(`input[id^="name-"]`)?.value.toLowerCase() || '';
+      const email = row.querySelector(`input[id^="email-"]`)?.value.toLowerCase() || '';
+      const rowRole = row.querySelector(`select[id^="role-"]`)?.value || '';
+      const matchSearch = !search || id.includes(search) || name.includes(search) || email.includes(search);
+      const matchRole   = !role   || rowRole === role;
+      row.style.display = matchSearch && matchRole ? '' : 'none';
+    });
+  }
+
+  // ── 뉴스 검색/필터 ──
+  function filterNews() {
+    const search = document.getElementById('news-search').value.toLowerCase();
+    const source = document.getElementById('news-source-filter').value;
+    document.querySelectorAll('#newsTable tbody tr').forEach(row => {
+      const title    = row.cells[1]?.textContent.toLowerCase() || '';
+      const rowSource = row.cells[2]?.textContent.trim() || '';
+      const matchSearch = !search || title.includes(search);
+      const matchSource = !source || rowSource === source;
+      row.style.display = matchSearch && matchSource ? '' : 'none';
     });
   }
 
@@ -417,6 +518,17 @@
           </td>
         </tr>`;
     });
+    // 언론사 필터 드롭다운 업데이트
+    const sources = [...new Set(list.map(n => n.source).filter(Boolean))].sort();
+    const sel = document.getElementById('news-source-filter');
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">전체 언론사</option>';
+    sources.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (s === currentVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
   }
 
   async function toggleStatus(id, current) {
@@ -453,6 +565,16 @@
     el.style.color = data.success ? '#2f9e44' : '#fa5252';
   }
 
+  async function cleanContent() {
+    const el = document.getElementById('fetch-result');
+    el.textContent = '본문 정리 중...';
+    el.style.color = '#888';
+    const res  = await fetch(`${ADMIN_API}/clean-content`, { method: 'POST' });
+    const data = await res.json();
+    el.textContent = data.message;
+    el.style.color = data.success ? '#2f9e44' : '#fa5252';
+  }
+
   async function recrawlContent() {
     const el = document.getElementById('fetch-result');
     el.textContent = '본문 재수집 중...';
@@ -461,6 +583,73 @@
     const data = await res.json();
     el.textContent = data.message;
     el.style.color = data.success ? '#2f9e44' : '#fa5252';
+  }
+
+  // ── 이미지 업로드 ──
+  async function uploadImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const status = document.getElementById('upload-status');
+    status.textContent = '업로드 중...';
+    status.style.color = '#868e96';
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${ADMIN_API}/upload-image`, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('news-image').value = data.url;
+      status.textContent = '✅ 업로드 완료!';
+      status.style.color = '#2f9e44';
+    } else {
+      status.textContent = `❌ ${data.message}`;
+      status.style.color = '#fa5252';
+    }
+    input.value = '';
+  }
+
+  // ── 신고 관리 ──
+  async function loadReports() {
+    const res = await fetch(`${ADMIN_API}/reports`);
+    const list = await res.json();
+    const tbody = document.querySelector('#reportTable tbody');
+    tbody.innerHTML = '';
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:24px;">신고 내역이 없습니다.</td></tr>';
+      return;
+    }
+    list.forEach(r => {
+      const statusBadge = r.status === 'resolved'
+        ? `<span class="badge" style="background:#d3f9d8;color:#2f9e44;">처리완료</span>`
+        : r.status === 'dismissed'
+        ? `<span class="badge" style="background:#f1f3f5;color:#868e96;">반려</span>`
+        : `<span class="badge" style="background:#fff3cd;color:#856404;">검토중</span>`;
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.id}</td>
+          <td><a href="/news/${r.news_id}" target="_blank" style="color:#c00;text-decoration:none;">${r.news_title || '(삭제된 기사)'}</a></td>
+          <td>${r.reporter_name}</td>
+          <td style="color:#868e96;font-size:12px;">${r.reporter_id}</td>
+          <td>${r.reason || '-'}</td>
+          <td>${statusBadge}</td>
+          <td style="font-size:12px;color:#adb5bd;">${r.created_at}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="updateReport(${r.id},'resolved')">처리완료</button>
+            <button class="btn btn-gray" style="font-size:12px;padding:5px 10px;" onclick="updateReport(${r.id},'dismissed')">반려</button>
+            <button class="btn btn-red" style="font-size:12px;padding:5px 10px;" onclick="deleteReport(${r.id})">삭제</button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  async function updateReport(id, status) {
+    await fetch(`${ADMIN_API}/reports/${id}?status=${status}`, { method: 'PUT' });
+    loadReports();
+  }
+
+  async function deleteReport(id) {
+    if (!confirm('신고 내역을 삭제할까요?')) return;
+    await fetch(`${ADMIN_API}/reports/${id}`, { method: 'DELETE' });
+    loadReports();
   }
 
   // ── 초기 로드 ──

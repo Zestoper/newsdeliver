@@ -8,9 +8,35 @@ SMTP_USER = "zestoper@naver.com"
 SMTP_PASSWORD = "YVT68P7YPTJV"
 
 
-def send_newsletter(to_emails: list[str], title: str, content: str, source: str = "", category_name: str = "") -> int:
+def send_newsletter(
+    to_emails: list[str],
+    title: str,
+    content: str,
+    source: str = "",
+    category_name: str = "",
+    image_url: str = "",
+    article_link: str = "",
+    news_id: int = None,
+    base_url: str = "http://127.0.0.1:8000",
+) -> int:
     if not to_emails:
         return 0
+
+    detail_url = f"{base_url.rstrip('/')}/news/{news_id}" if news_id else ""
+    original_url = article_link or detail_url
+
+    image_block = (
+        f'<img src="{image_url}" alt="{title}" '
+        f'style="width:100%; max-height:360px; object-fit:cover; display:block; border-radius:6px; margin-bottom:24px;">'
+        if image_url else ""
+    )
+    link_block = (
+        f'<div style="margin-top:28px; text-align:center;">'
+        f'<a href="{original_url}" style="display:inline-block; padding:12px 28px; background:#c00; '
+        f'color:white; text-decoration:none; border-radius:6px; font-size:14px; font-weight:700;">원문 보기</a>'
+        f'</div>'
+        if original_url else ""
+    )
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.starttls()
@@ -24,15 +50,17 @@ def send_newsletter(to_emails: list[str], title: str, content: str, source: str 
 
             html_body = f"""
             <div style="max-width:600px; margin:0 auto; font-family:sans-serif;">
-              <div style="background:#333; padding:20px 24px;">
+              <div style="background:#c00; padding:20px 24px;">
                 <h1 style="color:white; margin:0; font-size:18px;">📰 News Delivery</h1>
-                {'<span style="background:#1971c2; color:white; padding:2px 10px; border-radius:20px; font-size:12px; margin-left:10px;">' + category_name + '</span>' if category_name else ''}
+                {'<span style="background:rgba(255,255,255,0.25); color:white; padding:2px 10px; border-radius:20px; font-size:12px; margin-left:10px;">' + category_name + '</span>' if category_name else ''}
               </div>
               <div style="padding:32px 24px; background:white;">
                 <p style="font-size:12px; color:#868e96; margin-bottom:8px;">{source or '출처 없음'}</p>
-                <h2 style="font-size:22px; color:#212529; margin-bottom:16px;">{title}</h2>
-                <hr style="border:none; border-top:1px solid #e9ecef; margin-bottom:20px;">
-                <p style="font-size:15px; line-height:1.8; color:#333; white-space:pre-line;">{content}</p>
+                <h2 style="font-size:22px; color:#212529; margin-bottom:16px; line-height:1.4;">{title}</h2>
+                <hr style="border:none; border-top:1px solid #e9ecef; margin-bottom:24px;">
+                {image_block}
+                <p style="font-size:15px; line-height:1.9; color:#333; white-space:pre-line;">{content}</p>
+                {link_block}
               </div>
               <div style="padding:16px 24px; background:#f8f9fa; text-align:center;">
                 <p style="font-size:12px; color:#adb5bd;">© 2026 News Delivery</p>

@@ -37,6 +37,9 @@
     <h2>👤 마이페이지</h2>
   </div>
 
+  {% set pw_error = request.query_params.get('pw_error') %}
+  {% set pw_success = request.query_params.get('pw_success') %}
+
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
 
     <!-- 내 정보 수정 -->
@@ -99,6 +102,43 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- 비밀번호 변경 -->
+  <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">🔒 비밀번호 변경</h3>
+
+    {% if pw_success %}
+    <p style="font-size:14px; color:#2f9e44; background:#d3f9d8; padding:10px 14px; border-radius:6px; margin-bottom:16px;">✅ 비밀번호가 변경되었습니다.</p>
+    {% elif pw_error == 'wrong' %}
+    <p style="font-size:14px; color:#c00; background:#fff0f0; padding:10px 14px; border-radius:6px; margin-bottom:16px;">❌ 현재 비밀번호가 올바르지 않습니다.</p>
+    {% elif pw_error == 'confirm' %}
+    <p style="font-size:14px; color:#c00; background:#fff0f0; padding:10px 14px; border-radius:6px; margin-bottom:16px;">❌ 새 비밀번호와 확인 비밀번호가 일치하지 않습니다.</p>
+    {% elif pw_error == 'short' %}
+    <p style="font-size:14px; color:#c00; background:#fff0f0; padding:10px 14px; border-radius:6px; margin-bottom:16px;">❌ 비밀번호는 8자 이상이어야 합니다.</p>
+    {% endif %}
+
+    <form action="/mypage/change-password" method="post" style="max-width:400px;">
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">현재 비밀번호</label>
+        <input name="current_pw" type="password" placeholder="현재 비밀번호 입력"
+               style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;" required>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">새 비밀번호</label>
+        <input name="new_pw" type="password" placeholder="8자 이상 입력"
+               style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;" required>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:5px;">새 비밀번호 확인</label>
+        <input name="new_pw_confirm" type="password" placeholder="새 비밀번호 재입력"
+               style="width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:14px;" required>
+      </div>
+      <button type="submit"
+              style="padding:10px 28px; background:#c00; color:white; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer;">
+        비밀번호 변경
+      </button>
+    </form>
   </div>
 
   <!-- 좋아요한 뉴스 -->

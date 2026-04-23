@@ -67,10 +67,6 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5;
   word-break: keep-all;
 }
 
-.detail-content.collapsed {
-  max-height: 6.1em;
-  overflow: hidden;
-}
 
 .btn-read-more {
   display: block;

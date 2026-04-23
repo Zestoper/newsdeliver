@@ -1,13 +1,19 @@
-from fastapi import APIRouter
+import uuid
+from pathlib import Path
+from fastapi import APIRouter, Request, UploadFile, File
 from sqlalchemy import text
 from app.database import engine
 from app.services.email import send_newsletter
+
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "static" / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 @router.post("/send-newsletter")
-def send_newsletter_api():
+def send_newsletter_api(request: Request):
+    base_url = str(request.base_url).rstrip("/")
     with engine.connect() as conn:
         # 인증된 구독자만 발송
         subs = conn.execute(
@@ -60,7 +66,11 @@ def send_newsletter_api():
                     title=news["title"],
                     content=news["content"],
                     source=news.get("source", ""),
-                    category_name=news.get("category_name", "")
+                    category_name=news.get("category_name", ""),
+                    image_url=news.get("image_url", ""),
+                    article_link=news.get("link", ""),
+                    news_id=news["id"],
+                    base_url=base_url,
                 )
                 total_sent += 1
                 last_news_id = news["id"]
@@ -75,7 +85,7 @@ def send_newsletter_api():
 
     return {"success": True, "message": f"총 {total_sent}건 발송 완료!"}
 
-from app.services.naver_news import fetch_and_save_news, extract_full_content
+from app.services.naver_news import fetch_and_save_news, extract_full_content, clean_article_text
 
 @router.post("/fetch-news")
 def fetch_news_api():
@@ -108,3 +118,70 @@ def recrawl_content_api():
                 failed += 1
         conn.commit()
     return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패"}
+
+
+@router.post("/clean-content")
+def clean_content_api():
+    cleaned = 0
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT id, content FROM news WHERE content IS NOT NULL")).fetchall()
+        for row in rows:
+            original = row.content or ""
+            fixed = clean_article_text(original)
+            if fixed != original:
+                conn.execute(
+                    text("UPDATE news SET content = :content WHERE id = :id"),
+                    {"content": fixed, "id": row.id}
+                )
+                cleaned += 1
+        conn.commit()
+    return {"success": True, "message": f"{cleaned}건의 기사에서 JS 코드를 제거했습니다."}
+
+
+@router.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+        return {"success": False, "message": "지원하지 않는 파일 형식입니다."}
+    filename = f"{uuid.uuid4().hex}{ext}"
+    dest = UPLOAD_DIR / filename
+    dest.write_bytes(await file.read())
+    return {"success": True, "url": f"/static/uploads/{filename}"}
+
+@router.get("/reports")
+def get_reports():
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT r.id, r.news_id, r.reporter_id, r.reporter_name,
+                   r.reason, r.status, r.created_at,
+                   n.title as news_title
+            FROM reports r
+            LEFT JOIN news n ON r.news_id = n.id
+            ORDER BY r.created_at DESC
+        """)).fetchall()
+    result = []
+    for row in rows:
+        d = dict(row._mapping)
+        if d["created_at"]:
+            d["created_at"] = d["created_at"].strftime("%Y-%m-%d %H:%M")
+        result.append(d)
+    return result
+
+
+@router.put("/reports/{report_id}")
+def update_report(report_id: int, status: str):
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE reports SET status=:status WHERE id=:id"),
+            {"status": status, "id": report_id}
+        )
+        conn.commit()
+    return {"success": True}
+
+
+@router.delete("/reports/{report_id}")
+def delete_report(report_id: int):
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM reports WHERE id=:id"), {"id": report_id})
+        conn.commit()
+    return {"success": True}

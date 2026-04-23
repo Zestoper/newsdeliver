@@ -13,28 +13,78 @@ CATEGORY_KEYWORDS = {
     "문화": "문화 뉴스",
     "스포츠": "스포츠 뉴스",
     "예술": "예술 뉴스",
+    "연예": "연예 뉴스",
+    "국제": "국제 뉴스",
+    "사회": "사회 뉴스",
 }
+
+_GARBAGE_MARKERS = [
+    'window.__ht', 'pstatic.net',
+    '"write_placeholder"', '"sort_favorite"', 'duplicate_caution',
+]
+
+_FOOTER_MARKERS = [
+    '※', '▶', '◆', '■', '☞', '☛',
+    'Copyright', 'copyright', 'ⓒ', '무단 전재', '무단전재', '재배포 금지',
+    '제보는', '제보하기', '여러분의 제보', '기사제보',
+]
+
+def clean_article_text(text: str) -> str:
+    # JS/JSON 광고 스크립트 제거
+    for marker in _GARBAGE_MARKERS:
+        idx = text.find(marker)
+        if idx == -1:
+            continue
+        w = text.rfind('window.', 0, idx + len(marker))
+        cut = w if (w != -1 and idx - w < 300) else idx
+        prefix = text[:cut]
+        ends = [prefix.rfind(e) for e in ['다. ', '요. ', '다.', '요.', '다!', '다?', '. ']]
+        last = max(ends)
+        text = (prefix[:last + 2] if last >= 0 else prefix).strip()
+        break
+
+    # 언론사 면책/저작권/제보 문구 제거 (※ 등 기호 기준)
+    for marker in _FOOTER_MARKERS:
+        idx = text.find(marker)
+        if idx == -1:
+            continue
+        prefix = text[:idx]
+        ends = [prefix.rfind(e) for e in ['다. ', '요. ', '다.', '요.', '다!', '다?', '. ']]
+        last = max(ends)
+        text = (prefix[:last + 2] if last >= 0 else prefix).strip()
+        break
+
+    # 남아있는 window.xxx 제거
+    text = re.sub(r'window\.[^\s가-힣]*\s*=\s*[^가-힣]*', '', text)
+    text = re.sub(r' {2,}', ' ', text).strip()
+    return text
+
 
 def extract_full_content(url):
     try:
-        with httpx.Client(timeout=5, follow_redirects=True) as client:
+        with httpx.Client(timeout=10, follow_redirects=True) as client:
             res = client.get(url)
             if res.status_code != 200:
                 return None
 
             html = res.text
-            for div_id in ['dic_area', 'articleBodyContents', 'articleBody']:
+            for div_id in ['dic_area', 'articleBodyContents', 'articleBody', 'article-body', 'news_body']:
                 idx = html.find(f'id="{div_id}"')
+                if idx == -1:
+                    idx = html.find(f"id='{div_id}'")
                 if idx == -1:
                     continue
                 tag_end = html.find('>', idx)
                 if tag_end == -1:
                     continue
-                # Extract up to 15000 chars after the opening tag — avoids stopping at first nested </div>
-                raw = html[tag_end + 1:tag_end + 15000]
-                raw = re.sub(r'<(script|style)[^>]*>[\s\S]*?</(script|style)>', '', raw)
+                # 충분히 큰 청크로 읽고 태그 제거 후 문장 단위로 정리
+                raw = html[tag_end + 1:tag_end + 200_000]
+                # script/style 태그 제거
+                raw = re.sub(r'<(script|style)[^>]*>[\s\S]*?</(script|style)>', '', raw, flags=re.IGNORECASE)
+                # 나머지 HTML 태그 제거
                 text = re.sub(r'<[^>]+>', '', raw)
                 text = re.sub(r'\s+', ' ', text).strip()
+                text = clean_article_text(text)
                 if len(text) > 100:
                     return text
     except Exception as e:
@@ -119,7 +169,7 @@ def fetch_and_save_news():
                 ).fetchone()
                 if existing:
                     existing_content = existing.content or ""
-                    if len(existing_content) < 300 and naver_link:
+                    if len(existing_content) < 1000 and naver_link:
                         full_content = extract_full_content(naver_link)
                         if full_content and len(full_content) > len(existing_content):
                             conn.execute(

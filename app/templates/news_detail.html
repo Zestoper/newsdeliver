@@ -3,7 +3,7 @@
 {% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=3" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=4" />
 {% endblock %}
 
 {% block content %}
@@ -21,28 +21,52 @@
     {% endif %}
 
     <div class="detail-content-wrap">
-      <p class="detail-content collapsed" id="detail-content">{{ news.content }}</p>
-      <button class="btn-read-more" id="btn-read-more" onclick="expandContent()">더보기 ▼</button>
+      <p class="detail-content" id="detail-content">{{ news.content }}</p>
+      <button class="btn-read-more" id="btn-read-more" onclick="expandContent()" style="display:none;">더보기 ▼</button>
     </div>
 
     <div class="detail-actions">
       <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
-        ❤️ <span id="like-count">{{ like_count }}</span>
+        ♥ <span id="like-count">{{ like_count }}</span>
       </button>
 
       {% if current_user %}
-        {% if subscribed %}
-        <button class="btn-subscribe subscribed" onclick="location.href='/subscribe'">✅ 구독 중</button>
-        {% else %}
-        <button class="btn-subscribe" onclick="location.href='/subscribe'">🔔 구독하기</button>
-        {% endif %}
         {% if current_user.role == 'admin' or current_user.id == news.author_id %}
         <a href="/news/{{ news.id }}/delete" onclick="return confirm('삭제할까요?');" class="btn-delete">🗑 삭제</a>
         {% endif %}
-      {% else %}
-        <button class="btn-subscribe" onclick="location.href='/login'">🔔 구독하기</button>
+        {% if current_user.role != 'admin' %}
+        <button onclick="openReportModal()" style="padding:9px 18px;background:white;color:#adb5bd;border:1.5px solid #dee2e6;border-radius:24px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all 0.2s;"
+          onmouseover="this.style.color='#fa5252';this.style.borderColor='#fa5252';" onmouseout="this.style.color='#adb5bd';this.style.borderColor='#dee2e6';">
+          🚨 신고
+        </button>
+        {% endif %}
       {% endif %}
     </div>
+  </div>
+
+  <!-- 신고 모달 -->
+  <div id="report-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:32px 28px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+      <h3 style="font-size:17px; font-weight:800; margin-bottom:6px;">🚨 게시글 신고</h3>
+      <p style="font-size:13px; color:#868e96; margin-bottom:20px;">신고 사유를 선택하거나 직접 입력해주세요.</p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+        {% for r in ['허위 정보', '스팸/광고', '혐오 표현', '저작권 침해', '기타'] %}
+        <button onclick="setReason('{{ r }}')"
+          style="padding:6px 14px; border:1.5px solid #dee2e6; border-radius:20px; background:white; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.2s;"
+          onmouseover="this.style.borderColor='#c00';this.style.color='#c00';"
+          onmouseout="this.style.borderColor='#dee2e6';this.style.color='inherit';">
+          {{ r }}
+        </button>
+        {% endfor %}
+      </div>
+      <textarea id="report-reason" rows="3" placeholder="신고 사유를 입력하세요 (선택)"
+        style="width:100%; padding:10px 14px; border:1.5px solid #dee2e6; border-radius:8px; font-size:14px; font-family:inherit; resize:none; margin-bottom:16px;"></textarea>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="closeReportModal()" style="padding:9px 20px; background:#f1f3f5; border:none; border-radius:6px; font-size:14px; cursor:pointer; font-family:inherit;">취소</button>
+        <button onclick="submitReport()" style="padding:9px 20px; background:#c00; color:white; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">신고하기</button>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- 댓글 -->
@@ -84,6 +108,48 @@
     }
   }
 
+  function buildCommentHTML(c, isReply = false) {
+    const isMyComment = CURRENT_USER_ID && String(c.user_id) === String(CURRENT_USER_ID);
+    const indent = isReply
+      ? 'margin-left:32px; padding-left:16px; border-left:3px solid #f0f0f0;'
+      : '';
+    const replyBtn = (!isReply && CURRENT_USER)
+      ? `<button onclick="toggleReplyBox(${c.id})" style="padding:4px 10px;background:none;border:none;color:#868e96;font-size:12px;cursor:pointer;font-family:inherit;">↩ 답글</button>`
+      : '';
+    const likeBtn = !isReply
+      ? `<button id="clike-btn-${c.id}" onclick="toggleCommentLike(${c.id})"
+           style="padding:4px 10px;background:none;border:1px solid ${c.liked ? '#faa2c1' : '#dee2e6'};
+                  border-radius:20px;color:${c.liked ? '#e64980' : '#adb5bd'};
+                  font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px;">
+           ♥ <span id="clike-count-${c.id}">${c.like_count}</span>
+         </button>`
+      : '';
+    return `
+      <div class="comment-item" id="comment-${c.id}" style="${indent}">
+        <div class="comment-header">
+          <span class="comment-author">${isReply ? '↳ ' : ''}${c.name}</span>
+          <span class="comment-date">${c.created_at}</span>
+        </div>
+        <p class="comment-content" id="comment-content-${c.id}">${c.content}</p>
+        <div class="comment-edit-box" id="comment-edit-${c.id}" style="display:none;">
+          <textarea id="comment-edit-input-${c.id}" style="width:100%;padding:8px;border:1.5px solid #dee2e6;border-radius:6px;font-size:14px;font-family:inherit;">${c.content}</textarea>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button onclick="saveComment(${c.id})" class="btn-comment" style="padding:6px 14px;">저장</button>
+            <button onclick="cancelEdit(${c.id})" style="padding:6px 14px;background:#f1f3f5;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">취소</button>
+          </div>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
+          ${likeBtn}
+          ${replyBtn}
+          ${isMyComment ? `
+            <button onclick="editComment(${c.id})" style="padding:4px 10px;background:#f1f3f5;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;">수정</button>
+            <button onclick="deleteComment(${c.id})" style="padding:4px 10px;background:#fff5f5;color:#fa5252;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;">삭제</button>
+          ` : ''}
+        </div>
+        ${!isReply ? `<div id="reply-box-${c.id}" style="display:none; margin-top:10px; margin-left:32px;"></div>` : ''}
+      </div>`;
+  }
+
   async function loadComments() {
     const res = await fetch(`/news/${NEWS_ID}/comments`);
     const comments = await res.json();
@@ -93,29 +159,66 @@
       list.innerHTML = '<p style="color:#bbb; font-size:14px;">첫 댓글을 남겨보세요!</p>';
       return;
     }
-    comments.forEach(c => {
-      const isMyComment = CURRENT_USER_ID && c.user_id === CURRENT_USER_ID;
-      list.innerHTML += `
-        <div class="comment-item" id="comment-${c.id}">
-          <div class="comment-header">
-            <span class="comment-author">${c.name}</span>
-            <span class="comment-date">${c.created_at}</span>
-          </div>
-          <p class="comment-content" id="comment-content-${c.id}">${c.content}</p>
-          <div class="comment-edit-box" id="comment-edit-${c.id}" style="display:none;">
-            <textarea id="comment-edit-input-${c.id}" style="width:100%;padding:8px;border:1.5px solid #dee2e6;border-radius:6px;font-size:14px;font-family:inherit;">${c.content}</textarea>
-            <div style="display:flex;gap:8px;margin-top:6px;">
-              <button onclick="saveComment(${c.id})" class="btn-comment" style="padding:6px 14px;">저장</button>
-              <button onclick="cancelEdit(${c.id})" style="padding:6px 14px;background:#f1f3f5;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">취소</button>
-            </div>
-          </div>
-          ${isMyComment ? `
-          <div style="margin-top:8px;display:flex;gap:8px;">
-            <button onclick="editComment(${c.id})" style="padding:4px 12px;background:#f1f3f5;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;">수정</button>
-            <button onclick="deleteComment(${c.id})" style="padding:4px 12px;background:#fff5f5;color:#fa5252;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;">삭제</button>
-          </div>` : ''}
-        </div>`;
+    // 부모 댓글과 대댓글 분리
+    const parents = comments.filter(c => !c.parent_id);
+    const replyMap = {};
+    comments.filter(c => c.parent_id).forEach(c => {
+      (replyMap[c.parent_id] = replyMap[c.parent_id] || []).push(c);
     });
+
+    parents.forEach(c => {
+      list.innerHTML += buildCommentHTML(c, false);
+      (replyMap[c.id] || []).forEach(r => {
+        list.innerHTML += buildCommentHTML(r, true);
+      });
+    });
+  }
+
+  function toggleReplyBox(parentId) {
+    const box = document.getElementById(`reply-box-${parentId}`);
+    if (box.style.display === 'none') {
+      box.style.display = 'block';
+      box.innerHTML = `
+        <div style="display:flex;gap:8px;">
+          <textarea id="reply-input-${parentId}" placeholder="답글을 입력하세요"
+            style="flex:1;padding:8px 12px;border:1.5px solid #dee2e6;border-radius:8px;font-size:14px;font-family:inherit;resize:none;height:56px;"></textarea>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button onclick="submitReply(${parentId})" class="btn-comment" style="padding:6px 14px;font-size:13px;">등록</button>
+            <button onclick="document.getElementById('reply-box-${parentId}').style.display='none'"
+              style="padding:6px 14px;background:#f1f3f5;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;">취소</button>
+          </div>
+        </div>`;
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
+  async function submitReply(parentId) {
+    const input = document.getElementById(`reply-input-${parentId}`);
+    if (!input.value.trim()) return;
+    const formData = new FormData();
+    formData.append('content', input.value);
+    formData.append('parent_id', parentId);
+    const res = await fetch(`/news/${NEWS_ID}/comments`, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) loadComments();
+  }
+
+  async function toggleCommentLike(commentId) {
+    if (!CURRENT_USER) { alert('로그인이 필요합니다.'); return; }
+    const res = await fetch(`/news/${NEWS_ID}/comments/${commentId}/like`, { method: 'POST' });
+    const data = await res.json();
+    if (!data.success) return;
+    const btn = document.getElementById(`clike-btn-${commentId}`);
+    const cnt = document.getElementById(`clike-count-${commentId}`);
+    cnt.textContent = data.count;
+    if (data.liked) {
+      btn.style.color = '#e64980';
+      btn.style.borderColor = '#faa2c1';
+    } else {
+      btn.style.color = '#adb5bd';
+      btn.style.borderColor = '#dee2e6';
+    }
   }
 
   function editComment(id) {
@@ -151,15 +254,20 @@
 
   loadComments();
 
-  // 내용이 3줄 이하면 버튼 숨기기
-  (function() {
+  // 폰트 로딩 완료 후 실제 높이로 더보기 버튼 결정
+  document.fonts.ready.then(function() {
     const content = document.getElementById('detail-content');
     const btn = document.getElementById('btn-read-more');
-    if (content && btn && content.scrollHeight <= content.clientHeight + 2) {
-      btn.style.display = 'none';
+    if (!content || !btn) return;
+    const fullHeight = content.scrollHeight;
+    content.classList.add('collapsed');
+    const collapsedHeight = content.clientHeight;
+    if (fullHeight <= collapsedHeight + 4) {
       content.classList.remove('collapsed');
+    } else {
+      btn.style.display = 'block';
     }
-  })();
+  });
 
   function expandContent() {
     const content = document.getElementById('detail-content');
