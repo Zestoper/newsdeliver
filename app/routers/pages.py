@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 from app.database import engine
+from app.config import settings
 from app.services.store import (
     add_subscription,
     add_user,
@@ -94,7 +95,7 @@ async def home(request: Request) -> HTMLResponse:
             LIMIT 5
         """))]
         top_viewed = [dict(r._mapping) for r in conn.execute(text("""
-            SELECT n.id, n.title, n.view_count, c.name as category_name
+            SELECT n.id, n.title, n.view_count, n.created_at, c.name as category_name
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
             WHERE n.status = 'published'
@@ -242,6 +243,8 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
                   subscribed_ids=subscribed_ids, current_email=current_email,
                   is_subscribed=is_subscribed, is_verified=is_verified,
                   verify_link=verify_link,
+                  toss_client_key=settings.TOSS_CLIENT_KEY,
+                  skip_payment=settings.SKIP_PAYMENT,
                   message=notify[0], message_type=notify[1])
 
 
@@ -301,6 +304,52 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
         pass
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
+
+
+@router.get("/subscribe/payment/success", response_class=HTMLResponse)
+async def subscribe_payment_success(
+    request: Request,
+    paymentKey: str = "",  # 서버사이드 승인 시 사용
+    orderId: str = "",     # 서버사이드 승인 시 사용
+    amount: int = 0,       # 서버사이드 승인 시 사용
+    email: str = "",
+) -> HTMLResponse:
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    if not email:
+        return RedirectResponse(url="/subscribe?pay_error=1", status_code=303)
+
+    # Toss 서버사이드 결제 승인
+    import httpx as _httpx, base64 as _base64
+    _auth = _base64.b64encode(f"{settings.TOSS_SECRET_KEY}:".encode()).decode()
+    _res = _httpx.post(
+        "https://api.tosspayments.com/v1/payments/confirm",
+        headers={"Authorization": f"Basic {_auth}", "Content-Type": "application/json"},
+        json={"paymentKey": paymentKey, "orderId": orderId, "amount": amount},
+    )
+    if _res.status_code != 200:
+        return RedirectResponse(url="/subscribe?pay_error=1", status_code=303)
+
+    if is_duplicate_subscription(email, user_id=user["id"]):
+        return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
+
+    try:
+        token = add_subscription(email, user_id=user["id"])
+    except ValueError:
+        return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
+
+    try:
+        send_verify_email(email, token, base_url=str(request.base_url))
+    except Exception:
+        pass
+
+    return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
+
+
+@router.get("/subscribe/payment/fail", response_class=HTMLResponse)
+async def subscribe_payment_fail() -> HTMLResponse:
+    return RedirectResponse(url="/subscribe?pay_error=1", status_code=303)
 
 
 def _do_verify(token: str) -> bool:

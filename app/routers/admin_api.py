@@ -62,7 +62,13 @@ def send_newsletter_api(request: Request):
 
     return {"success": True, "message": f"총 {total_sent}명에게 발송 완료!"}
 
-from app.services.naver_news import fetch_and_save_news, extract_full_content, clean_article_text
+import time
+import urllib.parse
+import httpx as _httpx
+from app.services.naver_news import (
+    fetch_and_save_news, extract_full_content, clean_article_text,
+    CLIENT_ID, CLIENT_SECRET,
+)
 
 @router.post("/fetch-news")
 def fetch_news_api():
@@ -75,26 +81,113 @@ def fetch_news_api():
 
 @router.post("/recrawl-content")
 def recrawl_content_api():
-    updated = 0
-    failed = 0
+    # 1) DB 연결은 짧게 — 처리할 목록만 로딩 후 즉시 닫기
     with engine.connect() as conn:
         rows = conn.execute(
-            text("SELECT id, link, content FROM news WHERE link IS NOT NULL AND link != '' ORDER BY id DESC")
+            text("""
+                SELECT id, link, naver_link, content FROM news
+                WHERE (naver_link IS NOT NULL AND naver_link != '')
+                   OR (link IS NOT NULL AND link != '')
+                ORDER BY id DESC
+            """)
         ).fetchall()
-        for row in rows:
-            if row.content and len(row.content) >= 1000:
+    todo = [
+        (r.id, (r.naver_link or "").strip() or (r.link or "").strip(), r.content)
+        for r in rows
+        if not (r.content and len(r.content) >= 1000)
+        and ((r.naver_link or "").strip() or (r.link or "").strip())
+    ]
+    skipped = len(rows) - len(todo)
+
+    # 2) HTTP 스크래핑 (DB 연결 없이)
+    updates = []
+    failed = 0
+    for article_id, crawl_url, old_content in todo:
+        new_content = extract_full_content(crawl_url)
+        if new_content and len(new_content) > len(old_content or ""):
+            updates.append((article_id, new_content))
+        else:
+            failed += 1
+
+    # 3) 업데이트는 건별로 커밋 — 락 최소화
+    with engine.connect() as conn:
+        for article_id, new_content in updates:
+            conn.execute(
+                text("UPDATE news SET content = :content WHERE id = :id"),
+                {"content": new_content, "id": article_id}
+            )
+            conn.commit()
+
+    updated = len(updates)
+    return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패 (충분한 본문: {skipped}건)"}
+
+
+@router.post("/fix-content-via-api")
+def fix_content_via_api():
+    """네이버 API로 기사 제목 검색 → naver_link 복원 → 본문 재수집"""
+    naver_headers = {
+        "X-Naver-Client-Id": CLIENT_ID,
+        "X-Naver-Client-Secret": CLIENT_SECRET,
+    }
+
+    # 1) 처리 목록 로딩 후 DB 연결 닫기
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT id, title, content FROM news
+            WHERE (content IS NULL OR LENGTH(content) < 500)
+            AND (naver_link IS NULL OR naver_link = '')
+            ORDER BY id DESC
+            LIMIT 100
+        """)).fetchall()
+    todo = list(rows)
+
+    # 2) HTTP 작업 (DB 연결 없이)
+    updates = []
+    failed = 0
+    for row in todo:
+        query = urllib.parse.quote(row.title[:50])
+        api_url = f"https://openapi.naver.com/v1/search/news.json?query={query}&display=3&sort=date"
+        try:
+            with _httpx.Client(timeout=5) as client:
+                res = client.get(api_url, headers=naver_headers)
+            if res.status_code != 200:
+                failed += 1
+                time.sleep(0.1)
                 continue
-            new_content = extract_full_content(row.link)
-            if new_content and len(new_content) > len(row.content or ""):
-                conn.execute(
-                    text("UPDATE news SET content = :content WHERE id = :id"),
-                    {"content": new_content, "id": row.id}
-                )
-                updated += 1
+
+            naver_link = None
+            for item in res.json().get("items", []):
+                item_title = (item.get("title", "")
+                              .replace("<b>", "").replace("</b>", "")
+                              .replace("&quot;", '"').replace("&amp;", "&"))
+                if item_title.strip() == row.title.strip():
+                    naver_link = item.get("link", "")
+                    break
+
+            if naver_link:
+                content = extract_full_content(naver_link)
+                if content and len(content) > len(row.content or ""):
+                    updates.append((row.id, content, naver_link))
+                else:
+                    failed += 1
             else:
                 failed += 1
-        conn.commit()
-    return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패"}
+
+            time.sleep(0.1)
+        except Exception:
+            failed += 1
+
+    # 3) 건별 커밋
+    with engine.connect() as conn:
+        for article_id, content, naver_link in updates:
+            conn.execute(
+                text("UPDATE news SET content=:c, naver_link=:nl WHERE id=:id"),
+                {"c": content, "nl": naver_link, "id": article_id}
+            )
+            conn.commit()
+
+    updated = len(updates)
+    return {"success": True, "message": f"API 재수집: {updated}건 성공, {failed}건 실패 (100건씩 처리, 반복 실행 가능)"}
 
 
 @router.post("/clean-content")
@@ -222,8 +315,15 @@ def get_stats():
             """))
         ]
 
-        # news_users에 created_at 컬럼 없음 — 빈 리스트
-        daily_users = []
+        daily_users = [
+            dict(row._mapping) for row in conn.execute(text("""
+                SELECT DATE(created_at) as day, COUNT(*) as count
+                FROM news_users
+                WHERE created_at IS NOT NULL
+                  AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                GROUP BY day ORDER BY day
+            """))
+        ]
 
     return {
         "total_users": total_users,

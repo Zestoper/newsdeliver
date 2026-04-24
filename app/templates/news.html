@@ -3,7 +3,7 @@
 {% block title %}뉴스 목록 - News Delivery{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}">
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=2.0">
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -34,11 +34,11 @@
   </div>
   <nav class="main-nav">
     <ul>
-      <li><a href="/">홈</a></li>
-      <li><a href="/news" class="active">뉴스</a></li>
-      <li><a href="/search">검색</a></li>
-      <li><a href="/subscribe">구독</a></li>
-      <li><a href="/contact">문의</a></li>
+      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
+      <li><a href="/news" class="active"><span class="nav-icon">📰</span>뉴스</a></li>
+      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
+      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+      <li><a href="/contact"><span class="nav-icon">✉️</span>문의</a></li>
     </ul>
   </nav>
 </header>

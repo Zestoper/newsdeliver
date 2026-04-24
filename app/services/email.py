@@ -2,10 +2,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-SMTP_HOST = "smtp.naver.com"
-SMTP_PORT = 587
-SMTP_USER = "zestoper@naver.com"
-SMTP_PASSWORD = "YVT68P7YPTJV"
+from app.config import settings
+
+SMTP_HOST = settings.SMTP_HOST
+SMTP_PORT = settings.SMTP_PORT
+SMTP_USER = settings.SMTP_USER
+SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 _CAT_EMOJI = {
     "정치": "🏛", "경제": "💰", "IT": "💻", "문화": "🎭",

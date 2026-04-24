@@ -1,5 +1,17 @@
+:root {
+  --red:     #D42B2B;
+  --red-h:   #B82424;
+  --red-bg:  #FFF0F0;
+  --text:    #1A1A1A;
+  --muted:   #6B7280;
+  --light:   #9CA3AF;
+  --border:  #E5E4E0;
+  --bg:      #F4F3F0;
+  --surface: #FFFFFF;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
 .subscribe-container {
   max-width: 640px;
@@ -11,91 +23,71 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5;
 .subscribe-container h1 {
   font-size: 26px;
   font-weight: 900;
-  color: #1a1a1a;
+  color: var(--text);
   margin-bottom: 6px;
   letter-spacing: -0.5px;
 }
-
-.sub-desc {
-  font-size: 15px;
-  color: #777;
-  margin-bottom: 28px;
-}
+.sub-desc { font-size: 15px; color: var(--muted); margin-bottom: 28px; }
 
 /* 카테고리 */
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 28px;
-}
+.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
 
 .category-btn {
-  padding: 22px 12px;
-  background: white;
-  color: #495057;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  padding: 20px 12px;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   font-family: inherit;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 10px rgba(0,0,0,0.05);
   transition: all 0.2s;
 }
 .category-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-  border-color: #c00;
-  color: #c00;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  border-color: var(--red);
+  color: var(--red);
 }
 .category-btn.subscribed {
-  background: #fff0f0;
-  color: #c00;
-  border-color: #c00;
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red);
+  box-shadow: 0 2px 8px rgba(212,43,43,0.15);
 }
 
 /* 이메일 구독 박스 */
 .email-section-box {
-  background: white;
-  border-radius: 12px;
+  background: var(--surface);
+  border-radius: 14px;
   padding: 36px 32px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.08);
   max-width: 500px;
   margin: 0 auto;
   text-align: left;
+  border-top: 3px solid var(--red);
 }
+.email-section-box .sub-desc { font-size: 14px; color: var(--muted); margin-bottom: 20px; font-weight: 500; }
 
-.email-section-box .sub-desc {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-.email-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
+.email-form { display: flex; gap: 10px; margin-bottom: 12px; }
 .email-form input {
   flex: 1;
   padding: 11px 16px;
-  border: 1.5px solid #dee2e6;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
-  transition: border-color 0.2s;
+  background: #FAFAF8;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--text);
 }
-.email-form input:focus {
-  outline: none;
-  border-color: #c00;
-}
+.email-form input:focus { outline: none; border-color: var(--red); background: white; box-shadow: 0 0 0 3px rgba(212,43,43,0.08); }
 
 .btn-subscribe {
   padding: 11px 22px;
-  background: #c00;
+  background: var(--red);
   color: white;
   border: none;
   border-radius: 8px;
@@ -103,60 +95,40 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5;
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   transition: all 0.2s;
   white-space: nowrap;
 }
-.btn-subscribe:hover {
-  background: #a00;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(204,0,0,0.25);
-}
+.btn-subscribe:hover { background: var(--red-h); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,43,43,0.25); }
 
 /* 메시지 */
-.message {
-  padding: 12px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-.message.success { background: #fff0f0; color: #c00; border: 1px solid #ffc9c9; }
-.message.error { background: #fff5f5; color: #fa5252; border: 1px solid #ffc9c9; }
+.message { padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 20px; }
+.message.success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+.message.error   { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
 
 .btn-unsubscribe {
-  padding: 10px 20px;
-  background: #fff5f5;
-  color: #fa5252;
-  border: 1px solid #ffc9c9;
-  border-radius: 6px;
+  padding: 9px 18px;
+  background: var(--surface);
+  color: #ef4444;
+  border: 1.5px solid #fca5a5;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   transition: all 0.2s;
 }
-.btn-unsubscribe:hover { background: #ffe3e3; }
+.btn-unsubscribe:hover { background: #FEF2F2; border-color: #f87171; }
 
 /* 로그인 필요 */
-.login-required {
-  font-size: 14px;
-  color: #adb5bd;
-  margin: 24px 0;
-}
-.login-required a {
-  color: #c00;
-  font-weight: 700;
-  text-decoration: none;
-}
-.login-required a:hover { text-decoration: underline; }
+.login-required { font-size: 14px; color: var(--light); margin: 24px 0; }
+.login-required a { color: var(--red); font-weight: 700; }
 
 .helper-link {
   display: inline-block;
   margin-top: 24px;
   font-size: 13px;
-  color: #adb5bd;
-  text-decoration: none;
+  color: var(--light);
   transition: color 0.2s;
 }
-.helper-link:hover { color: #c00; }
+.helper-link:hover { color: var(--red); }

@@ -3,7 +3,7 @@
 {% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=6" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=8" />
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,12 @@
   <div class="detail-box">
     <span class="detail-source">{{ news.source or '출처 없음' }}</span>
     <h1 class="detail-title">{{ news.title }}</h1>
-    <p class="detail-date">{{ news.created_at.strftime('%Y년 %m월 %d일') if news.created_at else '' }}</p>
+    <p class="detail-date">{{ news.created_at.strftime('%Y년 %m월 %d일 %H:%M') if news.created_at else '' }}</p>
+    {% if news.link %}
+    <p class="detail-source-link">
+      출처: <a href="{{ news.link }}" target="_blank" rel="noopener">{{ news.link }}</a>
+    </p>
+    {% endif %}
     <hr class="detail-divider" />
 
     {% if news.image_url %}
@@ -26,7 +31,9 @@
         <p>{{ para.strip() }}</p>
         {% endfor %}
       </div>
-      <button class="btn-read-more" id="btn-read-more" onclick="expandContent()" style="display:none;">더보기 ▼</button>
+      <div class="btn-read-more-wrap" id="btn-read-more-wrap" style="display:none;">
+        <button class="btn-read-more" id="btn-read-more" onclick="expandContent()">전체 기사 보기</button>
+      </div>
     </div>
 
     <div class="detail-meta">
@@ -342,25 +349,26 @@
   // 폰트 로딩 완료 후 실제 높이로 더보기 버튼 결정
   document.fonts.ready.then(function() {
     const content = document.getElementById('detail-content');
-    const btn = document.getElementById('btn-read-more');
-    if (!content || !btn) return;
+    const wrap = document.getElementById('btn-read-more-wrap');
+    if (!content || !wrap) return;
     const fullHeight = content.scrollHeight;
     content.classList.add('collapsed');
     const collapsedHeight = content.clientHeight;
     if (fullHeight <= collapsedHeight + 4) {
       content.classList.remove('collapsed');
     } else {
-      btn.style.display = 'block';
+      wrap.style.display = 'block';
     }
   });
 
   function expandContent() {
     const content = document.getElementById('detail-content');
-    const btn = document.getElementById('btn-read-more');
+    const wrap = document.getElementById('btn-read-more-wrap');
     content.classList.remove('collapsed');
     content.style.maxHeight = 'none';
-    content.style.overflow = 'visible';
-    btn.style.display = 'none';
+    content.style.webkitMaskImage = 'none';
+    content.style.maskImage = 'none';
+    wrap.style.display = 'none';
   }
 </script>
 {% endblock %}

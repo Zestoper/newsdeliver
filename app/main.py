@@ -19,11 +19,13 @@ try:
         from sqlalchemy import text
         migrations = [
             ("ALTER TABLE news ADD COLUMN link VARCHAR(500)", "news.link"),
+            ("ALTER TABLE news ADD COLUMN naver_link VARCHAR(500)", "news.naver_link"),
             ("ALTER TABLE news ADD COLUMN view_count INT DEFAULT 0", "news.view_count"),
             ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
             ("ALTER TABLE subscriptions ADD COLUMN verify_token VARCHAR(100)", "subscriptions.verify_token"),
             ("ALTER TABLE subscriptions DROP INDEX unique_email", "subscriptions.unique_email 제약 제거"),
             ("ALTER TABLE news_comments ADD COLUMN parent_id INT DEFAULT NULL", "news_comments.parent_id"),
+            ("ALTER TABLE news_users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
         ]
         # reports 테이블 생성
         try:

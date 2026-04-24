@@ -1,15 +1,22 @@
+:root {
+  --red:    #D42B2B;
+  --red-h:  #B82424;
+  --text:   #1A1A1A;
+  --muted:  #6B7280;
+  --light:  #9CA3AF;
+  --border: #E5E4E0;
+  --bg:     #FAFAF8;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
 
-.login-page {
-  display: flex;
-  min-height: 100vh;
-}
+.login-page { display: flex; min-height: 100vh; }
 
 /* ── 왼쪽 브랜드 ── */
 .login-brand {
   flex: 1;
-  background: linear-gradient(150deg, #c00 0%, #7a0000 100%);
+  background: linear-gradient(160deg, #D42B2B 0%, #8A0000 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -22,51 +29,45 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
   content: '';
   position: absolute;
   bottom: -80px; right: -80px;
-  width: 320px; height: 320px;
-  background: rgba(255,255,255,0.06);
+  width: 340px; height: 340px;
+  background: rgba(255,255,255,0.05);
   border-radius: 50%;
 }
 .login-brand::before {
   content: '';
   position: absolute;
   top: -60px; left: -60px;
-  width: 220px; height: 220px;
-  background: rgba(255,255,255,0.05);
+  width: 240px; height: 240px;
+  background: rgba(255,255,255,0.04);
   border-radius: 50%;
 }
 
 .brand-logo {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   color: white;
   text-decoration: none;
-  margin-bottom: 56px;
+  margin-bottom: 60px;
   display: inline-block;
   opacity: 0.95;
+  letter-spacing: -0.5px;
 }
-
 .brand-tagline {
   font-size: 38px;
   font-weight: 900;
-  line-height: 1.35;
-  margin-bottom: 22px;
+  line-height: 1.3;
+  margin-bottom: 24px;
   letter-spacing: -1px;
 }
-
 .brand-tagline span {
   display: block;
-  width: 40px;
-  height: 4px;
-  background: rgba(255,255,255,0.5);
+  width: 36px;
+  height: 3px;
+  background: rgba(255,255,255,0.45);
   border-radius: 2px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
-
-.brand-desc {
-  font-size: 15px;
-  line-height: 1.9;
-  opacity: 0.8;
-}
+.brand-desc { font-size: 15px; line-height: 1.9; opacity: 0.75; }
 
 /* ── 오른쪽 로그인 폼 ── */
 .login-box {
@@ -77,75 +78,34 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
   justify-content: center;
   padding: 64px 52px;
 }
-
-.login-header {
-  margin-bottom: 36px;
-}
-
-.login-header h1 {
-  font-size: 30px;
-  font-weight: 900;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
-
-.login-header p {
-  font-size: 14px;
-  color: #999;
-}
+.login-header { margin-bottom: 36px; }
+.login-header h1 { font-size: 28px; font-weight: 900; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px; }
+.login-header p { font-size: 14px; color: var(--muted); }
 
 /* ── 메시지 ── */
-.message {
-  padding: 13px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-.message.success { background: #ebfbee; color: #2f9e44; border: 1px solid #b2f2bb; }
-.message.error   { background: #fff5f5; color: #fa5252; border: 1px solid #ffc9c9; }
+.message { padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 20px; }
+.message.success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+.message.error   { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
 
 /* ── 폼 ── */
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: 28px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.input-group label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #444;
-}
-
+.login-form { display: flex; flex-direction: column; gap: 18px; margin-bottom: 28px; }
+.input-group { display: flex; flex-direction: column; gap: 7px; }
+.input-group label { font-size: 13px; font-weight: 700; color: #374151; }
 .input-group input {
-  padding: 13px 16px;
-  border: 1.5px solid #e8e8e8;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
-  color: #1a1a1a;
-  background: #fafafa;
+  color: var(--text);
+  background: var(--bg);
   transition: all 0.2s;
 }
-.input-group input:focus {
-  outline: none;
-  border-color: #c00;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(204,0,0,0.08);
-}
+.input-group input:focus { outline: none; border-color: var(--red); background: white; box-shadow: 0 0 0 3px rgba(212,43,43,0.08); }
 
 .btn-login {
-  padding: 14px;
-  background: #c00;
+  padding: 13px;
+  background: var(--red);
   color: white;
   border: none;
   border-radius: 8px;
@@ -155,47 +115,22 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
   cursor: pointer;
   transition: all 0.2s;
   margin-top: 4px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
-.btn-login:hover {
-  background: #a00;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(204,0,0,0.3);
-}
+.btn-login:hover { background: var(--red-h); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(212,43,43,0.3); }
 
 /* ── 구분선 ── */
-.login-divider {
-  text-align: center;
-  position: relative;
-  margin-bottom: 24px;
-}
-.login-divider::before {
-  content: '';
-  position: absolute;
-  top: 50%; left: 0; right: 0;
-  height: 1px;
-  background: #eee;
-}
-.login-divider span {
-  background: white;
-  padding: 0 14px;
-  font-size: 12px;
-  color: #bbb;
-  position: relative;
-}
+.login-divider { text-align: center; position: relative; margin-bottom: 24px; }
+.login-divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border); }
+.login-divider span { background: white; padding: 0 14px; font-size: 12px; color: var(--light); position: relative; }
 
 /* ── 회원가입 ── */
 .signup-section { margin-bottom: 28px; }
-.signup-section p {
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 12px;
-  text-align: center;
-}
+.signup-section p { font-size: 13px; color: var(--muted); margin-bottom: 12px; text-align: center; }
 .signup-buttons { display: flex; gap: 10px; }
 .signup-btn {
   flex: 1;
-  padding: 12px;
+  padding: 11px;
   text-align: center;
   border-radius: 8px;
   font-size: 13px;
@@ -204,19 +139,14 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
   font-family: inherit;
   transition: all 0.2s;
 }
-.signup-btn:hover { transform: translateY(-1px); opacity: 0.9; }
-.user-btn  { background: #1a1a1a; color: white; }
-.press-btn { background: #1971c2; color: white; }
+.signup-btn:hover { transform: translateY(-1px); opacity: 0.88; }
+.user-btn  { background: #1F2937; color: white; }
+.press-btn { background: #1D4ED8; color: white; }
 
 /* ── 메인으로 ── */
 .back-home { text-align: center; }
-.back-home a {
-  font-size: 13px;
-  color: #bbb;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.back-home a:hover { color: #c00; }
+.back-home a { font-size: 13px; color: var(--light); transition: color 0.2s; }
+.back-home a:hover { color: var(--red); }
 
 /* ── 반응형 ── */
 @media (max-width: 768px) {

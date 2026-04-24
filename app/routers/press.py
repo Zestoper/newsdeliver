@@ -134,32 +134,6 @@ async def press_write(
         conn.commit()
     return RedirectResponse(url="/press/news", status_code=303)
 
-@router.post("/write", response_class=HTMLResponse)
-async def press_write(
-    request: Request,
-    title: str = Form(...),
-    content: str = Form(...),
-    source: str = Form(""),
-    image_url: str = Form(""),
-    status: str = Form("draft"),
-) -> HTMLResponse:
-    user = get_current_user(request)
-    if not user or user["role"] != "press":
-        return RedirectResponse(url="/login", status_code=303)
-
-    with engine.connect() as conn:
-        conn.execute(
-            text("""
-                INSERT INTO news (title, content, image_url, source, status, author_id)
-                VALUES (:title, :content, :image_url, :source, :status, :author_id)
-            """),
-            {"title": title, "content": content, "image_url": image_url,
-             "source": source, "status": status, "author_id": user["id"]}
-        )
-        conn.commit()
-
-    return RedirectResponse(url="/press/news", status_code=303)
-
 
 @router.get("/edit/{news_id}", response_class=HTMLResponse)
 async def press_edit_page(request: Request, news_id: int) -> HTMLResponse:
