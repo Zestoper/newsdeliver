@@ -1,7 +1,6 @@
 from pathlib import Path
-import secrets
+import base64
 import httpx
-from app.services.naver_news import extract_press_name
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -13,7 +12,6 @@ from app.config import settings
 from app.services.store import (
     add_subscription,
     add_user,
-    get_news_items,
     get_user,
     is_duplicate_subscription,
     is_duplicate_user,
@@ -346,9 +344,8 @@ async def subscribe_payment_success(
         return RedirectResponse(url="/subscribe?pay_error=1", status_code=303)
 
     # Toss 서버사이드 결제 승인
-    import httpx as _httpx, base64 as _base64
-    _auth = _base64.b64encode(f"{settings.TOSS_SECRET_KEY}:".encode()).decode()
-    _res = _httpx.post(
+    _auth = base64.b64encode(f"{settings.TOSS_SECRET_KEY}:".encode()).decode()
+    _res = httpx.post(
         "https://api.tosspayments.com/v1/payments/confirm",
         headers={"Authorization": f"Basic {_auth}", "Content-Type": "application/json"},
         json={"paymentKey": paymentKey, "orderId": orderId, "amount": amount},
@@ -692,8 +689,6 @@ async def delete_news_page(request: Request, news_id: int):
 
 @router.get("/search", response_class=HTMLResponse)
 async def search_page(request: Request, q: str = "", source: str = "") -> HTMLResponse:
-    # 실제 수집하는 언론사만 필터에 노출
-    from app.services.naver_news import extract_press_name
     domain_map = {
         "chosun": "조선일보", "joongang": "중앙일보", "donga": "동아일보",
         "hani": "한겨레", "khan": "경향신문", "ohmynews": "오마이뉴스",

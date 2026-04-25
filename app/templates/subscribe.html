@@ -46,8 +46,9 @@
     <div class="category-grid">
         {% for category in categories %}
         <button
-            class="category-btn {% if category.id in subscribed_ids %}subscribed{% endif %}"
-            onclick="toggleCategory({{ category.id }}, this)"
+            class="category-btn{{ ' subscribed' if category.id in subscribed_ids else '' }}"
+            data-id="{{ category.id }}"
+            onclick="toggleCategory(this)"
         >
             {% if category.name == '정치' %}🏛 {% elif category.name == '경제' %}💰 {% elif category.name == 'IT' %}💻
             {% elif category.name == '문화' %}🎭 {% elif category.name == '스포츠' %}⚽ {% elif category.name == '예술' %}🎨
@@ -119,47 +120,6 @@
         {% endif %}
     </div>
 
-    <script>
-        const TOSS_CLIENT_KEY = '{{ toss_client_key }}';
-        const SUB_PRICE = 2900; // 구독료 (원) — 변경 시 여기만 수정
-
-        async function handleSubscribe(e) {
-            e.preventDefault();
-            const email = document.getElementById('subscribe-email').value.trim();
-            if (!email) return;
-
-            const tossPayments = TossPayments(TOSS_CLIENT_KEY);
-            const orderId = 'sub-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
-            const successUrl = location.origin + '/subscribe/payment/success?email=' + encodeURIComponent(email);
-            const failUrl    = location.origin + '/subscribe/payment/fail';
-
-            try {
-                await tossPayments.requestPayment('카드', {
-                    amount:       SUB_PRICE,
-                    orderId:      orderId,
-                    orderName:    'News Delivery 뉴스레터 구독',
-                    successUrl:   successUrl,
-                    failUrl:      failUrl,
-                    customerEmail: email,
-                });
-            } catch (err) {
-                if (err.code !== 'USER_CANCEL') {
-                    alert('결제 중 오류가 발생했습니다: ' + err.message);
-                }
-            }
-        }
-
-        async function toggleCategory(categoryId, btn) {
-            const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                btn.classList.toggle('subscribed', data.subscribed);
-                const result = document.getElementById('sub-result');
-                result.textContent = data.subscribed ? '✅ 구독했어요!' : '구독 해지했어요.';
-                result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
-            }
-        }
-    </script>
     {% else %}
     <!-- 비로그인 상태 -->
     <div class="email-section-box" style="text-align:center; padding: 48px 32px;">
@@ -184,42 +144,59 @@
     {% endif %}
 </div>
 
-{% if current_user and current_user.role != 'admin' %}
 <script>
-(function() {
-  async function checkNavBadge() {
-    try {
-      const res = await fetch('/api/chat/unread');
-      const d = await res.json();
-      const b = document.getElementById('navChatBadge');
-      if (!b) return;
-      if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; }
-      else { b.style.display = 'none'; }
-    } catch(e) {}
-  }
-  checkNavBadge();
-  setInterval(checkNavBadge, 15000);
-})();
-</script>
-{% endif %}
+    const TOSS_CLIENT_KEY = '{{ toss_client_key }}';
+    const SUB_PRICE = 2900;
 
-{% if current_user and current_user.role == 'admin' %}
-<script>
-(function() {
-  async function checkAdminBadge() {
-    try {
-      const res = await fetch('/api/chat/unread');
-      const d = await res.json();
-      const b = document.getElementById('adminChatBadge');
-      if (!b) return;
-      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; }
-      else { b.style.display = 'none'; }
-    } catch(e) {}
-  }
-  checkAdminBadge();
-  setInterval(checkAdminBadge, 15000);
-})();
+    async function handleSubscribe(e) {
+        e.preventDefault();
+        const email = document.getElementById('subscribe-email').value.trim();
+        if (!email) return;
+        const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+        const orderId = 'sub-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+        const successUrl = location.origin + '/subscribe/payment/success?email=' + encodeURIComponent(email);
+        const failUrl    = location.origin + '/subscribe/payment/fail';
+        try {
+            await tossPayments.requestPayment('카드', {
+                amount: SUB_PRICE, orderId, orderName: 'News Delivery 뉴스레터 구독',
+                successUrl, failUrl, customerEmail: email,
+            });
+        } catch (err) {
+            if (err.code !== 'USER_CANCEL') alert('결제 중 오류가 발생했습니다: ' + err.message);
+        }
+    }
+
+    async function toggleCategory(btn) {
+        const categoryId = parseInt(btn.dataset.id, 10);
+        const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            btn.classList.toggle('subscribed', data.subscribed);
+            const result = document.getElementById('sub-result');
+            result.textContent = data.subscribed ? '✅ 구독했어요!' : '구독 해지했어요.';
+            result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
+        }
+    }
+
+    (function() {
+        const role = "{{ current_user.role if current_user else '' }}";
+        if (!role) return;
+        async function checkNavBadge() {
+            try {
+                const res = await fetch('/api/chat/unread');
+                const d = await res.json();
+                if (role !== 'admin') {
+                    const b = document.getElementById('navChatBadge');
+                    if (b) { if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; } else { b.style.display = 'none'; } }
+                } else {
+                    const b = document.getElementById('adminChatBadge');
+                    if (b) { if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; } else { b.style.display = 'none'; } }
+                }
+            } catch(e) {}
+        }
+        checkNavBadge();
+        setInterval(checkNavBadge, 15000);
+    })();
 </script>
-{% endif %}
 
 {% endblock %}

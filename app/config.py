@@ -34,5 +34,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/oauth/google/callback"
 
+    SERVER_BASE_URL: str = "http://127.0.0.1:8000"
+
 
 settings = Settings()

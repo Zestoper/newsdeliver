@@ -9,6 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 from app.database import engine
+from app.config import settings
 from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.routers.news import router as news_router
@@ -174,7 +175,7 @@ KST = pytz.timezone("Asia/Seoul")
 
 def _newsletter_job():
     from app.routers.admin_api import run_newsletter_job
-    run_newsletter_job(base_url="http://127.0.0.1:8000")
+    run_newsletter_job(base_url=settings.SERVER_BASE_URL)
 
 def _fetch_news_job():
     from app.services.naver_news import fetch_and_save_news

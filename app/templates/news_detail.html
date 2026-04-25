@@ -41,7 +41,11 @@
   </nav>
 </header>
 
-<div class="detail-container">
+<div class="detail-container"
+     data-news-id="{{ news.id if news else 0 }}"
+     data-user-id="{{ current_user.id if current_user else '' }}"
+     data-user-role="{{ current_user.role if current_user else '' }}"
+     data-logged-in="{{ 'true' if current_user else 'false' }}">
 
   {% if news %}
   <div class="detail-box">
@@ -76,12 +80,12 @@
     </div>
 
     <div class="detail-actions">
-      <button class="btn-like {% if liked %}liked{% endif %}" onclick="toggleLike({{ news.id }})">
+      <button class="btn-like" id="btn-like" data-liked="{{ 'true' if liked else 'false' }}" onclick="toggleLike(NEWS_ID)">
         ♥ <span id="like-count">{{ like_count }}</span>
       </button>
       <button class="btn-share" onclick="copyUrl()">🔗 URL 복사</button>
       {% if current_user %}
-      <button class="btn-bookmark {% if bookmarked %}saved{% endif %}" id="btn-bookmark" onclick="toggleBookmark({{ news.id }})">
+      <button class="btn-bookmark" id="btn-bookmark" data-bookmarked="{{ 'true' if bookmarked else 'false' }}" onclick="toggleBookmark(NEWS_ID)">
         🔖 <span id="bookmark-label">{% if bookmarked %}저장됨{% else %}스크랩{% endif %}</span>
       </button>
       {% endif %}
@@ -130,7 +134,7 @@
     <h3>💬 댓글</h3>
 
     {% if current_user %}
-    <form class="comment-form" onsubmit="submitComment(event, {{ news.id }})">
+    <form class="comment-form" onsubmit="submitComment(event)">
       <textarea id="comment-input" placeholder="댓글을 입력하세요" required></textarea>
       <button type="submit" class="btn-comment">등록</button>
     </form>
@@ -172,9 +176,10 @@
 </div>
 
 <script>
-  const NEWS_ID = {{ news.id if news else 0 }};
-  const CURRENT_USER = "{{ 'true' if current_user else 'false' }}" === 'true';
-  const CURRENT_USER_ID = "{{ current_user.id if current_user else '' }}";
+  const _meta = document.querySelector('.detail-container');
+  const NEWS_ID = parseInt(_meta.dataset.newsId || '0', 10);
+  const CURRENT_USER = _meta.dataset.loggedIn === 'true';
+  const CURRENT_USER_ID = _meta.dataset.userId;
 
   function copyUrl() {
     navigator.clipboard.writeText(location.href).then(() => {
@@ -366,11 +371,11 @@
     await fetch(`/news/${NEWS_ID}/comments/${id}`, { method: 'DELETE' });
     loadComments();
   }
-  async function submitComment(e, newsId) {
+  async function submitComment(e) {
     e.preventDefault();
     const formData = new FormData();
     formData.append('content', document.getElementById('comment-input').value);
-    const res = await fetch(`/news/${newsId}/comments`, { method: 'POST', body: formData });
+    const res = await fetch(`/news/${NEWS_ID}/comments`, { method: 'POST', body: formData });
     const data = await res.json();
     if (data.success) {
       document.getElementById('comment-input').value = '';
@@ -379,6 +384,12 @@
   }
 
   loadComments();
+
+  // Apply server-rendered state from data attributes
+  const likeBtn = document.getElementById('btn-like');
+  if (likeBtn && likeBtn.dataset.liked === 'true') likeBtn.classList.add('liked');
+  const bookmarkBtn = document.getElementById('btn-bookmark');
+  if (bookmarkBtn && bookmarkBtn.dataset.bookmarked === 'true') bookmarkBtn.classList.add('saved');
 
   // 폰트 로딩 완료 후 실제 높이로 더보기 버튼 결정
   document.fonts.ready.then(function() {
@@ -406,42 +417,26 @@
   }
 </script>
 
-{% if current_user and current_user.role != 'admin' %}
 <script>
 (function() {
-  async function checkNavBadge() {
+  const role = document.querySelector('.detail-container').dataset.userRole;
+  if (!role) return;
+  async function checkBadge() {
     try {
       const res = await fetch('/api/chat/unread');
       const d = await res.json();
-      const b = document.getElementById('navChatBadge');
-      if (!b) return;
-      if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; }
-      else { b.style.display = 'none'; }
+      if (role !== 'admin') {
+        const b = document.getElementById('navChatBadge');
+        if (b) { if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; } else { b.style.display = 'none'; } }
+      } else {
+        const b = document.getElementById('adminChatBadge');
+        if (b) { if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; } else { b.style.display = 'none'; } }
+      }
     } catch(e) {}
   }
-  checkNavBadge();
-  setInterval(checkNavBadge, 15000);
+  checkBadge();
+  setInterval(checkBadge, 15000);
 })();
 </script>
-{% endif %}
-
-{% if current_user and current_user.role == 'admin' %}
-<script>
-(function() {
-  async function checkAdminBadge() {
-    try {
-      const res = await fetch('/api/chat/unread');
-      const d = await res.json();
-      const b = document.getElementById('adminChatBadge');
-      if (!b) return;
-      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; }
-      else { b.style.display = 'none'; }
-    } catch(e) {}
-  }
-  checkAdminBadge();
-  setInterval(checkAdminBadge, 15000);
-})();
-</script>
-{% endif %}
 
 {% endblock %}

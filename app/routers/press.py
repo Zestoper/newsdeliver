@@ -1,45 +1,12 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 from app.database import engine
 from app.services.store import is_duplicate_user
+from app.routers.pages import AUTH_COOKIE_NAME, get_current_user, render
 
 router = APIRouter(prefix="/press")
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-
-AUTH_COOKIE_NAME = "newsletter_user"
-
-
-def get_current_user(request: Request) -> dict | None:
-    user_id = request.cookies.get(AUTH_COOKIE_NAME)
-    if not user_id:
-        return None
-    with engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT * FROM news_users WHERE id = :id"),
-            {"id": user_id}
-        )
-        row = result.fetchone()
-        return dict(row._mapping) if row else None
-
-
-def render(request, template_name, *, message=None, message_type="success", form_data=None, focus=None, **extra):
-    context = {
-        "request": request,
-        "current_user": get_current_user(request),
-        "message": message,
-        "message_type": message_type,
-        "form_data": form_data or {},
-        "focus": focus,
-        **extra,
-    }
-    return templates.TemplateResponse(request, template_name, context)
 
 
 # ── 회원가입 ──

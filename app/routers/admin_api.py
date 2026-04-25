@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request, UploadFile, File
 from sqlalchemy import text
 from app.database import engine
+from app.config import settings
 from app.services.email import send_newsletter
 from app.services.ai_summary import summarize_articles
 
@@ -63,7 +64,7 @@ def _load_subscriber_articles() -> list[dict]:
     return result
 
 
-def run_newsletter_job(base_url: str = "http://127.0.0.1:8000") -> dict:
+def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
     """뉴스레터 일괄 발송 — 스케줄러와 API 엔드포인트 공용"""
     _newsletter_status["running"] = True
     _newsletter_status["message"] = "구독자 정보 불러오는 중..."
