@@ -1,14 +1,17 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=3.0" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.3" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
 <header class="site-header">
     <div class="header-top">
         <div class="header-left">
-        <div class="header-date">{{ now if now else '' }}</div>
-        <div class="weather-ticker" id="weatherTicker"></div>
-    </div>
+            <div class="header-left-meta">
+                <div class="header-date">{{ now if now else '' }}</div>
+                <div class="weather-ticker" id="weatherTicker"></div>
+            </div>
+            <div class="news-ticker-pill" id="newsTicker"></div>
+        </div>
         <div class="header-logo">
             <a href="/">📰 News Delivery</a>
         </div>
@@ -77,7 +80,7 @@
         <!-- 점 네비게이션 -->
         <div class="big5-dots">
             {% for news in big5_news %}
-            <span class="big5-dot {% if loop.first %}active{% endif %}" onclick="big5Go({{ loop.index0 }})"></span>
+            <span class="big5-dot {% if loop.first %}active{% endif %}" data-idx="{{ loop.index0 }}"></span>
             {% endfor %}
         </div>
     </section>
@@ -208,7 +211,38 @@
 
 </div><!-- .main-with-sidebar -->
 
+<script type="application/json" id="tickerData">
+[{% for news in news_items[:15] %}{"id":{{ news.id }},"title":{{ news.title | tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]
+</script>
+
 <script>
+const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textContent);
+
+(function () {
+  const el = document.getElementById('newsTicker');
+  if (!el || !TICKER_ITEMS.length) return;
+  let idx = 0;
+  let currentId = null;
+
+  el.addEventListener('click', function () {
+    if (currentId) window.location.href = '/news/' + currentId;
+  });
+
+  function show() {
+    const item = TICKER_ITEMS[idx];
+    idx = (idx + 1) % TICKER_ITEMS.length;
+    currentId = item.id;
+    el.innerHTML =
+      '<span class="nt-item">' +
+        '<span class="nt-badge">속보</span>' +
+        '<span class="nt-title">' + item.title + '</span>' +
+      '</span>';
+  }
+
+  show();
+  setInterval(show, 4000);
+})();
+
 (function () {
   const slides = document.querySelectorAll('.big5-slide');
   const dots   = document.querySelectorAll('.big5-dot');
@@ -236,6 +270,12 @@
 
   window.big5Move = function (dir) { go(cur + dir); resetTimer(); };
   window.big5Go   = function (idx) { go(idx);        resetTimer(); };
+
+  dots.forEach(function (dot) {
+    dot.addEventListener('click', function () {
+      big5Go(parseInt(this.dataset.idx, 10));
+    });
+  });
 
   autoPlay();
 })();

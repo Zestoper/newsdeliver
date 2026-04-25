@@ -43,7 +43,38 @@ body::before {
   align-items: center;
   position: relative;
 }
-.header-left { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.header-left { flex: 1; display: flex; flex-direction: row; align-items: center; gap: 14px; overflow: hidden; min-width: 0; }
+.header-left-meta { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+
+/* ── 속보 티커 (날씨와 동일 방식) ── */
+.news-ticker-pill {
+  overflow: hidden;
+  width: 230px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.news-ticker-pill:hover { border-color: var(--red); background: var(--red-bg); box-shadow: 0 0 0 3px rgba(212,43,43,0.07); }
+.nt-item {
+  position: absolute;
+  left: 0; top: 50%;
+  width: 100%;
+  padding: 0 10px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: wt-in 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+.nt-badge { font-size: 10px; font-weight: 900; color: var(--red); flex-shrink: 0; letter-spacing: 0.3px; }
+.nt-title { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .header-logo {
   position: absolute;
   left: 50%;
