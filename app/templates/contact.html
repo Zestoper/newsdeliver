@@ -86,7 +86,7 @@
 <!-- 헤더 -->
 <header class="site-header">
   <div class="header-top">
-    <div class="header-date"></div>
+    <div class="header-left"><div class="header-date"></div></div>
     <div class="header-logo">
       <a href="/">📰 News Delivery</a>
     </div>
@@ -95,7 +95,7 @@
         <span class="user-name">{{ current_user.name }}님</span>
         <a href="/mypage" class="header-btn outline">마이페이지</a>
         {% if current_user.role == 'admin' %}
-          <a href="/static/admin.html" class="header-btn">관리자</a>
+          <a href="/static/admin.html" class="header-btn" style="position:relative;">관리자<span id="adminChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a>
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
@@ -124,14 +124,6 @@
   </div>
 
   <div class="contact-cards">
-    <div class="contact-card">
-      <div class="contact-card-icon">✉️</div>
-      <h3>이메일 문의</h3>
-      <p>
-        궁금한 점은 아래 이메일로 연락 주세요.<br>
-        <a href="mailto:zestoper@naver.com">zestoper@naver.com</a>
-      </p>
-    </div>
     <div class="contact-card" style="display:flex;flex-direction:column;justify-content:space-between;">
       <div>
         <div class="contact-card-icon">💬</div>
@@ -147,10 +139,19 @@
         <a href="/login" style="display:block;margin-top:16px;padding:10px 20px;background:#c00;color:white;border-radius:8px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;">로그인 후 이용 가능</a>
       {% endif %}
     </div>
+    <div class="contact-card">
+      <div class="contact-card-icon">✉️</div>
+      <h3>이메일 문의</h3>
+      <p>
+        궁금한 점은 아래 이메일로 연락 주세요.<br>
+        <a href="mailto:zestoper@naver.com">zestoper@naver.com</a>
+      </p>
+    </div>
   </div>
 
   <div class="contact-notice">
-    <h3>📋 문의 안내</h3>
+    <h3>📋 이메일 
+      문의 안내</h3>
     <ul>
       <li>뉴스 구독 및 해지 관련 문의는 이메일로 연락해주세요.</li>
       <li>뉴스 콘텐츠 오류 신고는 제목에 [오류신고]를 포함해 보내주세요.</li>
@@ -305,6 +306,25 @@ async function checkUnread() {
 
 checkUnread();
 setInterval(checkUnread, 15000);
+</script>
+{% endif %}
+
+{% if current_user and current_user.role == 'admin' %}
+<script>
+(function() {
+  async function checkAdminBadge() {
+    try {
+      const res = await fetch('/api/chat/unread');
+      const d = await res.json();
+      const b = document.getElementById('adminChatBadge');
+      if (!b) return;
+      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; }
+      else { b.style.display = 'none'; }
+    } catch(e) {}
+  }
+  checkAdminBadge();
+  setInterval(checkAdminBadge, 15000);
+})();
 </script>
 {% endif %}
 

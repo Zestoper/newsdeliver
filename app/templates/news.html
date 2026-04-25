@@ -13,15 +13,16 @@
 <!-- 헤더 -->
 <header class="site-header">
   <div class="header-top">
-    <div class="header-date"></div>
+    <div class="header-left"><div class="header-date"></div></div>
     <div class="header-logo">
       <a href="/">📰 News Delivery</a>
     </div>
     <div class="header-actions">
       {% if current_user %}
         <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
         {% if current_user.role == 'admin' %}
-          <a href="/static/admin.html" class="header-btn">관리자</a>
+          <a href="/static/admin.html" class="header-btn" style="position:relative;">관리자<span id="adminChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a>
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
@@ -38,7 +39,7 @@
       <li><a href="/news" class="active"><span class="nav-icon">📰</span>뉴스</a></li>
       <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
       <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-      <li><a href="/contact"><span class="nav-icon">✉️</span>문의</a></li>
+      <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
     </ul>
   </nav>
 </header>
@@ -127,6 +128,44 @@
   {% endif %}
 
 </main>
+
+{% if current_user and current_user.role != 'admin' %}
+<script>
+(function() {
+  async function checkNavBadge() {
+    try {
+      const res = await fetch('/api/chat/unread');
+      const d = await res.json();
+      const b = document.getElementById('navChatBadge');
+      if (!b) return;
+      if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; }
+      else { b.style.display = 'none'; }
+    } catch(e) {}
+  }
+  checkNavBadge();
+  setInterval(checkNavBadge, 15000);
+})();
+</script>
+{% endif %}
+
+{% if current_user and current_user.role == 'admin' %}
+<script>
+(function() {
+  async function checkAdminBadge() {
+    try {
+      const res = await fetch('/api/chat/unread');
+      const d = await res.json();
+      const b = document.getElementById('adminChatBadge');
+      if (!b) return;
+      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; }
+      else { b.style.display = 'none'; }
+    } catch(e) {}
+  }
+  checkAdminBadge();
+  setInterval(checkAdminBadge, 15000);
+})();
+</script>
+{% endif %}
 
 <!-- 푸터 -->
 <footer class="site-footer">

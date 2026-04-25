@@ -156,6 +156,10 @@ def get_unread(request: Request):
             count = conn.execute(
                 text("SELECT COUNT(*) FROM chat_messages WHERE sender='user' AND is_read=0")
             ).scalar() or 0
+            rooms = conn.execute(
+                text("SELECT COUNT(DISTINCT room_id) FROM chat_messages WHERE sender='user' AND is_read=0")
+            ).scalar() or 0
+            return {"count": int(count), "rooms": int(rooms)}
         else:
             room = conn.execute(
                 text("SELECT id FROM chat_rooms WHERE user_id=:uid"), {"uid": user["id"]}
