@@ -21,5 +21,18 @@ class Settings(BaseSettings):
     TOSS_SECRET_KEY: str = ""
     SKIP_PAYMENT: bool = False
 
+    # 소셜 로그인
+    KAKAO_CLIENT_ID: str = ""
+    KAKAO_CLIENT_SECRET: str = ""
+    KAKAO_REDIRECT_URI: str = "http://localhost:8000/oauth/kakao/callback"
+
+    NAVER_OAUTH_CLIENT_ID: str = ""
+    NAVER_OAUTH_CLIENT_SECRET: str = ""
+    NAVER_OAUTH_REDIRECT_URI: str = "http://localhost:8000/oauth/naver/callback"
+
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/oauth/google/callback"
+
 
 settings = Settings()

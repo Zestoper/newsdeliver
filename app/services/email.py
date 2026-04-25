@@ -24,9 +24,13 @@ def _card_html(article: dict, base_url: str) -> str:
     content = article.get("content") or ""
     link = article.get("link") or (f"{base_url}/news/{news_id}" if news_id else "")
 
-    excerpt = content.replace("\n", " ").strip()[:120]
-    if len(content.replace("\n", " ").strip()) > 120:
-        excerpt += "…"
+    ai_summary = article.get("ai_summary", "")
+    if ai_summary:
+        excerpt = ai_summary
+    else:
+        excerpt = content.replace("\n", " ").strip()[:120]
+        if len(content.replace("\n", " ").strip()) > 120:
+            excerpt += "…"
 
     cat_emoji = _CAT_EMOJI.get(cat, "📰")
     cat_badge = (
@@ -56,6 +60,7 @@ def _card_html(article: dict, base_url: str) -> str:
         {cat_badge}
         {'<p style="font-size:11px;color:#adb5bd;margin-bottom:6px;">'+source+'</p>' if source else ''}
         <h3 style="font-size:17px;font-weight:800;color:#1a1a1a;margin:0 0 10px;line-height:1.45;">{title}</h3>
+        {'<p style="font-size:11px;color:#7c3aed;font-weight:700;margin:0 0 6px;">✦ AI 요약</p>' if ai_summary else ''}
         <p style="font-size:14px;color:#555;line-height:1.75;margin:0 0 16px;">{excerpt}</p>
         {btn}
       </div>
@@ -66,6 +71,7 @@ def send_newsletter(
     to_email: str,
     articles: list,
     base_url: str = "http://127.0.0.1:8000",
+    category_name: str = "",
 ) -> bool:
     if not articles or not to_email:
         return False
@@ -73,9 +79,9 @@ def send_newsletter(
     base_url = base_url.rstrip("/")
     cards = "".join(_card_html(a, base_url) for a in articles)
 
-    cats = sorted({a.get("category_name") for a in articles if a.get("category_name")})
-    subject_cats = " · ".join(cats) if cats else "뉴스"
-    subject = f"[News Delivery] 오늘의 {subject_cats} 뉴스 {len(articles)}건"
+    cat_label = category_name or (articles[0].get("category_name") or "뉴스")
+    cat_emoji = _CAT_EMOJI.get(cat_label, "📰")
+    subject = f"[News Delivery] {cat_emoji} {cat_label} 최신 뉴스 {len(articles)}건"
 
     html_body = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -121,7 +127,7 @@ def send_newsletter(
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SMTP_USER, to_email, msg.as_string())

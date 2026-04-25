@@ -226,8 +226,7 @@ def extract_image_from_url(url):
             
             if match:
                 return match.group(1)
-    except Exception as e:
-        print(f"이미지 추출 중 오류 발생: {e}")
+    except Exception:
         return None
     return None
 

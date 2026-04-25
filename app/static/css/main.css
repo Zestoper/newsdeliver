@@ -41,10 +41,55 @@ body::before {
   padding: 12px 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  position: relative;
 }
-.header-date { flex: 1; font-size: 12px; color: var(--light); letter-spacing: 0.3px; }
-.header-logo { flex: 1; text-align: center; }
+.header-left { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.header-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+.header-date { font-size: 12px; color: var(--light); letter-spacing: 0.3px; }
+
+/* ── 날씨 티커 ── */
+.weather-ticker {
+  overflow: hidden;
+  width: 150px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.weather-ticker:hover {
+  border-color: var(--red);
+  background: var(--red-bg);
+  box-shadow: 0 0 0 3px rgba(212,43,43,0.07);
+}
+.wt-item {
+  position: absolute;
+  left: 0; top: 50%;
+  width: 100%;
+  padding: 0 13px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  animation: wt-in 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes wt-in {
+  from { transform: translateY(calc(-50% - 28px)); }
+  to   { transform: translateY(-50%); }
+}
+.wt-city { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+.wt-icon { font-size: 13px; line-height: 1; }
+.wt-temp { font-size: 13px; font-weight: 700; color: var(--red); margin-left: auto; }
 .header-logo a {
   font-size: 24px;
   font-weight: 900;
@@ -53,7 +98,7 @@ body::before {
   transition: opacity 0.2s;
 }
 .header-logo a:hover { opacity: 0.8; }
-.header-actions { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .user-name { font-size: 13px; color: var(--muted); margin-right: 2px; }
 
 .header-btn {
@@ -403,8 +448,41 @@ body::before {
 .main-with-sidebar { display: flex; align-items: stretch; max-width: 1320px; margin: 0 auto; }
 .main-with-sidebar .main-content { flex: 1; min-width: 0; max-width: none; margin: 0; }
 
-/* ── 실시간 인기 사이드바 ── */
-.popular-sidebar { width: 196px; flex-shrink: 0; padding: 20px 0 20px 14px; }
+/* ── 시장 지수 사이드바 (왼쪽) ── */
+.market-sidebar { width: 100%; }
+.market-list { padding: 6px 0; }
+.market-loading { font-size: 12px; color: var(--light); padding: 12px; text-align: center; }
+.market-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 8px 13px 4px;
+}
+.market-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 13px;
+  gap: 6px;
+  transition: background 0.12s;
+  cursor: default;
+}
+.market-item:hover { background: #FAFAF8; }
+.market-name { font-size: 11px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+.market-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.market-value { font-size: 12px; font-weight: 700; color: var(--text); }
+.market-change { font-size: 10px; font-weight: 600; }
+.market-change.up   { color: #DC2626; }
+.market-change.down { color: #2563EB; }
+.market-change.even { color: var(--light); }
+.market-divider { height: 1px; background: var(--border); margin: 4px 0; }
+@media (max-width: 1080px) { .right-col { display: none; } }
+
+/* ── 오른쪽 사이드바 ── */
+.right-col { width: 196px; flex-shrink: 0; padding: 8px 0 20px 14px; }
+@media (max-width: 1080px) { .right-col { display: none; } }
 .sidebar-sticky {
   position: sticky;
   top: 106px;
@@ -451,7 +529,6 @@ body::before {
   transition: color 0.12s;
 }
 .sidebar-news-time { font-size: 10px; color: var(--light); }
-@media (max-width: 1080px) { .popular-sidebar { display: none; } }
 
 /* ── 헤드라인 카드 ── */
 .headline-section { margin-bottom: 36px; }

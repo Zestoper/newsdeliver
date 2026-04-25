@@ -3,10 +3,25 @@
 {% block title %}{{ news.title if news else '뉴스 없음' }} - News Delivery{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=8" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/detail.css') }}?v=9" />
 {% endblock %}
 
+{% block back_btn %}{% endblock %}
+
 {% block content %}
+<header class="detail-header">
+  <div class="detail-header-inner">
+    <a href="/" class="detail-logo">📰 News Delivery</a>
+    <nav class="detail-nav">
+      <a href="/">홈</a>
+      <a href="/news">뉴스</a>
+      <a href="/search">검색</a>
+      <a href="/subscribe">구독</a>
+    </nav>
+    <button class="detail-back-btn" onclick="history.back()">← 뒤로</button>
+  </div>
+</header>
+
 <div class="detail-container">
 
   {% if news %}

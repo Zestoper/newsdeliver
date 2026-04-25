@@ -105,6 +105,7 @@
   </div>
 
   <!-- 비밀번호 변경 -->
+  {% if not current_user.oauth_provider %}
   <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">
     <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">🔒 비밀번호 변경</h3>
 
@@ -140,6 +141,7 @@
       </button>
     </form>
   </div>
+  {% endif %}
 
   <!-- 좋아요한 뉴스 -->
   <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">

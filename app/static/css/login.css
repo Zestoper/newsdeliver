@@ -143,6 +143,42 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
 .user-btn  { background: #1F2937; color: white; }
 .press-btn { background: #1D4ED8; color: white; }
 
+/* ── 소셜 로그인 ── */
+.social-login { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  font-family: inherit;
+  transition: opacity 0.2s, transform 0.15s;
+  cursor: pointer;
+}
+.social-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.kakao-btn  { background: #FEE500; color: #191600; }
+.naver-btn  { background: #03C75A; color: #FFFFFF; }
+.google-btn { background: #FFFFFF; color: #1A1A1A; border: 1.5px solid #E5E4E0; }
+
+.naver-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: white;
+  color: #03C75A;
+  font-size: 13px;
+  font-weight: 900;
+  border-radius: 3px;
+}
+
 /* ── 메인으로 ── */
 .back-home { text-align: center; }
 .back-home a { font-size: 13px; color: var(--light); transition: color 0.2s; }

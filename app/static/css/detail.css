@@ -13,7 +13,69 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
-.detail-container { max-width: 820px; margin: 36px auto 80px; padding: 0 24px; }
+/* ── 상단 네비게이션 ── */
+.detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.detail-header-inner {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.detail-logo {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--red);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.detail-logo:hover { color: var(--red-h); }
+.detail-nav {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+.detail-nav a {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.detail-nav a:hover { background: var(--bg); color: var(--text); }
+.detail-back-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+  background: white;
+  border: 1.5px solid var(--red);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.detail-back-btn:hover { background: var(--red-bg); }
+@media (max-width: 520px) {
+  .detail-nav { display: none; }
+  .detail-logo { font-size: 15px; }
+}
+
+.detail-container { max-width: 820px; margin: 28px auto 80px; padding: 0 24px; }
 
 .detail-box {
   background: var(--surface);

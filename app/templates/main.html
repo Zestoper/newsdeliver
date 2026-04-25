@@ -1,11 +1,14 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=2.0" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.0" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
 <header class="site-header">
     <div class="header-top">
+        <div class="header-left">
         <div class="header-date">{{ now if now else '' }}</div>
+        <div class="weather-ticker" id="weatherTicker"></div>
+    </div>
         <div class="header-logo">
             <a href="/">📰 News Delivery</a>
         </div>
@@ -41,6 +44,7 @@
 
 <!-- 메인 콘텐츠 -->
 <div class="main-with-sidebar">
+
 <main class="main-content">
 
     <!-- BIG5 슬라이더 -->
@@ -165,10 +169,11 @@
     {% endif %}
 </main>
 
-<!-- 실시간 인기 사이드바 -->
+<!-- 오른쪽 사이드바 -->
 {% if top_viewed %}
-<aside class="popular-sidebar">
+<div class="right-col">
   <div class="sidebar-sticky">
+    <!-- 실시간 인기뉴스 -->
     <div class="sidebar-header">
       <span class="sidebar-title">실시간 인기뉴스</span>
       <span class="sidebar-updated">조회수 기준</span>
@@ -188,8 +193,17 @@
       </li>
       {% endfor %}
     </ol>
+
+    <!-- 시장 지수 -->
+    <div class="sidebar-header" style="margin-top:10px;">
+      <span class="sidebar-title">시장 지수</span>
+      <span class="sidebar-updated" id="marketTime">--</span>
+    </div>
+    <div class="market-list" id="marketList">
+      <div class="market-loading">불러오는 중...</div>
+    </div>
   </div>
-</aside>
+</div>
 {% endif %}
 
 </div><!-- .main-with-sidebar -->
@@ -224,6 +238,125 @@
   window.big5Go   = function (idx) { go(idx);        resetTimer(); };
 
   autoPlay();
+})();
+</script>
+
+<script>
+(async function initMarket() {
+  const el = document.getElementById('marketList');
+  const timeEl = document.getElementById('marketTime');
+  if (!el) return;
+
+  function changeClass(state, change) {
+    const n = parseFloat((change || '0').replace(/,/g, ''));
+    if (state === 'RISE' || n > 0) return 'up';
+    if (state === 'FALL' || n < 0) return 'down';
+    return 'even';
+  }
+  function arrow(cls) { return cls === 'up' ? '▲' : cls === 'down' ? '▼' : ''; }
+
+  function row(name, value, change, rate, cls) {
+    return `<div class="market-item">
+      <span class="market-name">${name}</span>
+      <span class="market-right">
+        <span class="market-value">${value}</span>
+        <span class="market-change ${cls}">${arrow(cls)} ${change}${rate ? ' (' + rate + '%)' : ''}</span>
+      </span>
+    </div>`;
+  }
+
+  try {
+    const res = await fetch('/api/market');
+    const d = await res.json();
+    let html = '';
+
+    html += '<div class="market-section-label">지수</div>';
+    if (d.KOSPI) {
+      const cls = changeClass(d.KOSPI.state, d.KOSPI.change);
+      html += row('KOSPI', d.KOSPI.value, d.KOSPI.change, d.KOSPI.rate, cls);
+    }
+    if (d.KOSDAQ) {
+      const cls = changeClass(d.KOSDAQ.state, d.KOSDAQ.change);
+      html += row('KOSDAQ', d.KOSDAQ.value, d.KOSDAQ.change, d.KOSDAQ.rate, cls);
+    }
+
+    html += '<div class="market-divider"></div>';
+    html += '<div class="market-section-label">환율 (원)</div>';
+    if (d.USD_KRW) html += row('달러', d.USD_KRW.toLocaleString(), '', '', 'even');
+    if (d.EUR_KRW) html += row('유로', d.EUR_KRW.toLocaleString(), '', '', 'even');
+    if (d.JPY_KRW) html += row('100엔', d.JPY_KRW.toLocaleString(), '', '', 'even');
+    if (d.CNY_KRW) html += row('위안', d.CNY_KRW.toLocaleString(), '', '', 'even');
+
+    el.innerHTML = html;
+    const now = new Date();
+    if (timeEl) timeEl.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 기준`;
+  } catch {
+    el.innerHTML = '<div class="market-loading">불러오기 실패</div>';
+  }
+})();
+
+(function() {
+  const CITIES = [
+    { name: '서울', lat: 37.5665, lon: 126.9780 },
+    { name: '부산', lat: 35.1796, lon: 129.0756 },
+    { name: '인천', lat: 37.4563, lon: 126.7052 },
+    { name: '대구', lat: 35.8714, lon: 128.6014 },
+    { name: '대전', lat: 36.3504, lon: 127.3845 },
+    { name: '광주', lat: 35.1595, lon: 126.8526 },
+    { name: '울산', lat: 35.5384, lon: 129.3114 },
+    { name: '제주', lat: 33.4996, lon: 126.5312 },
+  ];
+
+  function wIcon(code) {
+    if (code === 0) return '☀️';
+    if (code <= 3)  return '⛅';
+    if (code <= 48) return '🌫️';
+    if (code <= 67) return '🌧️';
+    if (code <= 77) return '❄️';
+    if (code <= 82) return '🌦️';
+    return '⛈️';
+  }
+
+  async function loadWeather() {
+    const results = await Promise.all(CITIES.map(async (c) => {
+      try {
+        const r = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}` +
+          `&current=temperature_2m,weather_code&timezone=Asia%2FSeoul`
+        );
+        const d = await r.json();
+        return { name: c.name, temp: Math.round(d.current.temperature_2m), icon: wIcon(d.current.weather_code) };
+      } catch {
+        return { name: c.name, temp: '--', icon: '🌡' };
+      }
+    }));
+
+    const el = document.getElementById('weatherTicker');
+    if (!el) return;
+    let idx = 0;
+
+    let currentCity = '';
+    el.addEventListener('click', () => {
+      if (currentCity) window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(currentCity + ' 날씨')}`, '_blank');
+    });
+
+    function show() {
+      const w = results[idx];
+      idx = (idx + 1) % results.length;
+      currentCity = w.name;
+      el.innerHTML =
+        `<span class="wt-item">` +
+        `<span class="wt-city">${w.name}</span>` +
+        `<span class="wt-icon">${w.icon}</span>` +
+        `<span class="wt-temp">${w.temp}°</span>` +
+        `</span>`;
+    }
+
+    show();
+    setInterval(show, 3000);
+  }
+
+  loadWeather();
 })();
 </script>
 

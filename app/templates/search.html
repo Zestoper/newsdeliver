@@ -1,53 +1,92 @@
-    {% extends "base.html" %}
+{% extends "base.html" %}
 
-    {% block title %}검색 - News Delivery{% endblock %}
+{% block title %}검색 - News Delivery{% endblock %}
 
-    {% block head %}
-    <link rel="stylesheet" href="{{ request.url_for('static', path='css/search.css') }}?v=2.0">
-    {% endblock %}
+{% block head %}
+<link rel="stylesheet" href="/static/css/main.css?v=2.0">
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/search.css') }}?v=4.0">
+{% endblock %}
 
-    {% block content %}
-    <div class="search-container">
-    <h2>🔍 뉴스 검색</h2>
+{% block back_btn %}{% endblock %}
 
-    <form class="search-form" action="/search" method="get">
-        <div class="search-row">
-        <input type="text" name="q" placeholder="키워드를 입력하세요" value="{{ q }}" class="search-input">
-        <select name="source" class="search-select">
-            <option value="">전체 언론사</option>
-            {% for s in sources %}
-            <option value="{{ s }}" {% if s == selected_source %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="search-btn">검색</button>
-        </div>
-    </form>
+{% block content %}
 
-    <div class="search-result-info">
-        {% if q or selected_source %}
-        <p>
-            {% if q %}<strong>"{{ q }}"</strong> {% endif %}
-            {% if selected_source %}· <strong>{{ selected_source }}</strong> {% endif %}
-            검색 결과 <strong>{{ news_items|length }}건</strong>
-        </p>
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-date"></div>
+    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        {% if current_user.role == 'admin' %}
+          <a href="/static/admin.html" class="header-btn">관리자</a>
+        {% elif current_user.role == 'press' %}
+          <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% else %}
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+      {% endif %}
     </div>
-
-    <ul class="search-list">
-        {% for news in news_items %}
-        <li class="search-item">
-            <a href="/news/{{ news.id }}">
-            <div class="search-item-header">
-                <span class="search-source">{{ news.source or '출처 없음' }}</span>
-                <span class="search-date">{{ news.created_at.strftime('%Y-%m-%d') if news.created_at else '' }}</span>
-            </div>
-            <h3 class="search-title">{{ news.title }}</h3>
-            <p class="search-summary">{{ news.get('content', '')[:120] }}...</p>
-            </a>
-        </li>
-        {% else %}
-        <li class="search-empty">검색 결과가 없어요.</li>
-        {% endfor %}
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
+      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+      <li><a href="/search" class="active"><span class="nav-icon">🔍</span>검색</a></li>
+      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+      <li><a href="/contact"><span class="nav-icon">✉️</span>문의</a></li>
     </ul>
+  </nav>
+</header>
+
+<main class="main-content">
+
+<div class="search-container">
+  <h2>🔍 뉴스 검색</h2>
+
+  <form class="search-form" action="/search" method="get">
+    <div class="search-row">
+      <input type="text" name="q" placeholder="키워드를 입력하세요" value="{{ q }}" class="search-input">
+      <select name="source" class="search-select">
+        <option value="">전체 언론사</option>
+        {% for s in sources %}
+        <option value="{{ s }}" {% if s == selected_source %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="search-btn">검색</button>
     </div>
-    {% endblock %}
+  </form>
+
+  <div class="search-result-info">
+    {% if q or selected_source %}
+    <p>
+      {% if q %}<strong>"{{ q }}"</strong> {% endif %}
+      {% if selected_source %}· <strong>{{ selected_source }}</strong> {% endif %}
+      검색 결과 <strong>{{ news_items|length }}건</strong>
+    </p>
+    {% endif %}
+  </div>
+
+  <ul class="search-list">
+    {% for news in news_items %}
+    <li class="search-item">
+      <a href="/news/{{ news.id }}">
+        <div class="search-item-header">
+          <span class="search-source">{{ news.source or '출처 없음' }}</span>
+          <span class="search-date">{{ news.created_at.strftime('%Y-%m-%d') if news.created_at else '' }}</span>
+        </div>
+        <h3 class="search-title">{{ news.title }}</h3>
+        <p class="search-summary">{{ news.get('content', '')[:120] }}...</p>
+      </a>
+    </li>
+    {% else %}
+    <li class="search-empty">검색 결과가 없어요.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+</main>
+
+{% endblock %}

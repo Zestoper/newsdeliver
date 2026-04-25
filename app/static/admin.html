@@ -837,11 +837,34 @@
   // ── 이메일 발송 ──
   async function sendNewsletter() {
     if (!confirm('최신 뉴스를 전체 구독자에게 발송할까요?')) return;
+    const el = document.getElementById('send-result');
+    const btn = document.querySelector('[onclick="sendNewsletter()"]');
+
     const res  = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
     const data = await res.json();
-    const el   = document.getElementById('send-result');
+
+    if (!data.success) {
+      el.textContent = data.message;
+      el.style.color = '#ef4444';
+      return;
+    }
+
+    btn.disabled = true;
+    el.style.color = '#888';
     el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
+
+    const poll = setInterval(async () => {
+      try {
+        const sr = await fetch(`${ADMIN_API}/newsletter-status`);
+        const st = await sr.json();
+        el.textContent = st.message;
+        if (!st.running) {
+          clearInterval(poll);
+          btn.disabled = false;
+          el.style.color = st.success ? '#16a34a' : '#ef4444';
+        }
+      } catch { clearInterval(poll); btn.disabled = false; }
+    }, 3000);
   }
 
   // ── 뉴스 API 도구 ──

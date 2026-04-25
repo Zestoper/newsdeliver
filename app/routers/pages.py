@@ -1,5 +1,6 @@
 from pathlib import Path
 import secrets
+import httpx
 from app.services.naver_news import extract_press_name
 
 from fastapi import APIRouter, Form, Request
@@ -121,8 +122,18 @@ async def home(request: Request) -> HTMLResponse:
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, message: str | None = None) -> HTMLResponse:
-    return render(request, "login.html", message=message, message_type="success")
+async def login_page(request: Request, message: str | None = None, social_error: str | None = None) -> HTMLResponse:
+    social_msg = None
+    if social_error:
+        labels = {"kakao": "카카오", "naver": "네이버", "google": "구글"}
+        label = labels.get(social_error, "소셜")
+        social_msg = f"{label} 로그인에 실패했습니다. 앱 키 설정을 확인해주세요."
+    return render(request, "login.html",
+                  message=social_msg or message,
+                  message_type="error" if social_error else "success",
+                  has_kakao=bool(settings.KAKAO_CLIENT_ID),
+                  has_naver=bool(settings.NAVER_OAUTH_CLIENT_ID),
+                  has_google=bool(settings.GOOGLE_CLIENT_ID))
 
 
 @router.post("/login", response_class=HTMLResponse)
@@ -839,6 +850,13 @@ async def report_news(request: Request, news_id: int, reason: str = Form("")):
     if not user:
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
     with engine.connect() as conn:
+        # 하루 신고 횟수 체크 (최대 10건)
+        today_count = conn.execute(
+            text("SELECT COUNT(*) FROM reports WHERE reporter_id=:uid AND DATE(created_at)=CURDATE()"),
+            {"uid": user["id"]}
+        ).scalar()
+        if today_count >= 10:
+            return JSONResponse({"success": False, "message": "오늘 신고 가능 횟수(10건)를 초과했습니다. 추가 신고는 관리자에게 문의해주세요."})
         existing = conn.execute(
             text("SELECT id FROM reports WHERE news_id=:nid AND reporter_id=:uid"),
             {"nid": news_id, "uid": user["id"]}
@@ -884,6 +902,45 @@ async def toggle_category_subscribe(request: Request, category_id: int):
             subscribed = True
         conn.commit()
     return JSONResponse({"success": True, "subscribed": subscribed})
+
+
+@router.get("/api/market")
+async def market_data():
+    """KOSPI·KOSDAQ·환율 데이터 프록시"""
+    result = {}
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+
+    async with httpx.AsyncClient(timeout=5, headers=headers) as client:
+        # 지수
+        for code in ("KOSPI", "KOSDAQ"):
+            try:
+                r = await client.get(f"https://m.stock.naver.com/api/index/{code}/basic")
+                d = r.json()
+                result[code] = {
+                    "value": d.get("closePrice", "-"),
+                    "change": d.get("compareToPreviousClosePrice", "0"),
+                    "rate": d.get("fluctuationsRatio", "0"),
+                    "state": d.get("fluctuationCode", "EVEN"),
+                }
+            except Exception:
+                pass
+
+        # 환율 (USD 기준)
+        try:
+            r = await client.get("https://open.er-api.com/v6/latest/USD")
+            rates = r.json().get("rates", {})
+            krw = rates.get("KRW", 0)
+            result["USD_KRW"] = round(krw)
+            if rates.get("EUR"):
+                result["EUR_KRW"] = round(krw / rates["EUR"])
+            if rates.get("JPY"):
+                result["JPY_KRW"] = round(krw / rates["JPY"] * 100)
+            if rates.get("CNY"):
+                result["CNY_KRW"] = round(krw / rates["CNY"])
+        except Exception:
+            pass
+
+    return result
 
 
 @router.get("/my-subscriptions")
