@@ -379,6 +379,44 @@ def delete_reported_post(report_id: int):
     return {"success": True}
 
 
+@router.get("/press-members")
+def get_press_members():
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT id, name, email, tel, created_at, press_approved
+            FROM news_users
+            WHERE role = 'press'
+            ORDER BY press_approved ASC, created_at DESC
+        """)).fetchall()
+    result = []
+    for row in rows:
+        d = dict(row._mapping)
+        if d["created_at"]:
+            d["created_at"] = d["created_at"].strftime("%Y-%m-%d %H:%M")
+        result.append(d)
+    return result
+
+
+@router.post("/press/{user_id}/approve")
+def approve_press(user_id: str):
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE news_users SET press_approved = 1 WHERE id = :id AND role = 'press'"),
+            {"id": user_id}
+        )
+        conn.commit()
+    return {"success": True}
+
+
+@router.post("/press/{user_id}/reject")
+def reject_press(user_id: str):
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM news WHERE author_id = :id"), {"id": user_id})
+        conn.execute(text("DELETE FROM news_users WHERE id = :id AND role = 'press'"), {"id": user_id})
+        conn.commit()
+    return {"success": True}
+
+
 @router.get("/stats")
 def get_stats():
     with engine.connect() as conn:

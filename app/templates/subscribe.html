@@ -1,7 +1,40 @@
 {% extends "base.html" %} {% block title %}구독하기 - News Delivery{% endblock %} {% block head %}
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.4" />
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}?v=2.0" />
 <script src="https://js.tosspayments.com/v1/payment"></script>
-{% endblock %} {% block content %}
+{% endblock %} {% block back_btn %}{% endblock %} {% block content %}
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left"><div class="header-date"></div></div>
+    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
+        {% if current_user.role == 'admin' %}
+          <a href="/static/admin.html" class="header-btn" style="position:relative;">관리자<span id="adminChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a>
+        {% elif current_user.role == 'press' %}
+          <a href="/press/news" class="header-btn">언론사</a>
+        {% endif %}
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% else %}
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+      {% endif %}
+    </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
+      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
+      <li><a href="/subscribe" class="active"><span class="nav-icon">🔔</span>구독</a></li>
+      <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+    </ul>
+  </nav>
+</header>
+
 <div class="subscribe-container">
     <h1>🔔 구독 서비스</h1>
     <p class="sub-desc">관심 카테고리를 선택하고 이메일을 입력하세요.</p>
@@ -150,4 +183,43 @@
     </div>
     {% endif %}
 </div>
+
+{% if current_user and current_user.role != 'admin' %}
+<script>
+(function() {
+  async function checkNavBadge() {
+    try {
+      const res = await fetch('/api/chat/unread');
+      const d = await res.json();
+      const b = document.getElementById('navChatBadge');
+      if (!b) return;
+      if (d.count > 0) { b.textContent = d.count; b.style.display = 'inline-block'; }
+      else { b.style.display = 'none'; }
+    } catch(e) {}
+  }
+  checkNavBadge();
+  setInterval(checkNavBadge, 15000);
+})();
+</script>
+{% endif %}
+
+{% if current_user and current_user.role == 'admin' %}
+<script>
+(function() {
+  async function checkAdminBadge() {
+    try {
+      const res = await fetch('/api/chat/unread');
+      const d = await res.json();
+      const b = document.getElementById('adminChatBadge');
+      if (!b) return;
+      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-block'; }
+      else { b.style.display = 'none'; }
+    } catch(e) {}
+  }
+  checkAdminBadge();
+  setInterval(checkAdminBadge, 15000);
+})();
+</script>
+{% endif %}
+
 {% endblock %}

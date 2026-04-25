@@ -30,7 +30,7 @@
       <div class="message {{ message_type }}">{{ message }}</div>
     {% endif %}
 
-    <form class="signup-form" action="/press/signup" method="post">
+    <form class="signup-form" action="/press/signup" method="post" onsubmit="return validatePressForm()">
       <div class="form-row">
         <div class="input-group">
           <label for="name">언론사명</label>
@@ -55,7 +55,16 @@
       <div class="input-group">
         <label for="password">비밀번호</label>
         <input id="password" name="password" type="password"
-               placeholder="비밀번호 (8자 이상)" required>
+               placeholder="비밀번호 입력" required>
+        <span class="field-hint">8자 이상, 특수문자는 . ! @ 만 허용</span>
+        <span class="field-error" id="pwErr"></span>
+      </div>
+
+      <div class="input-group">
+        <label for="password_confirm">비밀번호 확인</label>
+        <input id="password_confirm" name="password_confirm" type="password"
+               placeholder="비밀번호 재입력" required>
+        <span class="field-error" id="pwConfirmErr"></span>
       </div>
 
       <div class="input-group">
@@ -63,13 +72,28 @@
         <input id="email" name="email" type="email"
                placeholder="example@press.com"
                value="{{ form_data.get('email', '') }}" required>
+        <span class="field-hint">example@domain.com 형식</span>
+        <span class="field-error" id="emailErr"></span>
       </div>
 
       <div class="input-group">
-        <label for="phone">전화번호</label>
-        <input id="phone" name="phone" type="tel"
-               placeholder="010-0000-0000"
-               value="{{ form_data.get('phone', '') }}" required>
+        <label>전화번호</label>
+        <input type="hidden" id="phone" name="phone">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input id="phone1" type="tel" maxlength="3" placeholder="010"
+                 style="width:56px;padding:9px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="pressPhoneInput(this,'phone1')" required>
+          <span style="color:#9ca3af;font-weight:700;">-</span>
+          <input id="phone2" type="tel" maxlength="4" placeholder="1234"
+                 style="width:68px;padding:9px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="pressPhoneInput(this,'phone2')">
+          <span style="color:#9ca3af;font-weight:700;">-</span>
+          <input id="phone3" type="tel" maxlength="4" placeholder="1234"
+                 style="width:68px;padding:9px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="pressPhoneInput(this,'phone3')">
+        </div>
+        <span class="field-hint">숫자만 입력</span>
+        <span class="field-error" id="phoneErr"></span>
       </div>
 
       <button type="submit" class="btn-signup" style="background:#1a1a2e;">가입하기</button>
@@ -84,6 +108,64 @@
   </div>
 
 </div>
+
+<style>
+  .field-hint  { display:block; font-size:10px; color:#9ca3af; margin-top:2px; }
+  .field-error { display:block; font-size:10px; color:#c00; }
+</style>
+
+<script>
+  function pressPhoneInput(input, id) {
+    input.value = input.value.replace(/\D/g, '');
+    const p1 = document.getElementById('phone1').value;
+    const p2 = document.getElementById('phone2').value;
+    const p3 = document.getElementById('phone3').value;
+    document.getElementById('phone').value = p1 + '-' + p2 + '-' + p3;
+    if (id === 'phone1' && input.value.length === 3) document.getElementById('phone2').focus();
+    if (id === 'phone2' && input.value.length === 4) document.getElementById('phone3').focus();
+  }
+
+  function validatePressForm() {
+    let ok = true;
+
+    // 비밀번호
+    const pw = document.getElementById('password').value;
+    const pwErr = document.getElementById('pwErr');
+    if (pw.length < 8 || !/^[a-zA-Z0-9가-힣.!@]*$/.test(pw)) {
+      pwErr.textContent = '8자 이상, 허용된 특수문자(. ! @)만 사용하세요.';
+      ok = false;
+    } else { pwErr.textContent = ''; }
+
+    // 비밀번호 확인
+    const pwConfirm = document.getElementById('password_confirm').value;
+    const pwConfirmErr = document.getElementById('pwConfirmErr');
+    if (pw !== pwConfirm) {
+      pwConfirmErr.textContent = '비밀번호가 일치하지 않습니다.';
+      ok = false;
+    } else { pwConfirmErr.textContent = ''; }
+
+    // 이메일
+    const email = document.getElementById('email').value;
+    const emailErr = document.getElementById('emailErr');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailErr.textContent = '올바른 이메일 형식이 아닙니다.';
+      ok = false;
+    } else { emailErr.textContent = ''; }
+
+    // 전화번호
+    const p1 = document.getElementById('phone1').value;
+    const p2 = document.getElementById('phone2').value;
+    const p3 = document.getElementById('phone3').value;
+    document.getElementById('phone').value = p1 + '-' + p2 + '-' + p3;
+    const phoneErr = document.getElementById('phoneErr');
+    if (!/^\d{3}-\d{4}-\d{4}$/.test(document.getElementById('phone').value)) {
+      phoneErr.textContent = '전화번호를 모두 입력해주세요.';
+      ok = false;
+    } else { phoneErr.textContent = ''; }
+
+    return ok;
+  }
+</script>
 
 {% if focus %}
 <script>

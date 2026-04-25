@@ -2,7 +2,7 @@
 {% block title %}내 뉴스 관리 - News Delivery{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=2.0">
+<link rel="stylesheet" href="/static/css/main.css?v=3.4">
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}?v=2">
 {% endblock %}
 
@@ -11,7 +11,7 @@
 {% block content %}
 <header class="site-header">
   <div class="header-top">
-    <div class="header-date"></div>
+    <div class="header-left"><div class="header-date"></div></div>
     <div class="header-logo"><a href="/">📰 News Delivery</a></div>
     <div class="header-actions">
       {% if current_user %}
@@ -31,9 +31,26 @@
 </header>
 
 <div class="press-container">
+  {% if not press_approved %}
+  <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="font-size:28px;line-height:1;">⏳</div>
+    <div>
+      <div style="font-weight:800;font-size:15px;color:#856404;margin-bottom:4px;">관리자 승인 대기 중입니다</div>
+      <div style="font-size:13px;color:#6b5300;line-height:1.6;">
+        가입 신청이 접수되었습니다. 관리자 승인 후 기사를 작성할 수 있습니다.<br>
+        승인까지 시간이 걸릴 수 있으며, 승인 완료 시 글쓰기가 활성화됩니다.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="press-header">
     <h2>📚 내 뉴스 관리</h2>
+    {% if press_approved %}
     <a href="/press/write" class="btn-new">+ 새 뉴스 작성</a>
+    {% else %}
+    <span class="btn-new" style="opacity:0.4;cursor:not-allowed;pointer-events:none;">+ 새 뉴스 작성</span>
+    {% endif %}
   </div>
 
   <table class="press-table">
@@ -60,7 +77,9 @@
         </td>
         <td>{{ news.created_at.strftime('%Y-%m-%d') if news.created_at else '' }}</td>
         <td>
+          {% if press_approved %}
           <a href="/press/edit/{{ news.id }}" class="btn-edit">수정</a>
+          {% endif %}
           <a href="/press/delete/{{ news.id }}" onclick="return confirm('삭제할까요?');" class="btn-del">삭제</a>
         </td>
       </tr>
@@ -79,4 +98,5 @@
     <p class="footer-copy">© 2026 News Delivery. All rights reserved.</p>
   </div>
 </footer>
+
 {% endblock %}

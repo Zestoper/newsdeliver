@@ -22,7 +22,6 @@
     <div class="header-left">
       <div class="header-left-meta">
         <div class="header-date" id="headerDate"></div>
-        <div class="weather-ticker" id="weatherTicker"></div>
       </div>
     </div>
     <div class="header-logo"><a href="/">📰 News Delivery</a></div>
@@ -233,6 +232,18 @@
     {% endif %}
   </div>
 
+  <!-- 회원탈퇴 -->
+  <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:10px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">🗑 회원 탈퇴</h3>
+    <p style="font-size:13px; color:#868e96; margin-bottom:16px; line-height:1.6;">탈퇴 시 계정 및 모든 활동 내역(좋아요, 북마크, 댓글, 구독 정보)이 영구 삭제되며 복구할 수 없습니다.</p>
+    <form action="/mypage/withdraw" method="post" onsubmit="return confirm('정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.');">
+      <button type="submit"
+              style="padding:10px 24px; background:white; color:#c00; border:1.5px solid #c00; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">
+        회원 탈퇴
+      </button>
+    </form>
+  </div>
+
 </main>
 
 <script>
@@ -240,25 +251,6 @@
   const d = new Date();
   const el = document.getElementById('headerDate');
   if (el) el.textContent = d.toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
-
-  async function loadWeather() {
-    const box = document.getElementById('weatherTicker');
-    if (!box) return;
-    try {
-      const r = await fetch('/api/weather');
-      const data = await r.json();
-      if (!data || !data.length) return;
-      let idx = 0;
-      function show() {
-        const item = data[idx % data.length];
-        box.innerHTML = `<div class="wt-item"><span class="wt-city">${item.city}</span><span class="wt-icon">${item.icon}</span><span class="wt-temp">${item.temp}°</span></div>`;
-        idx++;
-      }
-      show();
-      setInterval(show, 3000);
-    } catch(e) {}
-  }
-  loadWeather();
 })();
 </script>
 

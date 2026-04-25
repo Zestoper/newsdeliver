@@ -34,6 +34,8 @@ try:
             ("ALTER TABLE news_users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
             ("ALTER TABLE news ADD COLUMN ai_summary TEXT NULL", "news.ai_summary"),
             ("ALTER TABLE chat_messages ADD COLUMN message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
+            ("ALTER TABLE news_users ADD COLUMN press_approved TINYINT(1) DEFAULT 0", "news_users.press_approved"),
+            ("ALTER TABLE news_users ADD COLUMN press_notified TINYINT(1) DEFAULT 0", "news_users.press_notified"),
         ]
         # reports 테이블 생성
         try:

@@ -64,7 +64,7 @@ def render(
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request) -> HTMLResponse:
+async def home(request: Request, press_notice: str = "", signup_done: str = "") -> HTMLResponse:
     with engine.connect() as conn:
         news_items = [dict(r._mapping) for r in conn.execute(text("""
             SELECT n.*, c.name as category_name
@@ -118,7 +118,9 @@ async def home(request: Request) -> HTMLResponse:
                 big5_news.append(dict(row._mapping))
     return render(request, "main.html", news_items=news_items,
                   top_commented=top_commented, top_liked=top_liked,
-                  big5_news=big5_news, top_viewed=top_viewed)
+                  big5_news=big5_news, top_viewed=top_viewed,
+                  show_press_notice=press_notice == "1",
+                  show_signup_done=signup_done == "1")
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -145,7 +147,19 @@ async def login(
     form_data = {"user_id": user_id}
     user = get_user(user_id=user_id, password=password)
     if user:
-        response = RedirectResponse(url="/", status_code=303)
+        show_notice = False
+        if (user.get("role") == "press"
+                and user.get("press_approved")
+                and not user.get("press_notified")):
+            with engine.connect() as conn:
+                conn.execute(
+                    text("UPDATE news_users SET press_notified = 1 WHERE id = :id"),
+                    {"id": user_id}
+                )
+                conn.commit()
+            show_notice = True
+        redirect_url = "/?press_notice=1" if show_notice else "/"
+        response = RedirectResponse(url=redirect_url, status_code=303)
         response.set_cookie(
             key=AUTH_COOKIE_NAME,
             value=user_id,
@@ -214,7 +228,7 @@ async def signup(
         "name": name, "birth": birth, "user_id": user_id,
         "password": password, "email": email, "phone": phone,
     })
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/?signup_done=1", status_code=303)
 
 
 @router.get("/subscribe", response_class=HTMLResponse)
@@ -496,6 +510,27 @@ async def mypage_update(
         )
         conn.commit()
     return RedirectResponse(url="/mypage", status_code=303)
+
+
+@router.post("/mypage/withdraw")
+async def withdraw(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    uid = user["id"]
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM news_comments WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM news_likes WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM comment_likes WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM bookmarks WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM category_subscriptions WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM subscriptions WHERE user_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM reports WHERE reporter_id = :id"), {"id": uid})
+        conn.execute(text("DELETE FROM news_users WHERE id = :id"), {"id": uid})
+        conn.commit()
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(AUTH_COOKIE_NAME)
+    return response
 
 
 @router.post("/mypage/change-password")

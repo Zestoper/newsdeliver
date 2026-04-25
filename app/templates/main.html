@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=3.3" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.4" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
@@ -450,5 +450,54 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
         <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
     </div>
 </footer>
+
+{% if show_signup_done %}
+<div id="signupDoneModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);animation:popIn 0.25s ease;">
+    <div style="font-size:52px;margin-bottom:16px;">✅</div>
+    <h2 style="font-size:20px;font-weight:900;color:#1a1a1a;margin-bottom:10px;">회원가입이 완료됐습니다!</h2>
+    <p style="font-size:14px;color:#555;line-height:1.7;margin-bottom:28px;">로그인 후 서비스를 이용하실 수 있습니다.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="document.getElementById('signupDoneModal').remove()"
+        style="background:#e9ecef;color:#333;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        취소
+      </button>
+      <a href="/login"
+        style="background:#D42B2B;color:#fff;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;">
+        로그인
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if show_press_notice %}
+<div id="pressNoticeModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:400px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);animation:popIn 0.25s ease;">
+    <div style="font-size:52px;margin-bottom:16px;">🎉</div>
+    <h2 style="font-size:20px;font-weight:900;color:#1a1a1a;margin-bottom:10px;">언론사 승인이 완료됐습니다!</h2>
+    <p style="font-size:14px;color:#555;line-height:1.7;margin-bottom:28px;">
+      관리자가 회원님의 언론사 계정을 승인했습니다.<br>
+      이제 기사를 작성하고 발행할 수 있습니다.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="document.getElementById('pressNoticeModal').remove()"
+        style="background:#e9ecef;color:#333;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        닫기
+      </button>
+      <a href="/press/news"
+        style="background:#D42B2B;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;">
+        글쓰기 시작하기
+      </a>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+</style>
+{% endif %}
 
 {% endblock %}

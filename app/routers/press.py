@@ -90,9 +90,7 @@ async def press_signup(
         )
         conn.commit()
 
-    return render(request, "press/signup.html",
-                  message="가입이 완료되었습니다! 로그인해주세요.",
-                  message_type="success")
+    return RedirectResponse(url="/?signup_done=1", status_code=303)
 
 
 @router.get("/write", response_class=HTMLResponse)
@@ -100,6 +98,8 @@ async def press_write_page(request: Request) -> HTMLResponse:
     user = get_current_user(request)
     if not user or user["role"] != "press":
         return RedirectResponse(url="/login", status_code=303)
+    if not user.get("press_approved"):
+        return RedirectResponse(url="/press/news", status_code=303)
     with engine.connect() as conn:
         categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
     return render(request, "press/write.html", categories=categories)
@@ -118,6 +118,8 @@ async def press_write(
     user = get_current_user(request)
     if not user or user["role"] != "press":
         return RedirectResponse(url="/login", status_code=303)
+    if not user.get("press_approved"):
+        return RedirectResponse(url="/press/news", status_code=303)
 
     with engine.connect() as conn:
         conn.execute(
@@ -140,6 +142,8 @@ async def press_edit_page(request: Request, news_id: int) -> HTMLResponse:
     user = get_current_user(request)
     if not user or user["role"] != "press":
         return RedirectResponse(url="/login", status_code=303)
+    if not user.get("press_approved"):
+        return RedirectResponse(url="/press/news", status_code=303)
     with engine.connect() as conn:
         row = conn.execute(
             text("SELECT * FROM news WHERE id = :id AND author_id = :author_id"),
@@ -166,6 +170,8 @@ async def press_edit(
     user = get_current_user(request)
     if not user or user["role"] != "press":
         return RedirectResponse(url="/login", status_code=303)
+    if not user.get("press_approved"):
+        return RedirectResponse(url="/press/news", status_code=303)
     with engine.connect() as conn:
         conn.execute(
             text("""
@@ -195,7 +201,8 @@ async def press_news_page(request: Request) -> HTMLResponse:
         )
         news_list = [dict(row._mapping) for row in result]
 
-    return render(request, "press/news.html", news_list=news_list)
+    return render(request, "press/news.html", news_list=news_list,
+                  press_approved=bool(user.get("press_approved")))
 
 @router.get("/delete/{news_id}")
 async def press_delete(request: Request, news_id: int):

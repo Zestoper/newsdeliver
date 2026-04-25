@@ -30,18 +30,22 @@
       <div class="message {{ message_type }}">{{ message }}</div>
     {% endif %}
 
-    <form class="signup-form" action="{{ request.url_for('signup') }}" method="post">
+    <form class="signup-form" action="{{ request.url_for('signup') }}" method="post" onsubmit="return validateForm()">
       <div class="form-row">
         <div class="input-group">
           <label for="name">이름</label>
           <input id="name" name="name" type="text"
                  placeholder="성함을 입력하세요"
                  value="{{ form_data.get('name', '') }}" required>
+          <span class="field-hint">한글만, 5자 이하</span>
+          <span class="field-error" id="nameErr"></span>
         </div>
         <div class="input-group">
           <label for="birth">생년월일</label>
           <input id="birth" name="birth" type="date"
+                 min="1920-01-01"
                  value="{{ form_data.get('birth', '') }}" required>
+          <span class="field-error" id="birthErr"></span>
         </div>
       </div>
 
@@ -55,7 +59,16 @@
       <div class="input-group">
         <label for="password">비밀번호</label>
         <input id="password" name="password" type="password"
-               placeholder="비밀번호 (8자 이상)" required>
+               placeholder="비밀번호 입력" required>
+        <span class="field-hint">8자 이상, 특수문자는 . ! @ 만 허용</span>
+        <span class="field-error" id="pwErr"></span>
+      </div>
+
+      <div class="input-group">
+        <label for="password_confirm">비밀번호 확인</label>
+        <input id="password_confirm" name="password_confirm" type="password"
+               placeholder="비밀번호 재입력" required>
+        <span class="field-error" id="pwConfirmErr"></span>
       </div>
 
       <div class="input-group">
@@ -63,13 +76,27 @@
         <input id="email" name="email" type="email"
                placeholder="example@news.com"
                value="{{ form_data.get('email', '') }}" required>
+        <span class="field-hint">example@domain.com 형식</span>
+        <span class="field-error" id="emailErr"></span>
       </div>
 
       <div class="input-group">
-        <label for="phone">전화번호</label>
-        <input id="phone" name="phone" type="tel"
-               placeholder="010-0000-0000"
-               value="{{ form_data.get('phone', '') }}" required>
+        <label>전화번호</label>
+        <input type="hidden" id="phone" name="phone">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input id="phone1" type="tel" maxlength="3" placeholder="010"
+                 style="width:56px;padding:7px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="phoneInput(this,'phone1')" required>
+          <span style="color:#9ca3af;font-weight:700;">-</span>
+          <input id="phone2" type="tel" maxlength="4" placeholder="1234"
+                 style="width:68px;padding:7px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="phoneInput(this,'phone2')">
+          <span style="color:#9ca3af;font-weight:700;">-</span>
+          <input id="phone3" type="tel" maxlength="4" placeholder="1234"
+                 style="width:68px;padding:7px 4px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:center;"
+                 oninput="phoneInput(this,'phone3')">
+        </div>
+        <span class="field-error" id="phoneErr"></span>
       </div>
 
       <button type="submit" class="btn-signup">회원가입</button>
@@ -84,6 +111,93 @@
   </div>
 
 </div>
+
+<style>
+  .field-hint  { display:block; font-size:10px; color:#9ca3af; margin-top:1px; }
+  .field-error { display:block; font-size:10px; color:#c00; }
+</style>
+
+<script>
+  const nameInput = document.getElementById('name');
+  nameInput.addEventListener('compositionend', function() {
+    this.value = this.value.replace(/[^가-힣]/g, '');
+    if (this.value.length > 5) this.value = this.value.slice(0, 5);
+  });
+  nameInput.addEventListener('input', function(e) {
+    if (e.isComposing) return;
+    this.value = this.value.replace(/[^가-힣]/g, '');
+    if (this.value.length > 5) this.value = this.value.slice(0, 5);
+  });
+
+  function phoneInput(input, id) {
+    input.value = input.value.replace(/\D/g, '');
+    const p1 = document.getElementById('phone1').value;
+    const p2 = document.getElementById('phone2').value;
+    const p3 = document.getElementById('phone3').value;
+    document.getElementById('phone').value = p1 + '-' + p2 + '-' + p3;
+    // 자동 포커스 이동
+    if (id === 'phone1' && input.value.length === 3) document.getElementById('phone2').focus();
+    if (id === 'phone2' && input.value.length === 4) document.getElementById('phone3').focus();
+  }
+
+  function validateForm() {
+    let ok = true;
+
+    // 이름
+    const name = document.getElementById('name').value;
+    const nameErr = document.getElementById('nameErr');
+    if (!/^[가-힣]{1,5}$/.test(name)) {
+      nameErr.textContent = '한글만, 5자 이하로 입력해주세요.';
+      ok = false;
+    } else { nameErr.textContent = ''; }
+
+    // 생년월일
+    const birth = document.getElementById('birth').value;
+    const birthErr = document.getElementById('birthErr');
+    if (birth && birth.slice(0,4) < '1920') {
+      birthErr.textContent = '1920년 이후 생년월일을 입력해주세요.';
+      ok = false;
+    } else { birthErr.textContent = ''; }
+
+    // 이메일
+    const email = document.getElementById('email').value;
+    const emailErr = document.getElementById('emailErr');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailErr.textContent = '올바른 이메일 형식이 아닙니다.';
+      ok = false;
+    } else { emailErr.textContent = ''; }
+
+    // 비밀번호
+    const pw = document.getElementById('password').value;
+    const pwErr = document.getElementById('pwErr');
+    const pwOk = pw.length >= 8 && /^[a-zA-Z0-9가-힣.!@]*$/.test(pw);
+    if (!pwOk) {
+      pwErr.textContent = '8자 이상, 허용된 특수문자(. ! @)만 사용하세요.';
+      ok = false;
+    } else { pwErr.textContent = ''; }
+
+    // 비밀번호 확인
+    const pwConfirm = document.getElementById('password_confirm').value;
+    const pwConfirmErr = document.getElementById('pwConfirmErr');
+    if (pw !== pwConfirm) {
+      pwConfirmErr.textContent = '비밀번호가 일치하지 않습니다.';
+      ok = false;
+    } else { pwConfirmErr.textContent = ''; }
+
+    // 전화번호 — hidden input에 조합된 값 검증
+    const p1 = document.getElementById('phone1').value;
+    const p2 = document.getElementById('phone2').value;
+    const p3 = document.getElementById('phone3').value;
+    document.getElementById('phone').value = p1 + '-' + p2 + '-' + p3;
+    const phoneErr = document.getElementById('phoneErr');
+    if (!/^\d{3}-\d{4}-\d{4}$/.test(document.getElementById('phone').value)) {
+      phoneErr.textContent = '전화번호를 모두 입력해주세요.';
+      ok = false;
+    } else { phoneErr.textContent = ''; }
+
+    return ok;
+  }
+</script>
 
 {% if focus %}
 <script>
