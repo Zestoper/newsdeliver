@@ -15,6 +15,7 @@ from app.routers.news import router as news_router
 from app.routers.press import router as press_router
 from app.routers.admin_api import router as admin_api_router
 from app.routers.oauth import router as oauth_router
+from app.routers.chat import router as chat_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -32,6 +33,7 @@ try:
             ("ALTER TABLE news_comments ADD COLUMN parent_id INT DEFAULT NULL", "news_comments.parent_id"),
             ("ALTER TABLE news_users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
             ("ALTER TABLE news ADD COLUMN ai_summary TEXT NULL", "news.ai_summary"),
+            ("ALTER TABLE chat_messages ADD COLUMN message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
         ]
         # reports 테이블 생성
         try:
@@ -112,6 +114,32 @@ try:
             except Exception:
                 pass  # 이미 처리됨
 
+        # chat 테이블 생성
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS chat_rooms (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id VARCHAR(50) NOT NULL,
+                    user_name VARCHAR(100),
+                    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_user (user_id)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    room_id INT NOT NULL,
+                    sender VARCHAR(10) NOT NULL,
+                    message TEXT NOT NULL,
+                    is_read TINYINT(1) DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            conn.commit()
+            print("✅ chat 테이블")
+        except Exception:
+            pass
+
         # newsletter_sent 테이블 생성
         try:
             conn.execute(text("""
@@ -187,6 +215,7 @@ app.include_router(users_router)
 app.include_router(news_router)
 app.include_router(press_router)
 app.include_router(admin_api_router)
+app.include_router(chat_router)
 
 if __name__ == "__main__":
     import uvicorn

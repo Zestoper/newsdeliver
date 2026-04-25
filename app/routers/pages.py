@@ -455,13 +455,28 @@ async def mypage(request: Request) -> HTMLResponse:
             """),
             {"user_id": user["id"]}
         ).fetchall()
+        my_reports_result = conn.execute(
+            text("""
+                SELECT r.id, r.news_id, r.reason, r.status, r.created_at,
+                       n.title as news_title
+                FROM reports r
+                LEFT JOIN news n ON r.news_id = n.id
+                WHERE r.reporter_id = :user_id
+                ORDER BY r.created_at DESC
+            """),
+            {"user_id": user["id"]}
+        ).fetchall()
     subscription = dict(sub._mapping) if sub else None
     categories = [row.name for row in cat_result]
     liked_news = [dict(row._mapping) for row in liked_news_result]
     bookmarked_news = [dict(row._mapping) for row in bookmarked_news_result]
+    my_reports = [dict(row._mapping) for row in my_reports_result]
+    for r in my_reports:
+        if r["created_at"]:
+            r["created_at"] = r["created_at"].strftime("%Y.%m.%d")
     return render(request, "mypage.html", subscription=subscription,
                   categories=categories, liked_news=liked_news,
-                  bookmarked_news=bookmarked_news)
+                  bookmarked_news=bookmarked_news, my_reports=my_reports)
 
 
 @router.post("/mypage", response_class=HTMLResponse)

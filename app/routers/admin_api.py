@@ -361,6 +361,24 @@ def delete_report(report_id: int):
     return {"success": True}
 
 
+@router.post("/reports/{report_id}/delete-post")
+def delete_reported_post(report_id: int):
+    """신고된 기사 삭제 + 신고 처리완료"""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT news_id FROM reports WHERE id=:id"),
+            {"id": report_id}
+        ).fetchone()
+        if row and row.news_id:
+            conn.execute(text("DELETE FROM news WHERE id=:id"), {"id": row.news_id})
+        conn.execute(
+            text("UPDATE reports SET status='deleted' WHERE id=:id"),
+            {"id": report_id}
+        )
+        conn.commit()
+    return {"success": True}
+
+
 @router.get("/stats")
 def get_stats():
     with engine.connect() as conn:

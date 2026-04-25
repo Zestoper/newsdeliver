@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>관리자 페이지 - News Delivery</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -406,6 +409,7 @@
   <button class="tab" onclick="showTab('reports', this)">🚨 신고 관리</button>
   <button class="tab" onclick="showTab('subscribers', this)">📬 구독자 목록</button>
   <button class="tab" onclick="showTab('stats', this)">📊 통계</button>
+  <button class="tab" onclick="showTab('chat', this)" id="chatTabBtn" style="position:relative;">💬 채팅 문의<span id="chatTabBadge" style="display:none;position:absolute;top:4px;right:4px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:20px;align-items:center;justify-content:center;padding:0 4px;"></span></button>
 </div>
 
 <div class="content">
@@ -532,6 +536,31 @@
         <p class="form-desc">최신 발행된 뉴스를 전체 구독자에게 이메일로 발송합니다.</p>
         <button class="btn btn-primary" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
         <p id="send-result" class="result-msg" style="margin-top:12px;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 채팅 문의 -->
+  <div id="chat" class="section">
+    <div class="section-title">💬 채팅 문의 관리</div>
+    <div style="display:flex;gap:16px;height:580px;">
+      <!-- 채팅방 목록 -->
+      <div style="width:240px;flex-shrink:0;background:#f9f9f9;border-radius:10px;border:1px solid #e5e4e0;overflow-y:auto;">
+        <div style="padding:14px 16px;font-size:13px;font-weight:700;color:#555;border-bottom:1px solid #e5e4e0;">문의 목록</div>
+        <div id="chatRoomList"></div>
+      </div>
+      <!-- 채팅 내용 -->
+      <div style="flex:1;display:flex;flex-direction:column;background:white;border-radius:10px;border:1px solid #e5e4e0;overflow:hidden;">
+        <div id="chatRoomTitle" style="padding:14px 20px;font-size:14px;font-weight:700;border-bottom:1px solid #e5e4e0;color:#555;">채팅방을 선택하세요</div>
+        <div id="adminChatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f9f9f9;"></div>
+        <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;background:white;align-items:center;">
+          <label for="adminFileInput" style="cursor:pointer;padding:8px 10px;border:1.5px solid #e5e4e0;border-radius:50%;font-size:16px;line-height:1;flex-shrink:0;" title="사진/동영상 첨부">📎</label>
+          <input id="adminFileInput" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none;" onchange="adminSendFile(this)">
+          <input id="adminChatInput" type="text" placeholder="답변을 입력하세요..." maxlength="500"
+            style="flex:1;padding:10px 14px;border:1.5px solid #e5e4e0;border-radius:24px;font-size:14px;outline:none;"
+            onkeydown="if(event.key==='Enter'&&!event.isComposing)adminSendMsg()">
+          <button onclick="adminSendMsg()" style="padding:10px 18px;background:#c00;color:white;border:none;border-radius:24px;font-size:13px;font-weight:700;cursor:pointer;">전송</button>
+        </div>
       </div>
     </div>
   </div>
@@ -671,6 +700,7 @@
     if (name === 'reports') loadReports();
     if (name === 'subscribers') loadSubscribers();
     if (name === 'stats') loadStats();
+    if (name === 'chat') loadChatRooms();
   }
 
   // ── 회원 관리 ──
@@ -926,6 +956,141 @@
     input.value = '';
   }
 
+  // ── 채팅 관리 ──
+  let _adminWs = null;
+  let _activeRoomId = null;
+
+  async function loadChatRooms() {
+    const res = await fetch('/api/chat/rooms');
+    const rooms = await res.json();
+    const list = document.getElementById('chatRoomList');
+    if (!Array.isArray(rooms) || !rooms.length) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;font-size:13px;">문의 없음</div>';
+      return;
+    }
+    list.innerHTML = rooms.map(r => `
+      <div onclick="openAdminRoom(${r.id},'${r.user_name}')"
+        style="padding:12px 16px;border-bottom:1px solid #eee;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background=''"
+        id="room-item-${r.id}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:700;color:#1a1a1a;">${r.user_name}</span>
+          ${r.unread > 0 ? `<span style="background:#c00;color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">${r.unread}</span>` : ''}
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.last_msg || ''}</div>
+        <div style="font-size:10px;color:#ccc;margin-top:2px;">${r.last_message_at || ''}</div>
+      </div>`).join('');
+  }
+
+  async function openAdminRoom(roomId, userName) {
+    _activeRoomId = roomId;
+    document.getElementById('chatRoomTitle').textContent = `${userName} 님과의 대화`;
+
+    const hist = await fetch(`/api/chat/room/${roomId}/messages`);
+    const msgs = await hist.json();
+    const box = document.getElementById('adminChatMessages');
+    box.innerHTML = '';
+    msgs.forEach(m => adminAppendMsg(m.sender, m.message, m.created_at, m.is_read, m.msg_type || 'text'));
+    updateChatBadge();
+
+    if (_adminWs) _adminWs.close();
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    _adminWs = new WebSocket(`${proto}://${location.host}/api/chat/ws/${roomId}`);
+    _adminWs.onmessage = e => {
+      const d = JSON.parse(e.data);
+      if (d.type === 'read_receipt') {
+        if (d.reader === 'user') {
+          document.querySelectorAll('.msg-status[data-sender="admin"]').forEach(el => {
+            el.textContent = '읽음';
+            el.style.color = '#16a34a';
+          });
+        }
+        return;
+      }
+      if (d.type === 'message' && d.sender !== 'admin') {
+        adminAppendMsg(d.sender, d.message, d.created_at, false, d.msg_type || 'text');
+        // 현재 이 방을 보고 있으면 즉시 읽음 처리
+        fetch(`/api/chat/room/${roomId}/read`, { method: 'POST' }).then(() => updateChatBadge());
+      }
+    };
+    // 읽음 처리 후 목록 뱃지 갱신
+    document.getElementById(`room-item-${roomId}`)
+      ?.querySelectorAll('span[style*="background:#c00"]')
+      .forEach(el => el.remove());
+  }
+
+  function adminAppendMsg(sender, message, time, isRead, msgType) {
+    const box = document.getElementById('adminChatMessages');
+    const isAdmin = sender === 'admin';
+    const readText = isAdmin ? (isRead ? '읽음' : '안읽음') : '';
+    msgType = msgType || 'text';
+    let contentHtml;
+    if (msgType === 'image') {
+      contentHtml = `<a href="${message}" target="_blank"><img src="${message}" style="max-width:240px;max-height:200px;border-radius:10px;display:block;cursor:pointer;" loading="lazy"></a>`;
+    } else if (msgType === 'video') {
+      contentHtml = `<video src="${message}" controls style="max-width:240px;max-height:180px;border-radius:10px;display:block;"></video>`;
+    } else {
+      contentHtml = message;
+    }
+    const bubbleBg = msgType !== 'text' ? 'transparent' : (isAdmin ? '#c00' : 'white');
+    const bubbleColor = msgType !== 'text' ? 'inherit' : (isAdmin ? 'white' : '#1a1a1a');
+    const bubblePad = msgType !== 'text' ? '4px' : '9px 14px';
+    const div = document.createElement('div');
+    div.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin ? 'flex-end' : 'flex-start'};`;
+    div.innerHTML =
+      `<div style="max-width:280px;padding:${bubblePad};border-radius:${isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
+        background:${bubbleBg};color:${bubbleColor};
+        font-size:13px;line-height:1.6;box-shadow:${msgType !== 'text' ? 'none' : '0 1px 4px rgba(0,0,0,0.08)'};">${contentHtml}</div>
+      <span style="font-size:10px;color:#aaa;margin-top:3px;display:flex;gap:6px;">
+        ${isAdmin ? `<span class="msg-status" data-sender="admin" style="color:${isRead ? '#16a34a' : '#aaa'};">${readText}</span>` : ''}
+        <span>${time}</span>
+      </span>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function adminSendMsg() {
+    const input = document.getElementById('adminChatInput');
+    const msg = input.value.trim();
+    if (!msg || !_adminWs || _adminWs.readyState !== WebSocket.OPEN) return;
+    _adminWs.send(JSON.stringify({ sender: 'admin', message: msg, msg_type: 'text' }));
+    adminAppendMsg('admin', msg, new Date().toTimeString().slice(0,5), false, 'text');
+    input.value = '';
+  }
+
+  async function adminSendFile(input) {
+    if (!input.files || !input.files[0]) return;
+    if (!_activeRoomId) { alert('채팅방을 선택해주세요.'); return; }
+    const file = input.files[0];
+    if (file.size > 30 * 1024 * 1024) { alert('파일 크기는 30MB 이하만 가능합니다.'); input.value = ''; return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`/api/chat/room/${_activeRoomId}/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { alert('업로드 실패: ' + data.error); input.value = ''; return; }
+    if (_adminWs && _adminWs.readyState === WebSocket.OPEN) {
+      _adminWs.send(JSON.stringify({ sender: 'admin', message: data.url, msg_type: data.type }));
+      adminAppendMsg('admin', data.url, new Date().toTimeString().slice(0,5), false, data.type);
+    }
+    input.value = '';
+  }
+
+  // 탭 뱃지 폴링
+  async function updateChatBadge() {
+    const res = await fetch('/api/chat/unread');
+    const d = await res.json();
+    const b = document.getElementById('chatTabBadge');
+    if (!b) return;
+    if (d.count > 0) {
+      b.textContent = d.count;
+      b.style.display = 'inline-flex';
+    } else {
+      b.style.display = 'none';
+    }
+  }
+  updateChatBadge();
+  setInterval(updateChatBadge, 10000);
+
   // ── 신고 관리 ──
   async function loadReports() {
     const res = await fetch(`${ADMIN_API}/reports`);
@@ -938,10 +1103,13 @@
     }
     list.forEach(r => {
       const statusBadge = r.status === 'resolved'
-        ? `<span class="badge" style="background:#DCFCE7;color:#16a34a;">처리완료</span>`
+        ? `<span class="badge" style="background:#DCFCE7;color:#16a34a;">글유지</span>`
+        : r.status === 'deleted'
+        ? `<span class="badge" style="background:#FEE2E2;color:#dc2626;">글삭제</span>`
         : r.status === 'dismissed'
         ? `<span class="badge" style="background:#F1F0ED;color:#868e96;">반려</span>`
         : `<span class="badge" style="background:#FEF9C3;color:#854d0e;">검토중</span>`;
+      const isDone = r.status !== 'pending';
       tbody.innerHTML += `
         <tr>
           <td>${r.id}</td>
@@ -952,9 +1120,11 @@
           <td>${statusBadge}</td>
           <td style="font-size:12px;color:#adb5bd;">${r.created_at}</td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="updateReport(${r.id},'resolved')">처리완료</button>
+            ${isDone ? '' : `
+            <button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="updateReport(${r.id},'resolved')">글유지</button>
+            <button class="btn btn-red"   style="font-size:12px;padding:5px 10px;" onclick="deletePost(${r.id})">글삭제</button>
             <button class="btn btn-gray"  style="font-size:12px;padding:5px 10px;" onclick="updateReport(${r.id},'dismissed')">반려</button>
-            <button class="btn btn-red"   style="font-size:12px;padding:5px 10px;" onclick="deleteReport(${r.id})">삭제</button>
+            `}
           </td>
         </tr>`;
     });
@@ -962,6 +1132,12 @@
 
   async function updateReport(id, status) {
     await fetch(`${ADMIN_API}/reports/${id}?status=${status}`, { method: 'PUT' });
+    loadReports();
+  }
+
+  async function deletePost(id) {
+    if (!confirm('기사를 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+    await fetch(`${ADMIN_API}/reports/${id}/delete-post`, { method: 'POST' });
     loadReports();
   }
 

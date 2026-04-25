@@ -4,6 +4,13 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=2.0">
+  <style>
+    .report-badge { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .report-badge.pending  { background:#FEF9C3; color:#854d0e; }
+    .report-badge.resolved { background:#DCFCE7; color:#16a34a; }
+    .report-badge.deleted  { background:#FEE2E2; color:#dc2626; }
+    .report-badge.dismissed{ background:#F1F0ED; color:#868e96; }
+  </style>
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -176,6 +183,39 @@
       </div>
     {% else %}
       <p style="font-size:14px; color:#aaa;">스크랩한 뉴스가 없습니다.</p>
+    {% endif %}
+  </div>
+
+  <!-- 신고 내역 -->
+  <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-top:24px;">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a1a1a;">🚨 신고 내역</h3>
+    {% if my_reports %}
+      <div style="display:flex; flex-direction:column; gap:0;">
+        {% for r in my_reports %}
+          {% if r.status == 'resolved' %}{% set badge_text = '글유지' %}
+          {% elif r.status == 'deleted' %}{% set badge_text = '글삭제' %}
+          {% elif r.status == 'dismissed' %}{% set badge_text = '반려' %}
+          {% else %}{% set badge_text = '검토중' %}{% endif %}
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #f0f0f0; gap:12px;">
+            <div style="flex:1; min-width:0;">
+              {% if r.news_title %}
+                <a href="/news/{{ r.news_id }}" style="font-size:14px; font-weight:600; color:#1a1a1a; text-decoration:none; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.news_title }}</a>
+              {% else %}
+                <span style="font-size:14px; color:#aaa;">(삭제된 기사)</span>
+              {% endif %}
+              {% if r.reason %}
+                <span style="font-size:12px; color:#868e96; margin-top:3px; display:block;">사유: {{ r.reason }}</span>
+              {% endif %}
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+              <span class="report-badge {{ r.status }}">{{ badge_text }}</span>
+              <span style="font-size:12px; color:#aaa;">{{ r.created_at }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="font-size:14px; color:#aaa;">신고한 내역이 없습니다.</p>
     {% endif %}
   </div>
 

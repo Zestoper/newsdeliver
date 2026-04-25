@@ -132,13 +132,20 @@
         <a href="mailto:zestoper@naver.com">zestoper@naver.com</a>
       </p>
     </div>
-    <div class="contact-card">
-      <div class="contact-card-icon">🕐</div>
-      <h3>운영 시간</h3>
-      <p>
-        평일 09:00 – 18:00<br>
-        주말 및 공휴일 휴무
-      </p>
+    <div class="contact-card" style="display:flex;flex-direction:column;justify-content:space-between;">
+      <div>
+        <div class="contact-card-icon">💬</div>
+        <h3>1:1 채팅 문의</h3>
+        <p>관리자에게 실시간으로 문의하세요.</p>
+      </div>
+      {% if current_user %}
+        <button onclick="openChat()" style="margin-top:16px;padding:10px 20px;background:#c00;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%;position:relative;">
+          💬 채팅 시작하기
+          <span id="chatUnreadBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:11px;font-weight:900;min-width:20px;height:20px;border-radius:20px;align-items:center;justify-content:center;padding:0 5px;"></span>
+        </button>
+      {% else %}
+        <a href="/login" style="display:block;margin-top:16px;padding:10px 20px;background:#c00;color:white;border-radius:8px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;">로그인 후 이용 가능</a>
+      {% endif %}
     </div>
   </div>
 
@@ -152,6 +159,154 @@
     </ul>
   </div>
 </div>
+
+<!-- 1:1 채팅 모달 -->
+{% if current_user %}
+<div id="chatModal" style="display:none;position:fixed;bottom:24px;right:24px;width:360px;height:520px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:9999;flex-direction:column;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#cc0000,#ff4444);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div>
+      <div style="color:white;font-size:15px;font-weight:800;">💬 1:1 채팅 문의</div>
+      <div style="color:rgba(255,255,255,0.8);font-size:11px;margin-top:2px;">관리자가 확인 후 답변드립니다</div>
+    </div>
+    <button onclick="closeChat()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0;line-height:1;">✕</button>
+  </div>
+  <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f9f9f9;"></div>
+  <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0;background:white;align-items:center;">
+    <label for="chatFileInput" style="cursor:pointer;padding:8px 10px;border:1.5px solid #e5e4e0;border-radius:50%;font-size:16px;line-height:1;flex-shrink:0;" title="사진/동영상 첨부">📎</label>
+    <input id="chatFileInput" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none;" onchange="sendFile(this)">
+    <input id="chatInput" type="text" placeholder="메시지를 입력하세요..." maxlength="500"
+      style="flex:1;padding:10px 14px;border:1.5px solid #e5e4e0;border-radius:24px;font-size:14px;outline:none;"
+      onkeydown="if(event.key==='Enter'&&!event.isComposing)sendMsg()">
+    <button onclick="sendMsg()" style="padding:10px 18px;background:#c00;color:white;border:none;border-radius:24px;font-size:13px;font-weight:700;cursor:pointer;">전송</button>
+  </div>
+</div>
+
+<script>
+let _ws = null;
+let _roomId = null;
+let _lastMsgEl = null; // 마지막으로 보낸 메시지 엘리먼트 (읽음 표시용)
+
+async function openChat() {
+  const modal = document.getElementById('chatModal');
+  modal.style.display = 'flex';
+  clearUnreadBadge();
+
+  const res = await fetch('/api/chat/room');
+  const data = await res.json();
+  if (data.error) return;
+  _roomId = data.room_id;
+
+  // 이전 메시지 로드 (읽음 처리도 서버에서 자동)
+  const hist = await fetch(`/api/chat/room/${_roomId}/messages`);
+  const msgs = await hist.json();
+  const box = document.getElementById('chatMessages');
+  box.innerHTML = '';
+  msgs.forEach(m => appendMsg(m.sender, m.message, m.created_at, m.is_read, m.msg_type || 'text'));
+
+  if (_ws && _ws.readyState === WebSocket.OPEN) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  _ws = new WebSocket(`${proto}://${location.host}/api/chat/ws/${_roomId}`);
+  _ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'read_receipt') {
+      if (d.reader === 'admin') {
+        document.querySelectorAll('.msg-status[data-sender="user"]').forEach(el => {
+          el.textContent = '읽음';
+          el.style.color = '#16a34a';
+        });
+      }
+      return;
+    }
+    if (d.type === 'message') {
+      appendMsg(d.sender, d.message, d.created_at, false, d.msg_type || 'text');
+      if (d.sender === 'admin') {
+        fetch(`/api/chat/room/${_roomId}/read`, { method: 'POST' });
+      }
+    }
+  };
+}
+
+function closeChat() {
+  document.getElementById('chatModal').style.display = 'none';
+}
+
+function appendMsg(sender, message, time, isRead, msgType) {
+  const box = document.getElementById('chatMessages');
+  const isUser = sender === 'user';
+  const readText = isUser ? (isRead ? '읽음' : '안읽음') : '';
+  msgType = msgType || 'text';
+  let contentHtml;
+  if (msgType === 'image') {
+    contentHtml = `<a href="${message}" target="_blank"><img src="${message}" style="max-width:220px;max-height:200px;border-radius:10px;display:block;cursor:pointer;" loading="lazy"></a>`;
+  } else if (msgType === 'video') {
+    contentHtml = `<video src="${message}" controls style="max-width:220px;max-height:180px;border-radius:10px;display:block;"></video>`;
+  } else {
+    contentHtml = message;
+  }
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;flex-direction:column;align-items:${isUser ? 'flex-end' : 'flex-start'};`;
+  const bubbleBg = msgType !== 'text' ? 'transparent' : (isUser ? '#c00' : 'white');
+  const bubbleColor = msgType !== 'text' ? 'inherit' : (isUser ? 'white' : '#1a1a1a');
+  const bubblePad = msgType !== 'text' ? '4px' : '9px 14px';
+  div.innerHTML =
+    `<div style="max-width:240px;padding:${bubblePad};border-radius:${isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
+      background:${bubbleBg};color:${bubbleColor};
+      font-size:13px;line-height:1.6;box-shadow:${msgType !== 'text' ? 'none' : '0 1px 4px rgba(0,0,0,0.08)'};">${contentHtml}</div>
+    <span style="font-size:10px;color:#aaa;margin-top:3px;display:flex;gap:6px;">
+      ${isUser ? `<span class="msg-status" data-sender="user" style="color:${isRead ? '#16a34a' : '#aaa'};">${readText}</span>` : '<span style="color:#aaa;">관리자</span>'}
+      <span>${time}</span>
+    </span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !_ws || _ws.readyState !== WebSocket.OPEN) return;
+  _ws.send(JSON.stringify({ sender: 'user', message: msg, msg_type: 'text' }));
+  input.value = '';
+}
+
+async function sendFile(input) {
+  if (!input.files || !input.files[0]) return;
+  if (!_roomId) { alert('채팅방을 먼저 열어주세요.'); return; }
+  const file = input.files[0];
+  if (file.size > 30 * 1024 * 1024) { alert('파일 크기는 30MB 이하만 가능합니다.'); input.value = ''; return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`/api/chat/room/${_roomId}/upload`, { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.error) { alert('업로드 실패: ' + data.error); input.value = ''; return; }
+  if (_ws && _ws.readyState === WebSocket.OPEN) {
+    _ws.send(JSON.stringify({ sender: 'user', message: data.url, msg_type: data.type }));
+  }
+  input.value = '';
+}
+
+// ── 미읽음 뱃지 ──
+function clearUnreadBadge() {
+  const b = document.getElementById('chatUnreadBadge');
+  if (b) b.style.display = 'none';
+}
+
+async function checkUnread() {
+  const res = await fetch('/api/chat/unread');
+  const d = await res.json();
+  const b = document.getElementById('chatUnreadBadge');
+  if (!b) return;
+  if (d.count > 0) {
+    b.textContent = d.count;
+    b.style.display = 'inline-flex';
+  } else {
+    b.style.display = 'none';
+  }
+}
+
+checkUnread();
+setInterval(checkUnread, 15000);
+</script>
+{% endif %}
 
 <!-- 푸터 -->
 <footer class="site-footer">
