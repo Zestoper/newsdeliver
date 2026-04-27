@@ -506,7 +506,7 @@
       <span class="tool-panel-label">콘텐츠 도구</span>
       <div class="tool-btns">
         <button class="btn btn-primary" onclick="fetchNews()">📰 뉴스 가져오기</button>
-        <button class="btn btn-outline" onclick="recrawlContent()">🔄 본문 재수집</button>
+<button class="btn btn-outline" onclick="recrawlContent()">🔄 본문 재수집</button>
         <button class="btn btn-outline" onclick="fixContentViaApi()">🔍 API로 본문 복원</button>
         <button class="btn btn-gray" onclick="cleanContent()">🧹 JS 쓰레기 정리</button>
       </div>
@@ -948,7 +948,7 @@
     el.style.color = data.success ? '#16a34a' : '#ef4444';
   }
 
-  async function recrawlContent() {
+async function recrawlContent() {
     const el = document.getElementById('fetch-result');
     el.textContent = '본문 재수집 중...'; el.style.color = '#888';
     const res  = await fetch(`${ADMIN_API}/recrawl-content`, { method: 'POST' });

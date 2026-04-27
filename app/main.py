@@ -179,11 +179,27 @@ def _newsletter_job():
 
 def _fetch_news_job():
     from app.services.naver_news import fetch_and_save_news
+    from app.services.ai_summary import get_or_create_summary
+    from sqlalchemy import text as _text
     try:
         count = fetch_and_save_news()
         print(f"[뉴스 자동수집] {count}개 저장")
     except Exception as e:
         print(f"[뉴스 자동수집] 실패: {e}")
+        return
+
+    # 요약 없는 기사를 수집 직후 미리 생성 → 뉴스레터 발송 시 대기 없음
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                _text("SELECT id, title, content FROM news WHERE ai_summary IS NULL OR ai_summary = '' LIMIT 200")
+            ).fetchall()
+        for row in rows:
+            get_or_create_summary(row.id, row.title or "", row.content or "")
+        if rows:
+            print(f"[AI 요약] {len(rows)}개 생성 완료")
+    except Exception as e:
+        print(f"[AI 요약] 실패: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

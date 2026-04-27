@@ -11,7 +11,7 @@
 | 서비스명 | NewsDeliver |
 | 백엔드 | Python · FastAPI · SQLAlchemy · APScheduler |
 | 데이터베이스 | MySQL |
-| 외부 API | 네이버 뉴스 API · AI 요약 · OAuth (소셜 로그인) |
+| 외부 API | 네이버 뉴스 API · Groq API (AI 요약) · OAuth (소셜 로그인) |
 | 실시간 | WebSocket 채팅 |
 | 배포 | uvicorn |
 
@@ -28,13 +28,15 @@
 - 중복 방지: `UNIQUE INDEX (news.title)` + 기존 기사 본문 짧으면 업데이트
 
 ### 2. AI 뉴스 요약
-- 수집된 뉴스를 AI로 자동 요약 (`ai_summary` 컬럼)
-- 독자에게 핵심만 빠르게 전달
+- **Groq API** (`llama-3.1-8b-instant`) 로 뉴스 자동 요약 (`ai_summary` 컬럼)
+- 뉴스레터 발송 시 요약 없는 기사만 선별해 생성 — DB 캐시 활용으로 중복 호출 없음
+- 스레드 안전 직렬화 + 재시도(최대 5회)로 안정적 생성 보장
 
 ### 3. 이메일 뉴스레터
 - 구독자에게 하루 **2회** 자동 발송 (07:30 / 18:30 KST)
 - 이메일 인증 토큰으로 구독 확인
-- 중복 발송 방지 (`newsletter_sent` 테이블)
+- 중복 발송 방지 (`newsletter_sent` 테이블) — 새 기사 없는 카테고리는 최근 5개 재발송
+- SMTP 연결 1회 재사용으로 빠른 일괄 발송
 
 ### 4. 사용자 인증
 - 일반 회원가입 / 로그인 (이메일 인증 포함)
@@ -152,6 +154,9 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/oauth/google/callback
 
+# AI 요약 (Groq API)
+GROQ_API_KEY=your_groq_api_key
+
 # 서버
 SERVER_BASE_URL=http://127.0.0.1:8000
 
@@ -162,6 +167,8 @@ SKIP_PAYMENT=True
 ```
 
 ### 3. 서버 실행
+
+
 
 ```bash
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload

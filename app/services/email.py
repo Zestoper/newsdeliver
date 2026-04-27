@@ -67,6 +67,37 @@ def _card_html(article: dict, base_url: str) -> str:
     </div>"""
 
 
+def _build_html(cards: str, count: int, base_url: str) -> str:
+    """뉴스레터 HTML 본문 조립 — send_newsletter / send_newsletters_batch 공용."""
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:24px 16px;">
+  <div style="background:linear-gradient(135deg,#cc0000,#ff4444);border-radius:12px 12px 0 0;
+              padding:24px 28px;margin-bottom:0;">
+    <p style="color:rgba(255,255,255,0.75);font-size:11px;margin:0 0 4px;letter-spacing:1px;text-transform:uppercase;">News Delivery</p>
+    <h1 style="color:white;font-size:22px;font-weight:900;margin:0;letter-spacing:-0.5px;">오늘의 뉴스레터</h1>
+    <p style="color:rgba(255,255,255,0.8);font-size:13px;margin:6px 0 0;">
+      구독하신 카테고리의 최신 뉴스 <strong style="color:white;">{count}건</strong>을 전달해드립니다.
+    </p>
+  </div>
+  <div style="height:4px;background:linear-gradient(90deg,#cc0000,#ff6b6b);margin-bottom:20px;"></div>
+  {cards}
+  <div style="text-align:center;padding:20px 0 8px;">
+    <p style="font-size:13px;color:#868e96;margin:0 0 6px;">
+      <a href="{base_url}" style="color:#c00;text-decoration:none;font-weight:700;">📰 News Delivery</a> 뉴스레터
+    </p>
+    <p style="font-size:12px;color:#adb5bd;margin:0;">
+      © 2026 News Delivery ·
+      <a href="{base_url}/subscribe" style="color:#adb5bd;">구독 설정 변경</a>
+    </p>
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def send_newsletter(
     to_email: str,
     articles: list,
@@ -82,43 +113,7 @@ def send_newsletter(
     cat_label = category_name or (articles[0].get("category_name") or "뉴스")
     cat_emoji = _CAT_EMOJI.get(cat_label, "📰")
     subject = f"[News Delivery] {cat_emoji} {cat_label} 최신 뉴스 {len(articles)}건"
-
-    html_body = f"""<!DOCTYPE html>
-<html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:24px 16px;">
-
-  <!-- 헤더 -->
-  <div style="background:linear-gradient(135deg,#cc0000,#ff4444);border-radius:12px 12px 0 0;
-              padding:24px 28px;margin-bottom:0;">
-    <p style="color:rgba(255,255,255,0.75);font-size:11px;margin:0 0 4px;letter-spacing:1px;text-transform:uppercase;">News Delivery</p>
-    <h1 style="color:white;font-size:22px;font-weight:900;margin:0;letter-spacing:-0.5px;">오늘의 뉴스레터</h1>
-    <p style="color:rgba(255,255,255,0.8);font-size:13px;margin:6px 0 0;">
-      구독하신 카테고리의 최신 뉴스 <strong style="color:white;">{len(articles)}건</strong>을 전달해드립니다.
-    </p>
-  </div>
-
-  <!-- 구분선 -->
-  <div style="height:4px;background:linear-gradient(90deg,#cc0000,#ff6b6b);margin-bottom:20px;"></div>
-
-  <!-- 기사 카드 -->
-  {cards}
-
-  <!-- 푸터 -->
-  <div style="text-align:center;padding:20px 0 8px;">
-    <p style="font-size:13px;color:#868e96;margin:0 0 6px;">
-      <a href="{base_url}" style="color:#c00;text-decoration:none;font-weight:700;">📰 News Delivery</a> 뉴스레터
-    </p>
-    <p style="font-size:12px;color:#adb5bd;margin:0;">
-      © 2026 News Delivery ·
-      <a href="{base_url}/subscribe" style="color:#adb5bd;">구독 설정 변경</a>
-    </p>
-  </div>
-
-</div>
-</body>
-</html>"""
+    html_body = _build_html(cards, len(articles), base_url)
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -134,6 +129,57 @@ def send_newsletter(
         return True
     except Exception:
         return False
+
+
+def send_newsletters_batch(
+    items: list[dict],
+    base_url: str = "http://127.0.0.1:8000",
+) -> list[bool]:
+    """SMTP 연결 1번으로 여러 이메일 일괄 발송.
+
+    items 형식: [{"email": str, "articles": list, "category_name": str}, ...]
+    반환: items 순서와 동일한 성공 여부 bool 리스트
+    """
+    if not items:
+        return []
+
+    results = [False] * len(items)
+    base_url = base_url.rstrip("/")
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+
+            for i, item in enumerate(items):
+                try:
+                    to_email = item["email"]
+                    articles = item["articles"]
+                    category_name = item.get("category_name", "")
+
+                    if not articles or not to_email:
+                        continue
+
+                    cards = "".join(_card_html(a, base_url) for a in articles)
+                    cat_label = category_name or (articles[0].get("category_name") or "뉴스")
+                    cat_emoji = _CAT_EMOJI.get(cat_label, "📰")
+                    subject = f"[News Delivery] {cat_emoji} {cat_label} 최신 뉴스 {len(articles)}건"
+                    html_body = _build_html(cards, len(articles), base_url)
+
+                    msg = MIMEMultipart("alternative")
+                    msg["Subject"] = subject
+                    msg["From"] = SMTP_USER
+                    msg["To"] = to_email
+                    msg.attach(MIMEText(html_body, "html"))
+
+                    server.sendmail(SMTP_USER, to_email, msg.as_string())
+                    results[i] = True
+                except Exception:
+                    results[i] = False
+    except Exception:
+        pass
+
+    return results
 
 
 def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0.1:8000") -> None:
@@ -173,7 +219,7 @@ def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0
 
     msg.attach(MIMEText(html_body, "html"))
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
         server.starttls()
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.sendmail(SMTP_USER, to_email, msg.as_string())

@@ -36,5 +36,7 @@ class Settings(BaseSettings):
 
     SERVER_BASE_URL: str = "http://127.0.0.1:8000"
 
+    GROQ_API_KEY: str = ""
+
 
 settings = Settings()
