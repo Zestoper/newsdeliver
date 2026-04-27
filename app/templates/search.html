@@ -14,7 +14,7 @@
 <header class="site-header">
   <div class="header-top">
     <div class="header-left"><div class="header-date"></div></div>
-    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-logo"><a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#c00;border-radius:7px;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="2" rx="1" fill="white"/><rect x="3" y="9" width="14" height="2" rx="1" fill="white"/><rect x="3" y="14" width="9" height="2" rx="1" fill="white"/></svg></span><span style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span></a></div>
     <div class="header-actions">
       {% if current_user %}
         <span class="user-name">{{ current_user.name }}님</span>
@@ -31,15 +31,17 @@
       {% endif %}
     </div>
   </div>
-  <nav class="main-nav">
-    <ul>
-      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
-      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
-      <li><a href="/search" class="active"><span class="nav-icon">🔍</span>검색</a></li>
-      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-      <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
-    </ul>
-  </nav>
+  <!-- 네비게이션 -->
+    <nav class="main-nav">
+        <ul>
+            <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
+            <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+            <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+            <li><a href="/search" class="active"><span class="nav-icon">🔍</span>검색</a></li>
+            <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
+        </ul>
+    </nav>
 </header>
 
 <main class="main-content">

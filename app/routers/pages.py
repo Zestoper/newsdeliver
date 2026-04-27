@@ -717,6 +717,11 @@ async def search_page(request: Request, q: str = "", source: str = "") -> HTMLRe
                   sources=sources, q=q, selected_source=source)
 
 
+@router.get("/about", response_class=HTMLResponse)
+async def about(request: Request) -> HTMLResponse:
+    return render(request, "about.html")
+
+
 @router.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request) -> HTMLResponse:
     return render(request, "contact.html")

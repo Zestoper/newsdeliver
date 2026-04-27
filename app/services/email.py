@@ -76,8 +76,17 @@ def _build_html(cards: str, count: int, base_url: str) -> str:
 <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
   <div style="background:linear-gradient(135deg,#cc0000,#ff4444);border-radius:12px 12px 0 0;
               padding:24px 28px;margin-bottom:0;">
-    <p style="color:rgba(255,255,255,0.75);font-size:11px;margin:0 0 4px;letter-spacing:1px;text-transform:uppercase;">News Delivery</p>
-    <h1 style="color:white;font-size:22px;font-weight:900;margin:0;letter-spacing:-0.5px;">오늘의 뉴스레터</h1>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:8px;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+          <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+          <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+        </svg>
+      </span>
+      <span style="font-size:22px;font-weight:900;color:white;letter-spacing:-0.5px;">News<span style="color:rgba(255,255,255,0.75);">Deliver</span></span>
+    </div>
+    <h1 style="color:white;font-size:18px;font-weight:700;margin:0;letter-spacing:-0.5px;">오늘의 뉴스레터</h1>
     <p style="color:rgba(255,255,255,0.8);font-size:13px;margin:6px 0 0;">
       구독하신 카테고리의 최신 뉴스 <strong style="color:white;">{count}건</strong>을 전달해드립니다.
     </p>
@@ -86,7 +95,7 @@ def _build_html(cards: str, count: int, base_url: str) -> str:
   {cards}
   <div style="text-align:center;padding:20px 0 8px;">
     <p style="font-size:13px;color:#868e96;margin:0 0 6px;">
-      <a href="{base_url}" style="color:#c00;text-decoration:none;font-weight:700;">📰 News Delivery</a> 뉴스레터
+      <a href="{base_url}" style="color:#c00;text-decoration:none;font-weight:700;">NewsDeliver</a> 뉴스레터
     </p>
     <p style="font-size:12px;color:#adb5bd;margin:0;">
       © 2026 News Delivery ·

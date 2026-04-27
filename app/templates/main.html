@@ -13,7 +13,16 @@
             <div class="news-ticker-pill" id="newsTicker"></div>
         </div>
         <div class="header-logo">
-            <a href="/">📰 News Delivery</a>
+            <a href="/" style="display:flex;align-items:center;gap:9px;text-decoration:none;">
+                <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#c00;border-radius:8px;flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+                        <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+                        <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+                    </svg>
+                </span>
+                <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span>
+            </a>
         </div>
         <div class="header-actions">
             {% if current_user %}
@@ -38,9 +47,10 @@
         <ul>
             <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
             <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
-            <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
             <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+            <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
             <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
         </ul>
     </nav>
 </header>
@@ -441,9 +451,19 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
 <!-- 푸터 -->
 <footer class="site-footer">
     <div class="footer-inner">
-        <div class="footer-logo">📰 News Delivery</div>
+        <div class="footer-logo" style="display:flex;align-items:center;gap:8px;justify-content:center;">
+            <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:#c00;border-radius:6px;">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+                    <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+                    <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+                </svg>
+            </span>
+            <span><span style="color:#ff6b6b;">News</span>Deliver</span>
+        </div>
         <p class="footer-desc">카테고리 기반 뉴스 큐레이션 플랫폼</p>
         <div class="footer-links">
+            <a href="/about">회사 소개</a>
             <a href="/contact">문의하기</a>
             <a href="/subscribe">구독하기</a>
         </div>

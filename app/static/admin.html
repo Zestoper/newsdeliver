@@ -396,7 +396,18 @@
 <!-- 헤더 -->
 <div class="site-header">
   <div class="header-top">
-    <div class="header-logo"><a href="/">📰 News Delivery</a></div>
+    <div class="header-logo">
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#c00;border-radius:7px;">
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+            <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+            <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+          </svg>
+        </span>
+        <span style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:white;"><span style="color:#ff6b6b;">News</span>Deliver</span>
+      </a>
+    </div>
     <span class="header-title">🛠 관리자 페이지</span>
     <button class="header-back" onclick="history.back()">← 뒤로가기</button>
   </div>

@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}회사 소개 - NewsDeliver{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/css/main.css?v=3.4">
+  <style>
+    .about-hero {
+      background: linear-gradient(135deg, #cc0000 0%, #8a0000 100%);
+      color: white;
+      padding: 72px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .about-hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 240px; height: 240px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+    .about-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -40px;
+      width: 300px; height: 300px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+    .about-hero-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .about-hero-logo .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 12px;
+    }
+    .about-hero-logo .wordmark {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: white;
+    }
+    .about-hero h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 0 0 16px;
+      line-height: 1.4;
+    }
+    .about-hero p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.85);
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .about-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .about-section {
+      margin-top: 56px;
+    }
+    .about-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #c00;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .about-section h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin: 0 0 8px;
+    }
+    .about-section > p {
+      font-size: 15px;
+      color: #555;
+      line-height: 1.85;
+      max-width: 640px;
+      margin: 0 0 32px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      transition: box-shadow .2s;
+    }
+    .feature-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .feature-icon {
+      width: 44px; height: 44px;
+      background: #fff0f0;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin: 0 0 8px;
+    }
+    .feature-card p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .stat-box {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .stat-num {
+      font-size: 32px;
+      font-weight: 900;
+      color: #c00;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .value-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .value-item {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      border-left: 4px solid #c00;
+    }
+    .value-item h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin: 0 0 10px;
+    }
+    .value-item p {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .tech-tag {
+      display: inline-block;
+      background: #f5f5f5;
+      color: #333;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+    }
+    .tech-tag.red { background: #fff0f0; color: #c00; border-color: #ffd0d0; }
+
+    .cta-box {
+      background: linear-gradient(135deg, #cc0000, #ff4444);
+      border-radius: 16px;
+      padding: 44px 36px;
+      text-align: center;
+      color: white;
+      margin-top: 56px;
+    }
+    .cta-box h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+    .cta-box p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.85);
+      margin: 0 0 28px;
+      line-height: 1.7;
+    }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .cta-btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s;
+    }
+    .cta-btn:hover { transform: translateY(-2px); }
+    .cta-btn.white { background: white; color: #c00; }
+    .cta-btn.outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.6); }
+
+    @media (max-width: 720px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .value-list { grid-template-columns: 1fr; }
+      .about-hero h1 { font-size: 22px; }
+      .about-hero-logo .wordmark { font-size: 24px; }
+    }
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+{% endblock %}
+
+{% block back_btn %}{% endblock %}
+
+{% block content %}
+
+<!-- 헤더 -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left"><div class="header-date"></div></div>
+    <div class="header-logo"><a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#c00;border-radius:7px;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="2" rx="1" fill="white"/><rect x="3" y="9" width="14" height="2" rx="1" fill="white"/><rect x="3" y="14" width="9" height="2" rx="1" fill="white"/></svg></span><span style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span></a></div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
+        {% if current_user.role == 'admin' %}
+          <a href="/static/admin.html" class="header-btn">관리자</a>
+        {% elif current_user.role == 'press' %}
+          <a href="/press/news" class="header-btn">언론사</a>
+        {% endif %}
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% else %}
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+      {% endif %}
+    </div>
+  </div>
+  <!-- 네비게이션 -->
+    <nav class="main-nav">
+        <ul>
+            <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
+            <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+            <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+            <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
+            <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+            <li><a href="/about" class="active"><span class="nav-icon">ℹ️</span>소개</a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- 히어로 -->
+<div class="about-hero">
+  <div class="about-hero-logo">
+    <span class="icon">
+      <svg width="30" height="30" viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+        <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+        <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+      </svg>
+    </span>
+    <span class="wordmark">NewsDeliver</span>
+  </div>
+  <h1>세상의 모든 뉴스를<br>당신의 inbox로</h1>
+  <p>NewsDeliver는 AI 기술로 뉴스를 수집·요약하고<br>구독자의 관심사에 맞춰 매일 이메일로 전달하는 뉴스 플랫폼입니다.</p>
+</div>
+
+<div class="about-wrap">
+
+  <!-- 서비스 소개 -->
+  <div class="about-section">
+    <div class="about-section-title">About</div>
+    <h2>뉴스를 더 스마트하게</h2>
+    <p>하루에도 수천 건의 뉴스가 쏟아집니다. NewsDeliver는 네이버 뉴스 API로 9개 카테고리의 최신 기사를 2시간마다 자동 수집하고, AI가 핵심을 요약해 바쁜 일상 속에서도 꼭 필요한 뉴스만 빠르게 확인할 수 있도록 돕습니다.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI 뉴스 요약</h3>
+        <p>Groq AI(LLaMA 3.1)가 긴 기사를 3~4줄로 핵심만 압축합니다. 읽기 전에 요약으로 먼저 판단하세요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📬</div>
+        <h3>맞춤 이메일 뉴스레터</h3>
+        <p>관심 카테고리를 구독하면 매일 오전 7시 30분·오후 6시 30분, 최신 뉴스 5건이 메일로 도착합니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>실시간 자동 수집</h3>
+        <p>APScheduler가 2시간마다 뉴스를 자동 갱신합니다. 항상 최신 정보를 놓치지 않습니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔖</div>
+        <h3>북마크 & 댓글</h3>
+        <p>마음에 드는 기사를 저장하고, 댓글·대댓글로 다른 독자들과 생각을 나눠보세요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>실시간 채팅</h3>
+        <p>WebSocket 기반 채팅방에서 다른 사용자와 실시간으로 뉴스에 대한 의견을 나눌 수 있습니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>언론사 기사 작성</h3>
+        <p>관리자 승인을 받은 언론사 계정은 직접 기사를 작성하고 플랫폼에 게시할 수 있습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 서비스 현황 -->
+  <div class="about-section">
+    <div class="about-section-title">Stats</div>
+    <h2>서비스 현황</h2>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-num">9</div>
+        <div class="stat-label">뉴스 카테고리</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">2h</div>
+        <div class="stat-label">자동 갱신 주기</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">2×</div>
+        <div class="stat-label">일일 뉴스레터 발송</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">AI</div>
+        <div class="stat-label">LLaMA 3.1 요약</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 커버하는 카테고리 -->
+  <div class="about-section">
+    <div class="about-section-title">Categories</div>
+    <h2>9개 카테고리 커버리지</h2>
+    <p>정치부터 연예까지 — 관심사에 맞는 카테고리만 골라 구독할 수 있습니다.</p>
+    <div class="tech-stack">
+      <span class="tech-tag red">🏛 정치</span>
+      <span class="tech-tag red">💰 경제</span>
+      <span class="tech-tag red">💻 IT</span>
+      <span class="tech-tag red">🎭 문화</span>
+      <span class="tech-tag red">⚽ 스포츠</span>
+      <span class="tech-tag red">🎨 예술</span>
+      <span class="tech-tag red">🎬 연예</span>
+      <span class="tech-tag red">🌐 국제</span>
+      <span class="tech-tag red">📋 사회</span>
+    </div>
+  </div>
+
+  <!-- 핵심 가치 -->
+  <div class="about-section">
+    <div class="about-section-title">Values</div>
+    <h2>우리가 추구하는 가치</h2>
+    <p>NewsDeliver가 뉴스를 전달하는 방식에 담긴 철학입니다.</p>
+    <div class="value-list">
+      <div class="value-item">
+        <h3>정확성</h3>
+        <p>신뢰할 수 있는 출처에서 뉴스를 수집합니다. AI 요약도 원문의 맥락을 최대한 보존합니다.</p>
+      </div>
+      <div class="value-item">
+        <h3>효율성</h3>
+        <p>바쁜 하루 속에서 중요한 뉴스를 빠르게 파악할 수 있도록, 핵심만 정리해 드립니다.</p>
+      </div>
+      <div class="value-item">
+        <h3>개인화</h3>
+        <p>모든 뉴스를 읽을 필요는 없습니다. 관심 카테고리만 구독해 나만의 뉴스 피드를 만드세요.</p>
+      </div>
+      <div class="value-item">
+        <h3>신뢰성</h3>
+        <p>언론사 회원은 관리자 승인 후 기사를 게시할 수 있습니다. 검증된 콘텐츠만 제공합니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기술 스택 -->
+  <div class="about-section">
+    <div class="about-section-title">Tech Stack</div>
+    <h2>사용 기술</h2>
+    <p>안정적이고 빠른 서비스를 위해 검증된 기술 스택을 사용합니다.</p>
+    <div class="tech-stack">
+      <span class="tech-tag">Python</span>
+      <span class="tech-tag">FastAPI</span>
+      <span class="tech-tag">SQLAlchemy</span>
+      <span class="tech-tag">MySQL</span>
+      <span class="tech-tag">APScheduler</span>
+      <span class="tech-tag">WebSocket</span>
+      <span class="tech-tag">Groq AI (LLaMA 3.1)</span>
+      <span class="tech-tag">Naver News API</span>
+      <span class="tech-tag">OAuth (카카오·네이버·구글)</span>
+      <span class="tech-tag">JWT</span>
+      <span class="tech-tag">SMTP</span>
+      <span class="tech-tag">Jinja2</span>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h2>지금 바로 시작해보세요</h2>
+    <p>무료로 회원가입하고 관심 카테고리를 구독하면<br>매일 아침·저녁 맞춤 뉴스레터가 찾아옵니다.</p>
+    <div class="cta-btns">
+      <a href="{{ request.url_for('signup_page') }}" class="cta-btn white">무료 회원가입</a>
+      <a href="/subscribe" class="cta-btn outline">뉴스레터 구독</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- 푸터 -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#c00;border-radius:5px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="2" rx="1" fill="white"/><rect x="3" y="9" width="14" height="2" rx="1" fill="white"/><rect x="3" y="14" width="9" height="2" rx="1" fill="white"/></svg></span><span style="font-size:15px;font-weight:900;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span></div>
+    <p class="footer-desc">AI 기반 맞춤 뉴스 구독 플랫폼</p>
+    <div class="footer-links">
+      <a href="/about">회사 소개</a>
+      <a href="/contact">문의하기</a>
+      <a href="/subscribe">구독하기</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 NewsDeliver. All rights reserved.</p>
+  </div>
+</footer>
+
+{% endblock %}
