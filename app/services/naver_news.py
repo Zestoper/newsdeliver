@@ -267,7 +267,7 @@ def fetch_and_save_news():
         if not category_id:
             continue
 
-        url = f"https://openapi.naver.com/v1/search/news.json?query={keyword}&display=5&sort=date"
+        url = f"https://openapi.naver.com/v1/search/news.json?query={keyword}&display=20&sort=date"
 
         with httpx.Client() as client:
             res = client.get(url, headers=headers)

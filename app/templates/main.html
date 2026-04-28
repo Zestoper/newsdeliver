@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=3.4" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.6" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
@@ -519,5 +519,15 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
 }
 </style>
 {% endif %}
+
+<script>
+(function() {
+  var header = document.querySelector('.site-header');
+  if (!header) return;
+  window.addEventListener('scroll', function() {
+    header.classList.toggle('scrolled', window.scrollY > 50);
+  }, { passive: true });
+})();
+</script>
 
 {% endblock %}
