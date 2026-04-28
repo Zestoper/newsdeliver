@@ -517,6 +517,7 @@
       <span class="tool-panel-label">콘텐츠 도구</span>
       <div class="tool-btns">
         <button class="btn btn-primary" onclick="fetchNews()">📰 뉴스 가져오기</button>
+        <button class="btn btn-primary" onclick="fetchGlobalNews()">🌍 해외뉴스 가져오기</button>
 <button class="btn btn-outline" onclick="recrawlContent()">🔄 본문 재수집</button>
         <button class="btn btn-outline" onclick="fixContentViaApi()">🔍 API로 본문 복원</button>
         <button class="btn btn-gray" onclick="cleanContent()">🧹 JS 쓰레기 정리</button>
@@ -855,30 +856,30 @@
   async function loadNews() {
     const res = await fetch(NEWS_API);
     const list = await res.json();
-    const tbody = document.querySelector('#newsTable tbody');
-    tbody.innerHTML = '';
     list.forEach(n => { _newsMap[n.id] = n; });
-    list.forEach(n => {
+
+    const rows = list.map(n => {
       const date  = n.created_at ? n.created_at.substring(0, 10) : '';
       const badge = n.status === 'published'
         ? `<span class="badge badge-published">발행</span>`
         : `<span class="badge badge-draft">임시저장</span>`;
-      tbody.innerHTML += `
-        <tr>
-          <td>${n.id}</td>
-          <td>${n.title}</td>
-          <td>${n.source || ''}</td>
-          <td>${badge}</td>
-          <td>${date}</td>
-          <td style="white-space:nowrap;">
-            <button class="btn btn-gray" onclick="openEditModal(_newsMap[${n.id}])">편집</button>
-            <button class="btn btn-gray" onclick="toggleStatus(${n.id},'${n.status}')">
-              ${n.status === 'published' ? '임시저장으로' : '발행'}
-            </button>
-            <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
-          </td>
-        </tr>`;
+      return `<tr>
+        <td>${n.id}</td>
+        <td>${n.title}</td>
+        <td>${n.source || ''}</td>
+        <td>${badge}</td>
+        <td>${date}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-gray" onclick="openEditModal(_newsMap[${n.id}])">편집</button>
+          <button class="btn btn-gray" onclick="toggleStatus(${n.id},'${n.status}')">
+            ${n.status === 'published' ? '임시저장으로' : '발행'}
+          </button>
+          <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
+        </td>
+      </tr>`;
     });
+    document.querySelector('#newsTable tbody').innerHTML = rows.join('');
+
     const sources = [...new Set(list.map(n => n.source).filter(Boolean))].sort();
     const sel = document.getElementById('news-source-filter');
     const currentVal = sel.value;
@@ -945,6 +946,15 @@
     const el = document.getElementById('fetch-result');
     el.textContent = '뉴스 가져오는 중...'; el.style.color = '#888';
     const res  = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
+    const data = await res.json();
+    el.textContent = data.message;
+    el.style.color = data.success ? '#16a34a' : '#ef4444';
+  }
+
+  async function fetchGlobalNews() {
+    const el = document.getElementById('fetch-result');
+    el.textContent = '해외뉴스 가져오는 중... (30~60초 소요)'; el.style.color = '#888';
+    const res  = await fetch(`${ADMIN_API}/fetch-global-news`, { method: 'POST' });
     const data = await res.json();
     el.textContent = data.message;
     el.style.color = data.success ? '#16a34a' : '#ef4444';
@@ -1310,10 +1320,10 @@ async function recrawlContent() {
   // ── 뉴스 편집 모달 ──
   let _editCatsLoaded = false;
 
-  function openEditModal(n) {
+  async function openEditModal(n) {
     document.getElementById('edit-news-id').value  = n.id;
     document.getElementById('edit-title').value    = n.title || '';
-    document.getElementById('edit-content').value  = n.content || '';
+    document.getElementById('edit-content').value  = '불러오는 중...';
     document.getElementById('edit-image').value    = n.image_url || '';
     document.getElementById('edit-source').value   = n.source || '';
     document.getElementById('edit-status').value   = n.status || 'draft';
@@ -1334,6 +1344,11 @@ async function recrawlContent() {
     }
 
     document.getElementById('editModalOverlay').classList.add('open');
+
+    // content는 개별 fetch (LONGTEXT라 목록에서 제외됨)
+    const full = await fetch(`${NEWS_API}/${n.id}`).then(r => r.json());
+    document.getElementById('edit-content').value  = full.content || '';
+    catSel.value = full.category_id || n.category_id || '';
   }
 
   function closeEditModal() {

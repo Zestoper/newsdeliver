@@ -24,13 +24,31 @@ def _card_html(article: dict, base_url: str) -> str:
     content = article.get("content") or ""
     link = article.get("link") or (f"{base_url}/news/{news_id}" if news_id else "")
 
-    ai_summary = article.get("ai_summary", "")
-    if ai_summary:
-        excerpt = ai_summary
+    ai_summary = article.get("ai_summary", "") or ""
+    is_global = bool(article.get("is_global", 0))
+
+    # 해외뉴스: EN::: ... \n KO::: ... 형식 파싱
+    summary_block = ""
+    if ai_summary and is_global and "EN:::" in ai_summary and "KO:::" in ai_summary:
+        parts = ai_summary.split("KO:::", 1)
+        en_text = parts[0].replace("EN:::", "").strip()
+        ko_text = parts[1].strip() if len(parts) > 1 else ""
+        summary_block = (
+            f'<p style="font-size:11px;color:#0066cc;font-weight:700;margin:0 0 4px;">🌍 English Summary</p>'
+            f'<p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 12px;">{en_text}</p>'
+            f'<p style="font-size:11px;color:#7c3aed;font-weight:700;margin:0 0 4px;">✦ 한국어 요약</p>'
+            f'<p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 16px;">{ko_text}</p>'
+        )
+    elif ai_summary:
+        summary_block = (
+            f'<p style="font-size:11px;color:#7c3aed;font-weight:700;margin:0 0 6px;">✦ AI 요약</p>'
+            f'<p style="font-size:14px;color:#555;line-height:1.75;margin:0 0 16px;">{ai_summary}</p>'
+        )
     else:
         excerpt = content.replace("\n", " ").strip()[:120]
         if len(content.replace("\n", " ").strip()) > 120:
             excerpt += "…"
+        summary_block = f'<p style="font-size:14px;color:#555;line-height:1.75;margin:0 0 16px;">{excerpt}</p>'
 
     cat_emoji = _CAT_EMOJI.get(cat, "📰")
     cat_badge = (
@@ -60,8 +78,7 @@ def _card_html(article: dict, base_url: str) -> str:
         {cat_badge}
         {'<p style="font-size:11px;color:#adb5bd;margin-bottom:6px;">'+source+'</p>' if source else ''}
         <h3 style="font-size:17px;font-weight:800;color:#1a1a1a;margin:0 0 10px;line-height:1.45;">{title}</h3>
-        {'<p style="font-size:11px;color:#7c3aed;font-weight:700;margin:0 0 6px;">✦ AI 요약</p>' if ai_summary else ''}
-        <p style="font-size:14px;color:#555;line-height:1.75;margin:0 0 16px;">{excerpt}</p>
+        {summary_block}
         {btn}
       </div>
     </div>"""

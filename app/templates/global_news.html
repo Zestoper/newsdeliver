@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}뉴스 목록 - News Delivery{% endblock %}
+{% block title %}해외뉴스 - News Delivery{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.7">
@@ -34,17 +34,17 @@
     </div>
   </div>
   <!-- 네비게이션 -->
-    <nav class="main-nav">
-        <ul>
-            <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
-            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
-            <li><a href="/news" class="active"><span class="nav-icon">📰</span>뉴스</a></li>
-            <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
-            <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-            <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
-            <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
-        </ul>
-    </nav>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
+      <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
+      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+      <li><a href="/global-news" class="active"><span class="nav-icon">🌍</span>해외뉴스</a></li>
+      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
+      <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+    </ul>
+  </nav>
 </header>
 
 <!-- 콘텐츠 -->
@@ -52,17 +52,17 @@
 
   <!-- 페이지 타이틀 -->
   <div class="page-title-bar">
-    <h2>📰 뉴스 목록</h2>
+    <h2>🌍 해외뉴스</h2>
     {% if selected_category %}
       <span class="cat-badge">{{ selected_category }}</span>
     {% endif %}
   </div>
 
-  <!-- 카테고리 필터 -->
+  <!-- 카테고리 필터 (국내와 동일한 9개) -->
   <div class="category-tabs" style="margin-bottom:24px;">
-    <a href="/news" class="cat-tab {% if not selected_category %}active{% endif %}">전체</a>
+    <a href="/global-news" class="cat-tab {% if not selected_category %}active{% endif %}">전체</a>
     {% for cat in categories %}
-      <a href="/news?category={{ cat.name }}"
+      <a href="/global-news?category={{ cat.name }}"
          class="cat-tab {% if selected_category == cat.name %}active{% endif %}">
         {% if cat.name == '정치' %}🏛
         {% elif cat.name == '경제' %}💰
@@ -70,6 +70,9 @@
         {% elif cat.name == '문화' %}🎭
         {% elif cat.name == '스포츠' %}⚽
         {% elif cat.name == '예술' %}🎨
+        {% elif cat.name == '연예' %}🌟
+        {% elif cat.name == '국제' %}🌐
+        {% elif cat.name == '사회' %}🏘
         {% endif %}
         {{ cat.name }}
       </a>
@@ -92,14 +95,19 @@
           {% endif %}
           <h3 class="card-title">{{ news.get('title', '') }}</h3>
           <p class="card-desc">{{ news.get('content', '')[:80] }}...</p>
-          <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+            {% if news.source %}
+              <span style="font-size:11px;color:#888;background:#f5f5f5;padding:2px 7px;border-radius:10px;">{{ news.source }}</span>
+            {% endif %}
+          </div>
         </div>
       </a>
     {% endfor %}
   </div>
   {% else %}
     <div class="empty-state">
-      <p>등록된 뉴스가 없습니다.</p>
+      <p>해외 뉴스가 없습니다. 서버 재시작 후 자동 수집됩니다.</p>
     </div>
   {% endif %}
 
@@ -107,7 +115,7 @@
   <div class="pagination">
     {% set cat_qs = '&category=' ~ selected_category if selected_category else '' %}
     {% if page > 1 %}
-      <a href="/news?page={{ page - 1 }}{{ cat_qs }}" class="page-btn">← 이전</a>
+      <a href="/global-news?page={{ page - 1 }}{{ cat_qs }}" class="page-btn">← 이전</a>
     {% else %}
       <span class="page-btn disabled">← 이전</span>
     {% endif %}
@@ -116,14 +124,14 @@
       {% if p == page %}
         <span class="page-btn active">{{ p }}</span>
       {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
-        <a href="/news?page={{ p }}{{ cat_qs }}" class="page-btn">{{ p }}</a>
+        <a href="/global-news?page={{ p }}{{ cat_qs }}" class="page-btn">{{ p }}</a>
       {% elif p == page - 3 or p == page + 3 %}
         <span class="page-btn ellipsis">…</span>
       {% endif %}
     {% endfor %}
 
     {% if page < total_pages %}
-      <a href="/news?page={{ page + 1 }}{{ cat_qs }}" class="page-btn">다음 →</a>
+      <a href="/global-news?page={{ page + 1 }}{{ cat_qs }}" class="page-btn">다음 →</a>
     {% else %}
       <span class="page-btn disabled">다음 →</span>
     {% endif %}

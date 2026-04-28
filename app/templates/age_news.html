@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group_label }} - News Delivery{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.7">
+{% endblock %}
+
+{% block back_btn %}{% endblock %}
+
+{% block content %}
+
+<!-- 헤더 -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left"><div class="header-date"></div></div>
+    <div class="header-logo">
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#c00;border-radius:7px;">
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+            <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+            <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+          </svg>
+        </span>
+        <span style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      {% if current_user %}
+        <span class="user-name">{{ current_user.name }}님</span>
+        <a href="/mypage" class="header-btn outline">마이페이지</a>
+        {% if current_user.role == 'admin' %}
+          <a href="/static/admin.html" class="header-btn">관리자</a>
+        {% elif current_user.role == 'press' %}
+          <a href="/press/news" class="header-btn">언론사</a>
+        {% endif %}
+        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+      {% else %}
+        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
+        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+      {% endif %}
+    </div>
+  </div>
+  <nav class="main-nav">
+    <ul>
+      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
+      <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
+      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+      <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
+      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
+      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
+      <li><a href="/contact"><span class="nav-icon">✉️</span>문의</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="main-content">
+
+  <!-- 페이지 타이틀 -->
+  <div class="page-title-bar">
+    <h2>🎯 연령대별 추천 뉴스</h2>
+    <a href="/" class="more-link" style="font-size:13px;">← 홈으로</a>
+  </div>
+
+  <!-- 연령대 탭 -->
+  <div class="category-tabs" style="margin-bottom:20px;">
+    <a href="/age-news/teen"
+       class="cat-tab {% if group == 'teen' %}active{% endif %}">🔥 10~20대</a>
+    <a href="/age-news/adult"
+       class="cat-tab {% if group == 'adult' %}active{% endif %}">💼 30~40대</a>
+    <a href="/age-news/senior"
+       class="cat-tab {% if group == 'senior' %}active{% endif %}">🌿 50~70대</a>
+  </div>
+
+  <!-- 키워드 태그 필터 -->
+  {% set tag_map = {
+    "teen":   [
+      {"label": "취업/채용", "kw": "취업"},
+      {"label": "IT/AI",    "kw": "IT"},
+      {"label": "연예/문화", "kw": "연예"},
+      {"label": "게임/e스포츠", "kw": "게임"},
+      {"label": "패션/뷰티", "kw": "패션"},
+      {"label": "SNS/트렌드", "kw": "SNS"},
+      {"label": "대학/교육", "kw": "대학"},
+      {"label": "주식입문",  "kw": "주식"},
+      {"label": "사회이슈",  "kw": "사회"},
+      {"label": "해외화제",  "kw": "해외"}
+    ],
+    "adult":  [
+      {"label": "경제/부동산", "kw": "부동산"},
+      {"label": "주식/재테크", "kw": "재테크"},
+      {"label": "육아/교육",   "kw": "육아"},
+      {"label": "건강/의료",   "kw": "건강"},
+      {"label": "자동차",      "kw": "자동차"},
+      {"label": "정치/사회",   "kw": "정치"},
+      {"label": "IT/업무",     "kw": "IT"},
+      {"label": "창업/비즈니스","kw": "창업"},
+      {"label": "여행/레저",   "kw": "여행"},
+      {"label": "생활정보",    "kw": "생활"}
+    ],
+    "senior": [
+      {"label": "건강/의료", "kw": "건강"},
+      {"label": "정치",      "kw": "정치"},
+      {"label": "경제",      "kw": "경제"},
+      {"label": "부동산",    "kw": "부동산"},
+      {"label": "연금/복지", "kw": "연금"},
+      {"label": "사회/시사", "kw": "사회"},
+      {"label": "생활정보",  "kw": "생활"},
+      {"label": "문화/전통", "kw": "문화"},
+      {"label": "여행",      "kw": "여행"},
+      {"label": "지역뉴스",  "kw": "지역"}
+    ]
+  } %}
+
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;align-items:center;">
+    <a href="/age-news/{{ group }}"
+       class="age-filter-tag {% if not keyword %}active{% endif %}">전체</a>
+    {% for tag in tag_map[group] %}
+      <a href="/age-news/{{ group }}?keyword={{ tag.kw | urlencode }}"
+         class="age-filter-tag {% if keyword == tag.kw %}active{% endif %}">{{ tag.label }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 결과 수 -->
+  <div style="font-size:13px;color:#888;margin-bottom:16px;">
+    총 <strong style="color:#1a1a1a;">{{ total }}</strong>건의 뉴스
+    {% if keyword %} · <span style="color:#c00;">「{{ keyword }}」</span> 검색결과{% endif %}
+  </div>
+
+  <!-- 뉴스 그리드 -->
+  {% if news_items %}
+  <div class="news-grid">
+    {% for news in news_items %}
+      <a href="/news/{{ news.id }}" class="news-card">
+        {% if news.image_url and news.image_url.startswith('http') %}
+          <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
+        {% else %}
+          <div class="card-img no-img">📰</div>
+        {% endif %}
+        <div class="card-body">
+          {% if news.category_name %}
+            <span class="cat-badge">{{ news.category_name }}</span>
+          {% endif %}
+          <h3 class="card-title">{{ news.title }}</h3>
+          <span class="card-date">{{ news.created_at.strftime('%Y.%m.%d') if news.created_at else '' }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <p>해당 조건의 뉴스가 없습니다.</p>
+    </div>
+  {% endif %}
+
+  <!-- 페이지네이션 -->
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% set kw_qs = '&keyword=' ~ keyword if keyword else '' %}
+    {% if page > 1 %}
+      <a href="/age-news/{{ group }}?page={{ page - 1 }}{{ kw_qs }}" class="page-btn">← 이전</a>
+    {% else %}
+      <span class="page-btn disabled">← 이전</span>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+        <span class="page-btn active">{{ p }}</span>
+      {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+        <a href="/age-news/{{ group }}?page={{ p }}{{ kw_qs }}" class="page-btn">{{ p }}</a>
+      {% elif p == page - 3 or p == page + 3 %}
+        <span class="page-btn ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+      <a href="/age-news/{{ group }}?page={{ page + 1 }}{{ kw_qs }}" class="page-btn">다음 →</a>
+    {% else %}
+      <span class="page-btn disabled">다음 →</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- 푸터 -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:6px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#c00;border-radius:5px;">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+          <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
+          <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
+          <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
+        </svg>
+      </span>
+      <span style="font-size:15px;font-weight:900;color:#1a1a1a;"><span style="color:#c00;">News</span>Deliver</span>
+    </div>
+    <p class="footer-desc">카테고리 기반 뉴스 큐레이션 플랫폼</p>
+    <div class="footer-links">
+      <a href="/about">회사 소개</a>
+      <a href="/contact">문의하기</a>
+      <a href="/subscribe">구독하기</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 News Delivery. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+.age-filter-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  background: #f5f5f5;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  padding: 4px 12px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.age-filter-tag:hover { color: #c00; background: #fff0f0; border-color: #f4b8b8; }
+.age-filter-tag.active { color: #c00; background: #fff0f0; border-color: #c00; font-weight: 700; }
+</style>
+
+{% endblock %}

@@ -1,5 +1,6 @@
 from pathlib import Path
 import base64
+from datetime import date as _date
 import httpx
 
 from fastapi import APIRouter, Form, Request
@@ -65,11 +66,13 @@ def render(
 async def home(request: Request, press_notice: str = "", signup_done: str = "") -> HTMLResponse:
     with engine.connect() as conn:
         news_items = [dict(r._mapping) for r in conn.execute(text("""
-            SELECT n.*, c.name as category_name
+            SELECT n.id, n.title, n.image_url, n.content, n.created_at,
+                   c.name as category_name
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
-            WHERE n.status = 'published'
+            WHERE n.status = 'published' AND COALESCE(n.is_global, 0) = 0
             ORDER BY n.created_at DESC
+            LIMIT 20
         """))]
         top_commented = [dict(r._mapping) for r in conn.execute(text("""
             SELECT n.*, c.name as category_name,
@@ -118,7 +121,8 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
                   top_commented=top_commented, top_liked=top_liked,
                   big5_news=big5_news, top_viewed=top_viewed,
                   show_press_notice=press_notice == "1",
-                  show_signup_done=signup_done == "1")
+                  show_signup_done=signup_done == "1",
+                  now=_date.today().strftime("%Y년 %m월 %d일"))
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -240,11 +244,15 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
         is_verified = False
         verify_link = None
         if user:
-            result = conn.execute(
-                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
+            domestic_subscribed_ids = [row.category_id for row in conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id AND COALESCE(is_global, 0) = 0"),
                 {"user_id": user["id"]}
-            )
-            subscribed_ids = [row.category_id for row in result]
+            )]
+            global_subscribed_ids = [row.category_id for row in conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id AND is_global = 1"),
+                {"user_id": user["id"]}
+            )]
+            subscribed_ids = domestic_subscribed_ids  # 하위호환
             sub = conn.execute(
                 text("SELECT email, is_active, is_verified, verify_token FROM subscriptions WHERE user_id = :user_id"),
                 {"user_id": user["id"]}
@@ -256,6 +264,9 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
                 if not is_verified and sub.verify_token:
                     base = str(request.base_url).rstrip('/')
                     verify_link = f"{base}/verify-email?token={sub.verify_token}"
+    if not user:
+        domestic_subscribed_ids = []
+        global_subscribed_ids = []
     if verified == "1":
         notify = ("✅ 이메일 인증이 완료되었습니다! 구독이 활성화되었어요.", "success")
     elif mail_sent == "1":
@@ -263,7 +274,10 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
     else:
         notify = (None, "success")
     return render(request, "subscribe.html", categories=categories,
-                  subscribed_ids=subscribed_ids, current_email=current_email,
+                  subscribed_ids=subscribed_ids,
+                  domestic_subscribed_ids=domestic_subscribed_ids,
+                  global_subscribed_ids=global_subscribed_ids,
+                  current_email=current_email,
                   is_subscribed=is_subscribed, is_verified=is_verified,
                   verify_link=verify_link,
                   toss_client_key=settings.TOSS_CLIENT_KEY,
@@ -279,8 +293,12 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
     def get_subscribe_context():
         with engine.connect() as conn:
             categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
-            subscribed_ids = [row.category_id for row in conn.execute(
-                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id"),
+            domestic_ids = [row.category_id for row in conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id AND COALESCE(is_global, 0) = 0"),
+                {"user_id": user["id"]}
+            )]
+            global_ids = [row.category_id for row in conn.execute(
+                text("SELECT category_id FROM category_subscriptions WHERE user_id = :user_id AND is_global = 1"),
                 {"user_id": user["id"]}
             )]
             sub = conn.execute(
@@ -290,7 +308,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
             current_email = sub.email if sub else None
             is_subscribed = sub.is_active == 1 if sub else False
             is_verified = sub.is_verified == 1 if sub else False
-        return categories, subscribed_ids, current_email, is_subscribed, is_verified
+        return categories, domestic_ids, global_ids, current_email, is_subscribed, is_verified
 
     if not user:
         with engine.connect() as conn:
@@ -299,25 +317,28 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       message="로그인 후 구독할 수 있습니다.",
                       message_type="error", form_data=form_data,
                       categories=categories, subscribed_ids=[],
+                      domestic_subscribed_ids=[], global_subscribed_ids=[],
                       current_email=None, is_subscribed=False, is_verified=False,
                       verify_link=None)
 
     if is_duplicate_subscription(email, user_id=user["id"]):
-        categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
+        categories, domestic_ids, global_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
         return render(request, "subscribe.html",
                       message="이미 다른 사용자가 사용 중인 이메일입니다.",
                       message_type="error", form_data=form_data,
-                      categories=categories, subscribed_ids=subscribed_ids,
+                      categories=categories, subscribed_ids=domestic_ids,
+                      domestic_subscribed_ids=domestic_ids, global_subscribed_ids=global_ids,
                       current_email=current_email, is_subscribed=is_subscribed,
                       is_verified=is_verified, verify_link=None)
 
     try:
         token = add_subscription(email, user_id=user["id"])
     except ValueError as e:
-        categories, subscribed_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
+        categories, domestic_ids, global_ids, current_email, is_subscribed, is_verified = get_subscribe_context()
         return render(request, "subscribe.html",
                       message=str(e), message_type="error",
-                      categories=categories, subscribed_ids=subscribed_ids,
+                      categories=categories, subscribed_ids=domestic_ids,
+                      domestic_subscribed_ids=domestic_ids, global_subscribed_ids=global_ids,
                       current_email=current_email, is_subscribed=is_subscribed,
                       is_verified=is_verified, verify_link=None)
 
@@ -566,43 +587,89 @@ async def news(request: Request, category: str = "", page: int = 1) -> HTMLRespo
     page = max(1, page)
     offset = (page - 1) * _NEWS_PAGE_SIZE
     with engine.connect() as conn:
-        categories = [dict(row._mapping) for row in conn.execute(text("SELECT * FROM categories"))]
+        # 국내 카테고리만 (is_global = 0 인 카테고리)
+        categories = [dict(row._mapping) for row in conn.execute(text(
+            "SELECT DISTINCT c.* FROM categories c "
+            "JOIN news n ON n.category_id = c.id "
+            "WHERE COALESCE(n.is_global, 0) = 0"
+        ))]
+        base = "n.status = 'published' AND COALESCE(n.is_global, 0) = 0"
         if category:
             total_count = conn.execute(
-                text("""SELECT COUNT(*) FROM news n
-                        LEFT JOIN categories c ON n.category_id = c.id
-                        WHERE n.status = 'published' AND c.name = :category"""),
+                text(f"SELECT COUNT(*) FROM news n LEFT JOIN categories c ON n.category_id = c.id WHERE {base} AND c.name = :category"),
                 {"category": category}
             ).scalar() or 0
             result = conn.execute(
-                text("""
-                    SELECT n.*, c.name as category_name
-                    FROM news n
+                text(f"""
+                    SELECT n.*, c.name as category_name FROM news n
                     LEFT JOIN categories c ON n.category_id = c.id
-                    WHERE n.status = 'published' AND c.name = :category
-                    ORDER BY n.created_at DESC
-                    LIMIT :limit OFFSET :offset
+                    WHERE {base} AND c.name = :category
+                    ORDER BY n.created_at DESC LIMIT :limit OFFSET :offset
                 """),
                 {"category": category, "limit": _NEWS_PAGE_SIZE, "offset": offset}
             )
         else:
             total_count = conn.execute(
-                text("SELECT COUNT(*) FROM news WHERE status = 'published'")
+                text(f"SELECT COUNT(*) FROM news n WHERE {base}")
             ).scalar() or 0
             result = conn.execute(
-                text("""
-                    SELECT n.*, c.name as category_name
-                    FROM news n
+                text(f"""
+                    SELECT n.*, c.name as category_name FROM news n
                     LEFT JOIN categories c ON n.category_id = c.id
-                    WHERE n.status = 'published'
-                    ORDER BY n.created_at DESC
-                    LIMIT :limit OFFSET :offset
+                    WHERE {base}
+                    ORDER BY n.created_at DESC LIMIT :limit OFFSET :offset
                 """),
                 {"limit": _NEWS_PAGE_SIZE, "offset": offset}
             )
         news_items = [dict(row._mapping) for row in result]
     total_pages = max(1, (total_count + _NEWS_PAGE_SIZE - 1) // _NEWS_PAGE_SIZE)
     return render(request, "news.html", news_items=news_items,
+                  categories=categories, selected_category=category,
+                  page=page, total_pages=total_pages)
+
+
+@router.get("/global-news", response_class=HTMLResponse)
+async def global_news_page(request: Request, category: str = "", page: int = 1) -> HTMLResponse:
+    page = max(1, page)
+    offset = (page - 1) * _NEWS_PAGE_SIZE
+    with engine.connect() as conn:
+        # 국내와 동일한 9개 카테고리 항상 표시
+        categories = [dict(row._mapping) for row in conn.execute(text(
+            "SELECT * FROM categories WHERE name IN "
+            "('정치','경제','IT','문화','스포츠','예술','연예','국제','사회') "
+            "ORDER BY FIELD(name,'정치','경제','IT','문화','스포츠','예술','연예','국제','사회')"
+        ))]
+        base = "n.status = 'published' AND n.is_global = 1"
+        if category:
+            total_count = conn.execute(
+                text(f"SELECT COUNT(*) FROM news n LEFT JOIN categories c ON n.category_id = c.id WHERE {base} AND c.name = :category"),
+                {"category": category}
+            ).scalar() or 0
+            result = conn.execute(
+                text(f"""
+                    SELECT n.*, c.name as category_name FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE {base} AND c.name = :category
+                    ORDER BY n.created_at DESC LIMIT :limit OFFSET :offset
+                """),
+                {"category": category, "limit": _NEWS_PAGE_SIZE, "offset": offset}
+            )
+        else:
+            total_count = conn.execute(
+                text(f"SELECT COUNT(*) FROM news n WHERE {base}")
+            ).scalar() or 0
+            result = conn.execute(
+                text(f"""
+                    SELECT n.*, c.name as category_name FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE {base}
+                    ORDER BY n.created_at DESC LIMIT :limit OFFSET :offset
+                """),
+                {"limit": _NEWS_PAGE_SIZE, "offset": offset}
+            )
+        news_items = [dict(row._mapping) for row in result]
+    total_pages = max(1, (total_count + _NEWS_PAGE_SIZE - 1) // _NEWS_PAGE_SIZE)
+    return render(request, "global_news.html", news_items=news_items,
                   categories=categories, selected_category=category,
                   page=page, total_pages=total_pages)
 
@@ -823,6 +890,11 @@ async def toggle_comment_like(request: Request, news_id: int, comment_id: int):
     if not user:
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
     with engine.connect() as conn:
+        if not conn.execute(
+            text("SELECT id FROM news_comments WHERE id = :cid AND news_id = :nid"),
+            {"cid": comment_id, "nid": news_id},
+        ).fetchone():
+            return JSONResponse({"success": False, "message": "댓글을 찾을 수 없습니다."})
         existing = conn.execute(
             text("SELECT id FROM comment_likes WHERE comment_id=:cid AND user_id=:uid"),
             {"cid": comment_id, "uid": user["id"]}
@@ -873,8 +945,8 @@ async def update_comment(request: Request, news_id: int, comment_id: int, conten
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
     with engine.connect() as conn:
         conn.execute(
-            text("UPDATE news_comments SET content = :content WHERE id = :id AND user_id = :user_id"),
-            {"content": content, "id": comment_id, "user_id": user["id"]}
+            text("UPDATE news_comments SET content = :content WHERE id = :id AND news_id = :news_id AND user_id = :user_id"),
+            {"content": content, "id": comment_id, "news_id": news_id, "user_id": user["id"]}
         )
         conn.commit()
     return JSONResponse({"success": True})
@@ -887,8 +959,8 @@ async def delete_comment(request: Request, news_id: int, comment_id: int):
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
     with engine.connect() as conn:
         conn.execute(
-            text("DELETE FROM news_comments WHERE id = :id AND user_id = :user_id"),
-            {"id": comment_id, "user_id": user["id"]}
+            text("DELETE FROM news_comments WHERE id = :id AND news_id = :news_id AND user_id = :user_id"),
+            {"id": comment_id, "news_id": news_id, "user_id": user["id"]}
         )
         conn.commit()
     return JSONResponse({"success": True})
@@ -933,25 +1005,173 @@ async def toggle_category_subscribe(request: Request, category_id: int):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"success": False, "message": "로그인이 필요합니다."})
+    try:
+        body = await request.json()
+        is_global = int(body.get("is_global", 0))
+    except Exception:
+        is_global = 0
     with engine.connect() as conn:
         existing = conn.execute(
-            text("SELECT id FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id"),
-            {"user_id": user["id"], "category_id": category_id}
+            text("SELECT id FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id AND COALESCE(is_global, 0) = :is_global"),
+            {"user_id": user["id"], "category_id": category_id, "is_global": is_global}
         ).fetchone()
         if existing:
             conn.execute(
-                text("DELETE FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id"),
-                {"user_id": user["id"], "category_id": category_id}
+                text("DELETE FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id AND COALESCE(is_global, 0) = :is_global"),
+                {"user_id": user["id"], "category_id": category_id, "is_global": is_global}
             )
             subscribed = False
         else:
             conn.execute(
-                text("INSERT INTO category_subscriptions (user_id, category_id) VALUES (:user_id, :category_id)"),
-                {"user_id": user["id"], "category_id": category_id}
+                text("INSERT INTO category_subscriptions (user_id, category_id, is_global) VALUES (:user_id, :category_id, :is_global)"),
+                {"user_id": user["id"], "category_id": category_id, "is_global": is_global}
             )
             subscribed = True
         conn.commit()
     return JSONResponse({"success": True, "subscribed": subscribed})
+
+
+_AGE_GROUP_CONFIG = {
+    "teen": {
+        "categories": ["IT", "연예", "문화", "예술", "사회"],
+        "keywords": ["취업", "채용", "게임", "패션", "뷰티", "SNS", "트렌드", "대학", "인턴", "e스포츠"],
+    },
+    "adult": {
+        "categories": ["경제", "IT", "사회", "정치", "문화"],
+        "keywords": ["부동산", "재테크", "주식", "육아", "창업", "비즈니스", "자동차", "건강"],
+    },
+    "senior": {
+        "categories": ["정치", "경제", "사회", "문화"],
+        "keywords": ["건강", "의료", "연금", "복지", "노후", "부동산", "생활", "지역"],
+    },
+}
+
+_AGE_PAGE_SIZE = 12
+
+_AGE_GROUP_LABEL = {
+    "teen":   "🔥 10~20대 추천",
+    "adult":  "💼 30~40대 추천",
+    "senior": "🌿 50~70대 추천",
+}
+
+@router.get("/age-news/{group}", response_class=HTMLResponse)
+def age_news_page(request: Request, group: str = "teen", keyword: str = "", page: int = 1):
+    config = _AGE_GROUP_CONFIG.get(group)
+    if not config:
+        return RedirectResponse("/age-news/teen")
+
+    page = max(1, page)
+    offset = (page - 1) * _AGE_PAGE_SIZE
+    params: dict = {}
+
+    if keyword:
+        where = "n.status = 'published' AND COALESCE(n.is_global,0) = 0 AND n.title LIKE :kw"
+        params["kw"] = f"%{keyword}%"
+    else:
+        cats = config["categories"]
+        kws  = config["keywords"]
+        cat_ph = ", ".join(f":c{i}" for i in range(len(cats)))
+        kw_or  = " OR ".join(f"n.title LIKE :kw{i}" for i in range(len(kws)))
+        params.update({f"c{i}": c for i, c in enumerate(cats)})
+        params.update({f"kw{i}": f"%{kw}%" for i, kw in enumerate(kws)})
+        where = f"n.status = 'published' AND COALESCE(n.is_global,0) = 0 AND (c.name IN ({cat_ph}) OR ({kw_or}))"
+
+    count_sql = f"SELECT COUNT(*) FROM news n LEFT JOIN categories c ON n.category_id = c.id WHERE {where}"
+    data_sql = f"""
+        SELECT n.id, n.title, n.image_url, n.created_at, c.name AS category_name
+        FROM news n LEFT JOIN categories c ON n.category_id = c.id
+        WHERE {where}
+        ORDER BY n.created_at DESC
+        LIMIT :lim OFFSET :off
+    """
+    params["lim"] = _AGE_PAGE_SIZE
+    params["off"] = offset
+
+    with engine.connect() as conn:
+        total = conn.execute(text(count_sql), {k: v for k, v in params.items() if k not in ("lim", "off")}).scalar() or 0
+        rows  = conn.execute(text(data_sql), params).fetchall()
+
+    news_items = [
+        {
+            "id": r.id,
+            "title": r.title,
+            "image_url": r.image_url or "",
+            "category_name": r.category_name or "",
+            "created_at": r.created_at,
+        }
+        for r in rows
+    ]
+
+    total_pages = max(1, (total + _AGE_PAGE_SIZE - 1) // _AGE_PAGE_SIZE)
+
+    return render(request, "age_news.html",
+                  group=group,
+                  group_label=_AGE_GROUP_LABEL.get(group, "연령대별 추천"),
+                  keyword=keyword,
+                  news_items=news_items,
+                  page=page,
+                  total_pages=total_pages,
+                  total=total)
+
+
+@router.get("/api/age-news")
+def age_news(group: str = "teen", keyword: str = ""):
+    config = _AGE_GROUP_CONFIG.get(group)
+    if not config:
+        return []
+
+    params: dict = {}
+
+    if keyword:
+        # 특정 태그 클릭: 해당 키워드로만 필터
+        sql = """
+            SELECT n.id, n.title, n.image_url, n.created_at,
+                   c.name AS category_name
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.status = 'published'
+              AND COALESCE(n.is_global, 0) = 0
+              AND n.title LIKE :kw
+            ORDER BY n.created_at DESC
+            LIMIT 6
+        """
+        params["kw"] = f"%{keyword}%"
+    else:
+        # 연령대 전체: 카테고리 + 키워드 합산
+        cats = config["categories"]
+        kws  = config["keywords"]
+        cat_placeholders = ", ".join(f":c{i}" for i in range(len(cats)))
+        kw_conditions    = " OR ".join(f"n.title LIKE :kw{i}" for i in range(len(kws)))
+        params.update({f"c{i}": c for i, c in enumerate(cats)})
+        params.update({f"kw{i}": f"%{kw}%" for i, kw in enumerate(kws)})
+        sql = f"""
+            SELECT n.id, n.title, n.image_url, n.created_at,
+                   c.name AS category_name
+            FROM news n
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.status = 'published'
+              AND COALESCE(n.is_global, 0) = 0
+              AND (
+                  c.name IN ({cat_placeholders})
+                  OR ({kw_conditions})
+              )
+            ORDER BY n.created_at DESC
+            LIMIT 6
+        """
+
+    with engine.connect() as conn:
+        rows = conn.execute(text(sql), params).fetchall()
+
+    return [
+        {
+            "id": r.id,
+            "title": r.title,
+            "image_url": r.image_url or "",
+            "category_name": r.category_name or "",
+            "created_at": r.created_at.strftime("%Y.%m.%d") if r.created_at else "",
+        }
+        for r in rows
+    ]
 
 
 @router.get("/api/market")

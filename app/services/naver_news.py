@@ -34,12 +34,43 @@ _FOOTER_MARKERS = [
     '무단 전재', '무단전재', '재배포 금지',
     # 제보
     '제보는', '제보하기', '여러분의 제보', '기사제보',
-    # 관련/추천 기사 섹션
+    # 관련/추천 기사 섹션 (한국어)
     '다른기사 보기', '다른 기사 보기', '관련기사', '관련 기사',
     '당신만 안 본 뉴스', '많이 본 뉴스', '인기 뉴스',
     '주요기사', '최신뉴스', '포토뉴스', '하단메뉴', '하단영역',
     '이용약관', '개인정보처리방침',
+    # 영문 매체 관련기사·추천 섹션
+    'More from the BBC', 'More from BBC',
+    '\nRelated\n', '\nRelated topics\n', '\nRelated articles\n',
+    'You may also like', 'Read more:', 'Also read:',
+    'More stories', 'More news', 'Trending now',
+    'Most read', 'Top stories', 'Latest news',
+    # 영문 안전 고지 (BBC 등)
+    'If you, or someone you know',
+    'If you are affected by',
+    'For help and support,',
+    # 영문 저작권·면책
+    'All rights reserved', 'Terms of Use', 'Privacy Policy',
+    'Terms & Conditions',
+    # Al Jazeera 고유 푸터
+    'aj-logo', 'Code of Ethics',
+    'EU/EEA Regulatory Notice',
+    '\nAbout\n', 'AboutShow more',
+    # 공통 영문 사이트 푸터
+    'Follow us on', 'Subscribe to our newsletter',
+    'Download our app', 'Get the app',
+    'Sign up for', 'Newsletter sign',
+    '\nShare\n', 'Click here to share',
+    'share-nodes',
 ]
+
+# 본문 중간에도 나타나지만 단독 줄이면 제거할 노이즈 패턴
+_INLINE_NOISE_RE = re.compile(
+    r'^\s*(Advertisement|Sponsored|Listen|ListenListen.*|Save|ShareSave'
+    r'|facebookxwhatsapp.*|googleAdd.*|share-nodes.*'
+    r'|aj-logo.*|ListenListen.*)\s*$',
+    re.MULTILINE | re.IGNORECASE,
+)
 
 _SENTENCE_ENDS = ['다. ', '요. ', '다.', '요.', '다!', '다?', '. ']
 
@@ -74,15 +105,18 @@ def clean_article_text(text: str) -> str:
     # 1) 문자 정규화 (HTML 엔티티, 특수 따옴표, nbsp 등)
     text = _normalize_chars(text)
 
-    # 2) 사진 출처 인라인 제거: (사진=XXX), [사진=XXX], ⓒXXX
+    # 2) 단독 줄 노이즈 제거 (Advertisement, aj-logo, Listen 버튼 등)
+    text = _INLINE_NOISE_RE.sub('', text)
+
+    # 3) 사진 출처 인라인 제거: (사진=XXX), [사진=XXX], ⓒXXX
     text = re.sub(r'[(\[]\s*사진\s*[=:][^\)\]]{1,30}[\)\]]', '', text)
     text = re.sub(r'ⓒ\s*\S+', '', text)
 
-    # 3) 기자명·이메일 줄 제거 (단독 줄에 있는 경우)
+    # 4) 기자명·이메일 줄 제거 (단독 줄에 있는 경우)
     text = re.sub(r'\n[ \t]*\S{1,6}\s*기자[ \t]*\n', '\n', text)
     text = re.sub(r'\n[ \t]*[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}[ \t]*\n', '\n', text)
 
-    # 4) JS/JSON 광고 스크립트 제거
+    # 5) JS/JSON 광고 스크립트 제거
     for marker in _GARBAGE_MARKERS:
         idx = text.find(marker)
         if idx == -1:
@@ -92,7 +126,7 @@ def clean_article_text(text: str) -> str:
         text = _cut_at(text, cut)
         break
 
-    # 5) 푸터/저작권/관련기사 — 가장 앞에 나오는 마커 기준으로 자름
+    # 6) 푸터/저작권/관련기사 — 가장 앞에 나오는 마커 기준으로 자름
     earliest_idx = len(text)
     for marker in _FOOTER_MARKERS:
         idx = text.find(marker)
@@ -101,7 +135,7 @@ def clean_article_text(text: str) -> str:
     if earliest_idx < len(text):
         text = _cut_at(text, earliest_idx)
 
-    # 6) 남은 window.xxx 제거 및 공백 정리
+    # 7) 남은 window.xxx 제거 및 공백 정리
     text = re.sub(r'window\.[^\s가-힣]*\s*=\s*[^가-힣]*', '', text)
     text = re.sub(r'[ \t]{2,}', ' ', text)
     text = re.sub(r'\n{3,}', '\n\n', text)

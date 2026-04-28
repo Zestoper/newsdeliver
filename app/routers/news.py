@@ -28,8 +28,22 @@ class NewsUpdate(BaseModel):
 @router.get("")
 def get_news():
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM news ORDER BY created_at DESC"))
+        result = conn.execute(text("""
+            SELECT id, title, source, status, category_id, image_url, is_global, created_at
+            FROM news ORDER BY created_at DESC LIMIT 300
+        """))
         return [dict(row._mapping) for row in result]
+
+
+@router.get("/{news_id}")
+def get_news_one(news_id: int):
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM news WHERE id = :id"), {"id": news_id}
+        ).fetchone()
+        if not row:
+            return {}
+        return dict(row._mapping)
 
 
 @router.post("")

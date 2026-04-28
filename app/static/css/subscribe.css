@@ -14,7 +14,7 @@
 body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
 .subscribe-container {
-  max-width: 640px;
+  max-width: 800px;
   margin: 40px auto 60px;
   padding: 0 24px;
   text-align: center;
@@ -29,7 +29,29 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
 }
 .sub-desc { font-size: 15px; color: var(--muted); margin-bottom: 28px; }
 
-/* 카테고리 */
+/* 국내/해외 탭 */
+.news-type-tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.type-tab {
+  padding: 9px 36px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.type-tab:hover  { border-color: var(--red); color: var(--red); }
+.type-tab.active { background: var(--red); color: white; border-color: var(--red); }
+
+/* 카테고리 그리드 */
 .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
 
 .category-btn {

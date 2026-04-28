@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %}구독하기 - News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.4" />
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}?v=2.0" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.7" />
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}?v=3.1" />
 <script src="https://js.tosspayments.com/v1/payment"></script>
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
@@ -28,11 +28,12 @@
     <nav class="main-nav">
         <ul>
             <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
+            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
             <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+            <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
             <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
             <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
             <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
-            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
         </ul>
     </nav>
 </header>
@@ -44,22 +45,53 @@
     {% if message %}
     <div class="message {{ message_type }}">{{ message }}</div>
     {% endif %} {% if current_user %}
-    <!-- 카테고리 선택 -->
-    <div class="category-grid">
-        {% for category in categories %}
-        <button
-            class="category-btn{{ ' subscribed' if category.id in subscribed_ids else '' }}"
-            data-id="{{ category.id }}"
-            onclick="toggleCategory(this)"
-        >
-            {% if category.name == '정치' %}🏛 {% elif category.name == '경제' %}💰 {% elif category.name == 'IT' %}💻
-            {% elif category.name == '문화' %}🎭 {% elif category.name == '스포츠' %}⚽ {% elif category.name == '예술' %}🎨
-            {% elif category.name == '연예' %}🌟 {% elif category.name == '국제' %}🌍 {% elif category.name == '사회' %}🏘
-            {% endif %} {{ category.name }}
-        </button>
-        {% endfor %}
+    <!-- 카테고리 탭 -->
+    {% set cat_list = ['정치','경제','IT','문화','스포츠','예술','연예','국제','사회'] %}
+
+    <div class="news-type-tabs">
+      <button class="type-tab active" onclick="switchTab('domestic', this)">국내</button>
+      <button class="type-tab" onclick="switchTab('global', this)">해외</button>
     </div>
-    <p id="sub-result" style="margin-top: 12px; font-size: 14px"></p>
+
+    <!-- 국내 카테고리 -->
+    <div id="domestic-cats" class="category-grid">
+      {% for category in categories if category.name in cat_list %}
+      <button class="category-btn{{ ' subscribed' if category.id in domestic_subscribed_ids else '' }}"
+              data-id="{{ category.id }}" data-is-global="0" onclick="toggleCategory(this)">
+        {% if category.name == '정치' %}🏛
+        {% elif category.name == '경제' %}💰
+        {% elif category.name == 'IT' %}💻
+        {% elif category.name == '문화' %}🎭
+        {% elif category.name == '스포츠' %}⚽
+        {% elif category.name == '예술' %}🎨
+        {% elif category.name == '연예' %}🌟
+        {% elif category.name == '국제' %}🌐
+        {% elif category.name == '사회' %}🏘
+        {% endif %} {{ category.name }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- 해외 카테고리 (국내와 동일한 9개) -->
+    <div id="global-cats" class="category-grid" style="display:none;">
+      {% for category in categories if category.name in cat_list %}
+      <button class="category-btn{{ ' subscribed' if category.id in global_subscribed_ids else '' }}"
+              data-id="{{ category.id }}" data-is-global="1" onclick="toggleCategory(this)">
+        {% if category.name == '정치' %}🏛
+        {% elif category.name == '경제' %}💰
+        {% elif category.name == 'IT' %}💻
+        {% elif category.name == '문화' %}🎭
+        {% elif category.name == '스포츠' %}⚽
+        {% elif category.name == '예술' %}🎨
+        {% elif category.name == '연예' %}🌟
+        {% elif category.name == '국제' %}🌐
+        {% elif category.name == '사회' %}🏘
+        {% endif %} {{ category.name }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <p id="sub-result" style="margin-top: 12px; font-size: 14px;"></p>
 
     <!-- 이메일 구독 -->
     <div class="email-section-box">
@@ -245,14 +277,28 @@
         }
     }
 
+    function switchTab(type, btn) {
+        document.querySelectorAll('.type-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('domestic-cats').style.display = type === 'domestic' ? 'grid' : 'none';
+        document.getElementById('global-cats').style.display   = type === 'global'   ? 'grid' : 'none';
+        document.getElementById('sub-result').textContent = '';
+    }
+
     async function toggleCategory(btn) {
         const categoryId = parseInt(btn.dataset.id, 10);
-        const res = await fetch(`/categories/${categoryId}/subscribe`, { method: 'POST' });
+        const isGlobal = parseInt(btn.dataset.isGlobal || '0', 10);
+        const res = await fetch(`/categories/${categoryId}/subscribe`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({is_global: isGlobal})
+        });
         const data = await res.json();
         if (data.success) {
             btn.classList.toggle('subscribed', data.subscribed);
             const result = document.getElementById('sub-result');
-            result.textContent = data.subscribed ? '✅ 구독했어요!' : '구독 해지했어요.';
+            const label = isGlobal ? '해외' : '국내';
+            result.textContent = data.subscribed ? `✅ ${label} 구독했어요!` : `${label} 구독 해지했어요.`;
             result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
         }
     }

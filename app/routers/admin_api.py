@@ -1,12 +1,21 @@
 import uuid
+import time
 import threading
+import urllib.parse
 from pathlib import Path
+
+import httpx as _httpx
 from fastapi import APIRouter, Request, UploadFile, File
 from sqlalchemy import text
+
 from app.database import engine
 from app.config import settings
 from app.services.email import send_newsletters_batch
 from app.services.ai_summary import get_or_create_summary, summarize_articles
+from app.services.naver_news import (
+    fetch_and_save_news, extract_full_content, clean_article_text,
+    CLIENT_ID, CLIENT_SECRET,
+)
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "static" / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -28,7 +37,7 @@ def _load_subscriber_articles() -> list[dict]:
         for sub in subs:
             cat_rows = conn.execute(
                 text("""
-                    SELECT cs.category_id, c.name as category_name
+                    SELECT cs.category_id, COALESCE(cs.is_global, 0) as is_global, c.name as category_name
                     FROM category_subscriptions cs
                     JOIN categories c ON cs.category_id = c.id
                     WHERE cs.user_id = :uid
@@ -40,18 +49,20 @@ def _load_subscriber_articles() -> list[dict]:
                 continue
 
             for cat in cat_rows:
+                is_global_val = int(cat.is_global or 0)
                 news_rows = conn.execute(
                     text("""
                         SELECT n.*, c.name as category_name
                         FROM news n
                         LEFT JOIN categories c ON n.category_id = c.id
                         WHERE n.status = 'published' AND n.category_id = :cat_id
+                          AND COALESCE(n.is_global, 0) = :is_global
                           AND n.id NOT IN (
                               SELECT news_id FROM newsletter_sent WHERE email = :email
                           )
                         ORDER BY n.created_at DESC LIMIT 5
                     """),
-                    {"cat_id": cat.category_id, "email": sub.email},
+                    {"cat_id": cat.category_id, "email": sub.email, "is_global": is_global_val},
                 ).fetchall()
                 # 새 기사 없으면 최근 5개 재발송
                 if not news_rows:
@@ -61,16 +72,18 @@ def _load_subscriber_articles() -> list[dict]:
                             FROM news n
                             LEFT JOIN categories c ON n.category_id = c.id
                             WHERE n.status = 'published' AND n.category_id = :cat_id
+                              AND COALESCE(n.is_global, 0) = :is_global
                             ORDER BY n.created_at DESC LIMIT 5
                         """),
-                        {"cat_id": cat.category_id},
+                        {"cat_id": cat.category_id, "is_global": is_global_val},
                     ).fetchall()
                 if not news_rows:
                     continue
 
+                label = "해외" if is_global_val else "국내"
                 result.append({
                     "email": sub.email,
-                    "category_name": cat.category_name,
+                    "category_name": f"{label}{cat.category_name}",
                     "articles": [dict(r._mapping) for r in news_rows],
                 })
     return result
@@ -99,7 +112,10 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
         if todo:
             _newsletter_status["message"] = f"AI 요약 생성 중... (기사 {len(todo)}개, 잠시 기다려주세요)"
             for article in todo.values():
-                get_or_create_summary(article["id"], article.get("title", ""), article.get("content", ""))
+                get_or_create_summary(
+                    article["id"], article.get("title", ""), article.get("content", ""),
+                    is_global=bool(article.get("is_global", 0)),
+                )
 
         # 3) 이메일 일괄 발송 (SMTP 연결 1번 재사용)
         _newsletter_status["message"] = f"이메일 발송 중... (총 {len(subscriber_data)}건)"
@@ -156,19 +172,21 @@ def send_newsletter_api(request: Request):
 def newsletter_status():
     return _newsletter_status
 
-import time
-import urllib.parse
-import httpx as _httpx
-from app.services.naver_news import (
-    fetch_and_save_news, extract_full_content, clean_article_text,
-    CLIENT_ID, CLIENT_SECRET,
-)
-
 @router.post("/fetch-news")
 def fetch_news_api():
     try:
         count = fetch_and_save_news()
         return {"success": True, "message": f"{count}개 뉴스를 가져왔습니다!"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/fetch-global-news")
+def fetch_global_news_api():
+    try:
+        from app.services.global_news import fetch_and_save_global_news
+        count = fetch_and_save_global_news()
+        return {"success": True, "message": f"해외뉴스 {count}개를 가져왔습니다!"}
     except Exception as e:
         return {"success": False, "message": str(e)}
 

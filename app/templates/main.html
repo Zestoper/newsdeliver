@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="/static/css/main.css?v=3.6" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.7" />
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
 <!-- 상단 헤더 -->
@@ -46,11 +46,12 @@
     <nav class="main-nav">
         <ul>
             <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
+            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
             <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
+            <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
             <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
             <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
             <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
-            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
         </ul>
     </nav>
 </header>
@@ -123,6 +124,29 @@
             </a>
             {% endfor %}
         </div>
+    </section>
+
+    <!-- 연령대별 추천 뉴스 -->
+    <section class="news-grid-section" style="margin-top:32px;">
+      <div class="section-header" style="margin-bottom:14px;">
+        <h2>🎯 연령대별 추천</h2>
+        <a id="age-more-link" href="/age-news/teen" class="more-link">전체보기 →</a>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="age-tab active" onclick="loadAgeNews('teen', this)">
+          🔥 10~20대
+        </button>
+        <button class="age-tab" onclick="loadAgeNews('adult', this)">
+          💼 30~40대
+        </button>
+        <button class="age-tab" onclick="loadAgeNews('senior', this)">
+          🌿 50~70대
+        </button>
+      </div>
+      <div class="age-tag-row" id="age-tags"></div>
+      <div class="news-grid" id="age-news-grid">
+        <div style="color:#aaa;font-size:14px;padding:20px 0;">불러오는 중...</div>
+      </div>
     </section>
 
     <!-- 인기 뉴스 2열 -->
@@ -512,13 +536,156 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
     </div>
   </div>
 </div>
+{% endif %}
+
 <style>
 @keyframes popIn {
   from { transform: scale(0.85); opacity: 0; }
   to   { transform: scale(1);    opacity: 1; }
 }
+.age-tab {
+  padding: 8px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.age-tab:hover { border-color: #c00; color: #c00; }
+.age-tab.active { background: #c00; border-color: #c00; color: white; }
+.age-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  min-height: 26px;
+}
+.age-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  background: #f5f5f5;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.age-tag:hover { color: #c00; background: #fff0f0; border-color: #f4b8b8; }
+.age-tag.active { color: #c00; background: #fff0f0; border-color: #c00; }
 </style>
-{% endif %}
+
+<script>
+const _AGE_TAGS = {
+  teen: [
+    {label: '취업/채용', keyword: '취업'},
+    {label: 'IT/AI', keyword: 'IT'},
+    {label: '연예/문화', keyword: '연예'},
+    {label: '게임/e스포츠', keyword: '게임'},
+    {label: '패션/뷰티', keyword: '패션'},
+    {label: 'SNS/트렌드', keyword: 'SNS'},
+    {label: '대학/교육', keyword: '대학'},
+    {label: '주식입문', keyword: '주식'},
+    {label: '사회이슈', keyword: '사회'},
+    {label: '해외화제', keyword: '해외'},
+  ],
+  adult: [
+    {label: '경제/부동산', keyword: '부동산'},
+    {label: '주식/재테크', keyword: '재테크'},
+    {label: '육아/교육', keyword: '육아'},
+    {label: '건강/의료', keyword: '건강'},
+    {label: '자동차', keyword: '자동차'},
+    {label: '정치/사회', keyword: '정치'},
+    {label: 'IT/업무', keyword: 'IT'},
+    {label: '창업/비즈니스', keyword: '창업'},
+    {label: '여행/레저', keyword: '여행'},
+    {label: '생활정보', keyword: '생활'},
+  ],
+  senior: [
+    {label: '건강/의료', keyword: '건강'},
+    {label: '정치', keyword: '정치'},
+    {label: '경제', keyword: '경제'},
+    {label: '부동산', keyword: '부동산'},
+    {label: '연금/복지', keyword: '연금'},
+    {label: '사회/시사', keyword: '사회'},
+    {label: '생활정보', keyword: '생활'},
+    {label: '문화/전통', keyword: '문화'},
+    {label: '여행', keyword: '여행'},
+    {label: '지역뉴스', keyword: '지역'},
+  ],
+};
+
+let _currentGroup = 'teen';
+let _currentKeyword = '';
+
+function _renderTags(group, activeKeyword) {
+  const tags = _AGE_TAGS[group] || [];
+  document.getElementById('age-tags').innerHTML = tags.map(t =>
+    `<button class="age-tag${t.keyword === activeKeyword ? ' active' : ''}"
+       onclick="selectAgeTag('${t.keyword}')">${t.label}</button>`
+  ).join('');
+}
+
+async function _fetchAgeNews(group, keyword) {
+  const grid = document.getElementById('age-news-grid');
+  grid.innerHTML = '<div style="color:#aaa;font-size:14px;padding:20px 0;">불러오는 중...</div>';
+  const url = keyword
+    ? `/api/age-news?group=${group}&keyword=${encodeURIComponent(keyword)}`
+    : `/api/age-news?group=${group}`;
+  try {
+    const res = await fetch(url);
+    const list = await res.json();
+    if (!list.length) {
+      grid.innerHTML = '<div style="color:#aaa;font-size:14px;padding:20px 0;">해당 카테고리 뉴스가 없습니다.</div>';
+      return;
+    }
+    grid.innerHTML = list.map(n => `
+      <a href="/news/${n.id}" class="news-card">
+        ${n.image_url && n.image_url.startsWith('http')
+          ? `<div class="card-img" style="background-image:url('${n.image_url}')"></div>`
+          : `<div class="card-img no-img">📰</div>`}
+        <div class="card-body">
+          ${n.category_name ? `<span class="cat-badge">${n.category_name}</span>` : ''}
+          <h3 class="card-title">${n.title}</h3>
+          <span class="card-date">${n.created_at}</span>
+        </div>
+      </a>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#aaa;font-size:14px;padding:20px 0;">불러오기 실패</div>';
+  }
+}
+
+function loadAgeNews(group, btn) {
+  document.querySelectorAll('.age-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  _currentGroup = group;
+  _currentKeyword = '';
+  const moreLink = document.getElementById('age-more-link');
+  if (moreLink) moreLink.href = `/age-news/${group}`;
+  _renderTags(group, '');
+  _fetchAgeNews(group, '');
+}
+
+function selectAgeTag(keyword) {
+  if (_currentKeyword === keyword) {
+    _currentKeyword = '';
+    _renderTags(_currentGroup, '');
+    _fetchAgeNews(_currentGroup, '');
+  } else {
+    _currentKeyword = keyword;
+    _renderTags(_currentGroup, keyword);
+    _fetchAgeNews(_currentGroup, keyword);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const firstBtn = document.querySelector('.age-tab');
+  if (firstBtn) loadAgeNews('teen', firstBtn);
+});
+</script>
 
 <script>
 (function() {

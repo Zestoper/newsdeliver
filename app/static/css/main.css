@@ -602,11 +602,18 @@ body::before {
 .footer-copy { font-size: 11px; color: #3a3a3a; }
 
 /* ── 반응형 ── */
+@media (max-width: 900px) {
+  .news-ticker-pill { display: none; }
+  .weather-ticker   { display: none; }
+  .header-left-meta { display: none; }
+}
 @media (max-width: 768px) {
   .headline-card  { flex-direction: column; }
   .headline-img   { width: 100%; min-height: 200px; }
   .news-grid      { grid-template-columns: repeat(2, 1fr); }
   .header-top     { flex-direction: column; gap: 10px; }
+  .header-logo    { position: static; transform: none; }
+  .header-actions { justify-content: center; flex-wrap: wrap; }
 }
 @media (max-width: 480px) { .news-grid { grid-template-columns: 1fr; } }
 

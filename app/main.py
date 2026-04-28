@@ -26,6 +26,7 @@ try:
         from sqlalchemy import text
         migrations = [
             ("ALTER TABLE news ADD COLUMN link VARCHAR(500)", "news.link"),
+            ("ALTER TABLE news ADD COLUMN is_global TINYINT(1) DEFAULT 0", "news.is_global"),
             ("ALTER TABLE news ADD COLUMN naver_link VARCHAR(500)", "news.naver_link"),
             ("ALTER TABLE news ADD COLUMN view_count INT DEFAULT 0", "news.view_count"),
             ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
@@ -37,6 +38,9 @@ try:
             ("ALTER TABLE chat_messages ADD COLUMN message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
             ("ALTER TABLE news_users ADD COLUMN press_approved TINYINT(1) DEFAULT 0", "news_users.press_approved"),
             ("ALTER TABLE news_users ADD COLUMN press_notified TINYINT(1) DEFAULT 0", "news_users.press_notified"),
+            ("ALTER TABLE category_subscriptions ADD COLUMN is_global TINYINT(1) DEFAULT 0", "category_subscriptions.is_global"),
+            ("ALTER TABLE category_subscriptions DROP INDEX unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
+            ("ALTER TABLE category_subscriptions ADD UNIQUE KEY unique_cat_sub_global (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
         ]
         # reports 테이블 생성
         try:
@@ -168,6 +172,133 @@ try:
                 print(f"✅ 카테고리 추가: {cat}")
             except Exception:
                 pass
+
+        # 해외뉴스 카테고리 추가
+        global_cats = ["해외IT", "해외경제", "해외국제", "해외문화",
+                       "해외사회", "해외스포츠", "해외연예", "해외예술", "해외정치"]
+        for cat in global_cats:
+            try:
+                conn.execute(text("INSERT IGNORE INTO categories (name) VALUES (:name)"), {"name": cat})
+                conn.commit()
+                print(f"✅ 카테고리 추가: {cat}")
+            except Exception:
+                pass
+
+        # 기존 해외 기사: 해외XXX 카테고리 → 국내 카테고리로 이동 + is_global = 1 표시
+        remap = {
+            '해외IT': 'IT', '해외경제': '경제', '해외국제': '국제',
+            '해외문화': '문화', '해외사회': '사회', '해외스포츠': '스포츠',
+            '해외연예': '연예', '해외예술': '예술', '해외정치': '정치',
+            '해외뉴스': '국제', '해외건강': '사회', '해외과학': '사회',
+        }
+        try:
+            cat_rows = conn.execute(text("SELECT id, name FROM categories")).fetchall()
+            cat_map = {r.name: r.id for r in cat_rows}
+            total_remapped = 0
+            for old_name, new_name in remap.items():
+                old_id = cat_map.get(old_name)
+                new_id = cat_map.get(new_name)
+                if not old_id or not new_id:
+                    continue
+                r = conn.execute(text(
+                    "UPDATE news SET category_id = :new_id, is_global = 1 WHERE category_id = :old_id"
+                ), {"new_id": new_id, "old_id": old_id})
+                conn.commit()
+                total_remapped += r.rowcount
+            if total_remapped:
+                print(f"✅ 해외뉴스 카테고리 재분류: {total_remapped}건")
+        except Exception as e:
+            print(f"[해외뉴스 재분류] {e}")
+
+        # naver_link 가 있는 기사 → 무조건 국내 (is_global = 0)
+        try:
+            r = conn.execute(text(
+                "UPDATE news SET is_global = 0 WHERE naver_link IS NOT NULL AND naver_link != ''"
+            ))
+            conn.commit()
+            if r.rowcount:
+                print(f"✅ 국내뉴스 is_global 보정: {r.rowcount}건")
+        except Exception as e:
+            print(f"[is_global 국내 보정] {e}")
+
+        # 문화·예술 카테고리 중 naver_link 있는 기사는 국내로 보정
+        try:
+            r = conn.execute(text("""
+                UPDATE news n
+                JOIN categories c ON n.category_id = c.id
+                SET n.is_global = 0
+                WHERE c.name IN ('문화', '예술')
+                  AND n.naver_link IS NOT NULL AND n.naver_link != ''
+            """))
+            conn.commit()
+            if r.rowcount:
+                print(f"✅ 문화·예술 국내 보정: {r.rowcount}건")
+        except Exception as e:
+            print(f"[문화·예술 보정] {e}")
+
+        # 해외뉴스 재분류 정리 — 카테고리 개선 후 1회만 실행
+        try:
+            already = conn.execute(text(
+                "SELECT COUNT(*) FROM newsletter_sent WHERE email = '__global_purge_v9__' AND news_id = 0"
+            )).scalar()
+            if not already:
+                conn.execute(text(
+                    "INSERT INTO newsletter_sent (email, news_id) VALUES ('__global_purge_v9__', 0)"
+                ))
+                r = conn.execute(text("DELETE FROM news WHERE is_global = 1"))
+                conn.commit()
+                print(f"✅ 해외뉴스 전체 삭제: {r.rowcount}건 → 점수 기반 재분류 후 재수집 예정")
+        except Exception as e:
+            print(f"[해외뉴스 정리] {e}")
+
+        # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류
+        try:
+            from app.services.global_news import _REROUTE_ECO, _REROUTE_INTL, _kw_match
+            politics_terms = [
+                "trump", "donald trump", "maga", "biden", "kamala", "harris",
+                "obama", "desantis", "ocasio-cortez", "pelosi", "mcconnell",
+                "congress", "senate", "white house", "manifesto", "impeach",
+                "indictment", "arraignment", "whcd", "correspondents dinner",
+                "mass shooting", "shooting rampage", "gunman",
+            ]
+            non_politics_cats = "('문화', '예술', '연예', 'IT', '스포츠', '사회')"
+            conditions = " OR ".join(
+                [f"LOWER(n.title) LIKE :term_{i} OR LOWER(n.content) LIKE :term_{i}"
+                 for i in range(len(politics_terms))]
+            )
+            params = {f"term_{i}": f"%{t}%" for i, t in enumerate(politics_terms)}
+            cat_map = {
+                r.name: r.id
+                for r in conn.execute(text("SELECT id, name FROM categories")).fetchall()
+            }
+            rows = conn.execute(text(f"""
+                SELECT n.id, n.title, n.content FROM news n
+                JOIN categories c ON n.category_id = c.id
+                WHERE c.name IN {non_politics_cats}
+                  AND ({conditions})
+            """), params).fetchall()
+            reclassified = 0
+            for row in rows:
+                text_lower = ((row.title or "") + " " + (row.content or "")[:500]).lower()
+                if any(_kw_match(k, text_lower) for k in _REROUTE_ECO):
+                    new_cat = "경제"
+                elif any(_kw_match(k, text_lower) for k in _REROUTE_INTL):
+                    new_cat = "국제"
+                else:
+                    new_cat = "정치"
+                new_id = cat_map.get(new_cat)
+                if new_id:
+                    conn.execute(
+                        text("UPDATE news SET category_id = :cid WHERE id = :id"),
+                        {"cid": new_id, "id": row.id}
+                    )
+                    reclassified += 1
+            conn.commit()
+            if reclassified:
+                print(f"✅ 정치 기사 재분류: {reclassified}건")
+        except Exception as e:
+            print(f"[정치 기사 재분류] {e}")
+
 except Exception as e:
     print(f"❌ DB 연결 실패: {e}")
 
@@ -179,23 +310,78 @@ def _newsletter_job():
 
 def _fetch_news_job():
     from app.services.naver_news import fetch_and_save_news
+    from app.services.global_news import fetch_and_save_global_news
     from app.services.ai_summary import get_or_create_summary
     from sqlalchemy import text as _text
     try:
         count = fetch_and_save_news()
-        print(f"[뉴스 자동수집] {count}개 저장")
+        print(f"[뉴스 자동수집] 국내 {count}개 저장")
     except Exception as e:
-        print(f"[뉴스 자동수집] 실패: {e}")
-        return
+        print(f"[뉴스 자동수집] 국내 실패: {e}")
+    try:
+        global_count = fetch_and_save_global_news()
+        print(f"[뉴스 자동수집] 해외 {global_count}개 저장")
+    except Exception as e:
+        print(f"[뉴스 자동수집] 해외 실패: {e}")
+
+    # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류 (수집 주기마다 실행)
+    try:
+        from app.services.global_news import _REROUTE_ECO, _REROUTE_INTL, _kw_match
+        politics_terms = [
+            "trump", "donald trump", "maga", "biden", "kamala", "harris",
+            "obama", "desantis", "ocasio-cortez", "pelosi", "mcconnell",
+            "congress", "senate", "white house", "manifesto", "impeach",
+            "indictment", "arraignment", "whcd", "correspondents dinner",
+            "mass shooting", "shooting rampage", "gunman",
+        ]
+        non_politics_cats = "('문화', '예술', '연예', 'IT', '스포츠', '사회')"
+        conditions = " OR ".join(
+            [f"LOWER(n.title) LIKE :term_{i} OR LOWER(n.content) LIKE :term_{i}"
+             for i in range(len(politics_terms))]
+        )
+        params = {f"term_{i}": f"%{t}%" for i, t in enumerate(politics_terms)}
+        with engine.connect() as conn:
+            cat_map = {
+                r.name: r.id
+                for r in conn.execute(_text("SELECT id, name FROM categories")).fetchall()
+            }
+            rows = conn.execute(_text(f"""
+                SELECT n.id, n.title, n.content FROM news n
+                JOIN categories c ON n.category_id = c.id
+                WHERE c.name IN {non_politics_cats}
+                  AND ({conditions})
+            """), params).fetchall()
+
+            reclassified = 0
+            for row in rows:
+                text_lower = ((row.title or "") + " " + (row.content or "")[:500]).lower()
+                if any(_kw_match(k, text_lower) for k in _REROUTE_ECO):
+                    new_cat = "경제"
+                elif any(_kw_match(k, text_lower) for k in _REROUTE_INTL):
+                    new_cat = "국제"
+                else:
+                    new_cat = "정치"
+                new_id = cat_map.get(new_cat)
+                if new_id:
+                    conn.execute(
+                        _text("UPDATE news SET category_id = :cid WHERE id = :id"),
+                        {"cid": new_id, "id": row.id}
+                    )
+                    reclassified += 1
+            conn.commit()
+            if reclassified:
+                print(f"[정치 기사 재분류] {reclassified}건 이동")
+    except Exception as e:
+        print(f"[정치 기사 재분류] {e}")
 
     # 요약 없는 기사를 수집 직후 미리 생성 → 뉴스레터 발송 시 대기 없음
     try:
         with engine.connect() as conn:
             rows = conn.execute(
-                _text("SELECT id, title, content FROM news WHERE ai_summary IS NULL OR ai_summary = '' LIMIT 200")
+                _text("SELECT id, title, content, COALESCE(is_global,0) as is_global FROM news WHERE ai_summary IS NULL OR ai_summary = '' LIMIT 200")
             ).fetchall()
         for row in rows:
-            get_or_create_summary(row.id, row.title or "", row.content or "")
+            get_or_create_summary(row.id, row.title or "", row.content or "", is_global=bool(row.is_global))
         if rows:
             print(f"[AI 요약] {len(rows)}개 생성 완료")
     except Exception as e:
