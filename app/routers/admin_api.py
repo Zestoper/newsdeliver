@@ -102,23 +102,8 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
             _newsletter_status.update(running=False, success=False, message="구독자가 없습니다.")
             return {"success": False, "message": "구독자가 없습니다."}
 
-        # 2) 요약 없는 기사만 중복 제거 후 선요약 (Ollama 호출 최소화)
-        todo: dict[int, dict] = {}
-        for sub in subscriber_data:
-            for a in sub["articles"]:
-                if a.get("id") and not a.get("ai_summary"):
-                    todo[a["id"]] = a
-
-        if todo:
-            _newsletter_status["message"] = f"AI 요약 생성 중... (기사 {len(todo)}개, 잠시 기다려주세요)"
-            for article in todo.values():
-                get_or_create_summary(
-                    article["id"], article.get("title", ""), article.get("content", ""),
-                    is_global=bool(article.get("is_global", 0)),
-                )
-
-        # 3) 이메일 일괄 발송 (SMTP 연결 1번 재사용)
-        _newsletter_status["message"] = f"이메일 발송 중... (총 {len(subscriber_data)}건)"
+        # 2) 발송할 기사만 AI 요약 생성 후 이메일 발송
+        _newsletter_status["message"] = f"AI 요약 생성 중... (총 {len(subscriber_data)}건)"
         items = [
             {
                 "email": sub["email"],
@@ -127,27 +112,34 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
             }
             for sub in subscriber_data
         ]
+        _newsletter_status["message"] = f"이메일 발송 중... (총 {len(subscriber_data)}건)"
         results = send_newsletters_batch(items, base_url=base_url)
 
         total_sent = 0
+        sent_log: list[dict] = []
         for sub_info, item, success in zip(subscriber_data, items, results):
             cat = sub_info.get("category_name", "")
             if success:
                 total_sent += 1
                 print(f"[뉴스레터] 발송 완료: {sub_info['email']} [{cat}]")
-                with engine.connect() as conn:
-                    for a in item["articles"]:
-                        if a.get("id"):
-                            try:
-                                conn.execute(
-                                    text("INSERT IGNORE INTO newsletter_sent (email, news_id) VALUES (:email, :news_id)"),
-                                    {"email": sub_info["email"], "news_id": a["id"]},
-                                )
-                            except Exception:
-                                pass
-                    conn.commit()
+                for a in item["articles"]:
+                    if a.get("id"):
+                        sent_log.append({"email": sub_info["email"], "news_id": a["id"]})
             else:
                 print(f"[뉴스레터] 발송 실패: {sub_info['email']} [{cat}]")
+
+        # newsletter_sent 배치 INSERT
+        if sent_log:
+            with engine.connect() as conn:
+                for row in sent_log:
+                    try:
+                        conn.execute(
+                            text("INSERT IGNORE INTO newsletter_sent (email, news_id) VALUES (:email, :news_id)"),
+                            row,
+                        )
+                    except Exception:
+                        pass
+                conn.commit()
 
         msg = f"총 {total_sent}건 발송 완료!"
         _newsletter_status.update(running=False, success=True, message=msg)

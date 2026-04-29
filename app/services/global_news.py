@@ -1,9 +1,9 @@
 import re
 import httpx
 import feedparser
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from sqlalchemy import text
 from app.database import engine
-from app.services.naver_news import extract_full_content, extract_image_from_url
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)"}
 
@@ -12,33 +12,74 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)"}
 # pageSize: 피드에서 가져올 최대 기사 수
 # ══════════════════════════════════════════════════════════════════════
 RSS_SOURCES = [
-    # IT
-    {"url": "https://techcrunch.com/feed/",                             "db_category": "IT",    "limit": 20},
-    {"url": "https://www.theverge.com/rss/index.xml",                  "db_category": "IT",    "limit": 20},
-    {"url": "https://feeds.arstechnica.com/arstechnica/index",         "db_category": "IT",    "limit": 15},
-    # 경제
-    {"url": "https://feeds.marketwatch.com/marketwatch/topstories/",   "db_category": "경제",  "limit": 20},
-    {"url": "https://www.investing.com/rss/news.rss",                  "db_category": "경제",  "limit": 15},
-    # 스포츠
-    {"url": "https://www.espn.com/espn/rss/news",                      "db_category": "스포츠", "limit": 25},
-    {"url": "https://feeds.bbci.co.uk/sport/rss.xml",                  "db_category": "스포츠", "limit": 20},
-    # 연예
-    {"url": "https://variety.com/feed/",                                "db_category": "연예",  "limit": 20},
-    {"url": "https://www.hollywoodreporter.com/t/entertainment/feed/", "db_category": "연예",  "limit": 15},
-    # 정치
-    {"url": "https://rss.politico.com/politics-news.xml",              "db_category": "정치",  "limit": 20},
-    {"url": "https://thehill.com/homenews/feed/",                      "db_category": "정치",  "limit": 15},
-    # 예술
-    {"url": "https://www.nme.com/feed",                                "db_category": "예술",  "limit": 15},
-    {"url": "https://consequenceofsound.net/feed/",                    "db_category": "예술",  "limit": 15},
-    # 사회 (과학·건강)
-    {"url": "https://www.sciencedaily.com/rss/all.xml",                "db_category": "사회",  "limit": 25},
-    {"url": "https://www.livescience.com/feeds/all",                   "db_category": "사회",  "limit": 20},
-    # 국제
-    {"url": "https://www.aljazeera.com/xml/rss/all.xml",              "db_category": "국제",  "limit": 25},
-    {"url": "https://feeds.bbci.co.uk/news/world/rss.xml",            "db_category": "국제",  "limit": 20},
-    # 문화
-    {"url": "https://www.smithsonianmag.com/rss/latest_articles/",    "db_category": "문화",  "limit": 15},
+    # ── The New York Times ──────────────────────────────────────────────
+    {"url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",   "db_category": "IT",     "limit": 15},
+    {"url": "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",     "db_category": "경제",   "limit": 15},
+    {"url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",        "db_category": "국제",   "limit": 15},
+    {"url": "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",     "db_category": "정치",   "limit": 10},
+    {"url": "https://rss.nytimes.com/services/xml/rss/nyt/Arts.xml",         "db_category": "예술",   "limit": 10},
+    # ── The Wall Street Journal ─────────────────────────────────────────
+    {"url": "https://feeds.a.dj.com/rss/RSSWorldNews.xml",                   "db_category": "국제",   "limit": 15},
+    {"url": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",                 "db_category": "경제",   "limit": 15},
+    {"url": "https://feeds.a.dj.com/rss/RSSWSJD.xml",                        "db_category": "IT",     "limit": 15},
+    # ── Los Angeles Times ───────────────────────────────────────────────
+    {"url": "https://www.latimes.com/world-nation/rss2.0.xml",                "db_category": "국제",   "limit": 15},
+    {"url": "https://www.latimes.com/business/rss2.0.xml",                    "db_category": "경제",   "limit": 15},
+    {"url": "https://www.latimes.com/entertainment-arts/rss2.0.xml",          "db_category": "연예",   "limit": 15},
+    {"url": "https://www.latimes.com/sports/rss2.0.xml",                      "db_category": "스포츠", "limit": 15},
+    # ── BBC News ────────────────────────────────────────────────────────
+    {"url": "https://feeds.bbci.co.uk/news/world/rss.xml",                    "db_category": "국제",   "limit": 20},
+    {"url": "https://feeds.bbci.co.uk/news/business/rss.xml",                 "db_category": "경제",   "limit": 20},
+    {"url": "https://feeds.bbci.co.uk/news/technology/rss.xml",               "db_category": "IT",     "limit": 20},
+    {"url": "https://feeds.bbci.co.uk/news/politics/rss.xml",                 "db_category": "정치",   "limit": 15},
+    {"url": "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",   "db_category": "연예",   "limit": 15},
+    {"url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",  "db_category": "사회",   "limit": 15},
+    {"url": "https://feeds.bbci.co.uk/news/health/rss.xml",                   "db_category": "사회",   "limit": 15},
+    {"url": "https://feeds.bbci.co.uk/sport/rss.xml",                         "db_category": "스포츠", "limit": 20},
+    # ── The Guardian ────────────────────────────────────────────────────
+    {"url": "https://www.theguardian.com/world/rss",                          "db_category": "국제",   "limit": 20},
+    {"url": "https://www.theguardian.com/business/rss",                       "db_category": "경제",   "limit": 15},
+    {"url": "https://www.theguardian.com/sport/rss",                          "db_category": "스포츠", "limit": 15},
+    {"url": "https://www.theguardian.com/technology/rss",                     "db_category": "IT",     "limit": 15},
+    {"url": "https://www.theguardian.com/culture/rss",                        "db_category": "문화",   "limit": 10},
+    {"url": "https://www.theguardian.com/music/rss",                          "db_category": "예술",   "limit": 10},
+    {"url": "https://www.theguardian.com/politics/rss",                       "db_category": "정치",   "limit": 10},
+    # ── Daily Telegraph ─────────────────────────────────────────────────
+    {"url": "https://www.telegraph.co.uk/rss.xml",                            "db_category": "국제",   "limit": 15},
+    # ── NPR News ────────────────────────────────────────────────────────
+    {"url": "https://feeds.npr.org/1004/rss.xml",                             "db_category": "국제",   "limit": 20},
+    {"url": "https://feeds.npr.org/1006/rss.xml",                             "db_category": "경제",   "limit": 15},
+    {"url": "https://feeds.npr.org/1019/rss.xml",                             "db_category": "IT",     "limit": 15},
+    # ── Sky News (The Times 대체) ────────────────────────────────────────
+    {"url": "https://feeds.skynews.com/feeds/rss/world.xml",                  "db_category": "국제",   "limit": 20},
+    {"url": "https://feeds.skynews.com/feeds/rss/business.xml",               "db_category": "경제",   "limit": 15},
+    {"url": "https://feeds.skynews.com/feeds/rss/technology.xml",             "db_category": "IT",     "limit": 15},
+    {"url": "https://feeds.skynews.com/feeds/rss/politics.xml",               "db_category": "정치",   "limit": 10},
+    # ── IT (기존) ────────────────────────────────────────────────────────
+    {"url": "https://techcrunch.com/feed/",                                    "db_category": "IT",     "limit": 20},
+    {"url": "https://www.theverge.com/rss/index.xml",                         "db_category": "IT",     "limit": 20},
+    {"url": "https://feeds.arstechnica.com/arstechnica/index",                "db_category": "IT",     "limit": 15},
+    # ── 경제 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://feeds.marketwatch.com/marketwatch/topstories/",          "db_category": "경제",   "limit": 20},
+    {"url": "https://www.investing.com/rss/news.rss",                         "db_category": "경제",   "limit": 15},
+    # ── 스포츠 (기존) ────────────────────────────────────────────────────
+    {"url": "https://www.espn.com/espn/rss/news",                             "db_category": "스포츠", "limit": 25},
+    # ── 연예 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://variety.com/feed/",                                       "db_category": "연예",   "limit": 20},
+    {"url": "https://www.hollywoodreporter.com/t/entertainment/feed/",        "db_category": "연예",   "limit": 15},
+    # ── 정치 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://rss.politico.com/politics-news.xml",                     "db_category": "정치",   "limit": 20},
+    {"url": "https://thehill.com/homenews/feed/",                             "db_category": "정치",   "limit": 15},
+    # ── 예술 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://www.nme.com/feed",                                        "db_category": "예술",   "limit": 15},
+    {"url": "https://consequenceofsound.net/feed/",                           "db_category": "예술",   "limit": 15},
+    # ── 사회·과학 (기존) ─────────────────────────────────────────────────
+    {"url": "https://www.sciencedaily.com/rss/all.xml",                       "db_category": "사회",   "limit": 25},
+    {"url": "https://www.livescience.com/feeds/all",                          "db_category": "사회",   "limit": 20},
+    # ── 국제 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://www.aljazeera.com/xml/rss/all.xml",                     "db_category": "국제",   "limit": 25},
+    # ── 문화 (기존) ──────────────────────────────────────────────────────
+    {"url": "https://www.smithsonianmag.com/rss/latest_articles/",           "db_category": "문화",   "limit": 15},
 ]
 
 # ══════════════════════════════════════════════════════════════════════
@@ -235,7 +276,7 @@ def _entry_to_article(entry: dict, feed_title: str) -> dict:
 
 def _fetch_rss(url: str, limit: int) -> list[dict]:
     try:
-        r = httpx.get(url, headers=_HEADERS, timeout=15, follow_redirects=True)
+        r = httpx.get(url, headers=_HEADERS, timeout=6, follow_redirects=True)
         if r.status_code != 200:
             print(f"[해외뉴스] RSS 요청 실패 ({r.status_code}): {url[:70]}")
             return []
@@ -281,16 +322,9 @@ def _save(article: dict, category_id: int, category_name: str, seen: set,
         if conn.execute(text("SELECT id FROM news WHERE title = :t"), {"t": title}).fetchone():
             return False
 
-    full_content = extract_full_content(link) if link else None
-    if not full_content:
-        full_content = (
-            content_api if len(content_api) > len(description) else description
-        )
+    full_content = content_api if len(content_api) > len(description) else description
     if not full_content:
         full_content = title
-
-    if not image_url and link:
-        image_url = extract_image_from_url(link) or ""
 
     with engine.connect() as conn:
         conn.execute(
@@ -319,15 +353,33 @@ def fetch_and_save_global_news() -> int:
             for r in conn.execute(text("SELECT id, name FROM categories")).fetchall()
         }
 
+    # RSS 피드 병렬 수집 (최대 12개 동시, 전체 타임아웃 45초)
+    fetched: list[tuple[list[dict], str]] = []
+    executor = ThreadPoolExecutor(max_workers=12)
+    future_map = {
+        executor.submit(_fetch_rss, src["url"], src["limit"]): src["db_category"]
+        for src in RSS_SOURCES
+    }
+    try:
+        for future in as_completed(future_map, timeout=45):
+            cat_name = future_map[future]
+            try:
+                articles = future.result()
+            except Exception:
+                articles = []
+            if articles:
+                fetched.append((articles, cat_name))
+    except Exception:
+        pass
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
     saved = 0
     seen: set[str] = set()
-
-    for src in RSS_SOURCES:
-        cat_name = src["db_category"]
+    for articles, cat_name in fetched:
         cat_id = cat_map.get(cat_name)
         if not cat_id:
             continue
-        articles = _fetch_rss(src["url"], src["limit"])
         for article in articles:
             if _save(article, cat_id, cat_name, seen, cat_map):
                 saved += 1

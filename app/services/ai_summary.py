@@ -10,7 +10,7 @@ GROQ_MODEL = "llama-3.1-8b-instant"
 
 _groq_lock = threading.Lock()
 _last_call_time = 0.0
-_MIN_INTERVAL = 3.0  # 분당 최대 20회 (30회 한도 대비 여유)
+_MIN_INTERVAL = 6.0  # 분당 10회 (토큰 한도 대비 여유)
 
 _PROMPT_TEMPLATE = (
     "뉴스를 2문장으로 요약해줘. 사실만, 마침표로 끝내줘.\n"
@@ -26,7 +26,7 @@ _PROMPT_GLOBAL = (
 )
 
 
-def _call_groq(title: str, content: str, is_global: bool = False) -> str:
+def _call_groq(title: str, content: str, is_global: bool = False, fast_fail: bool = False) -> str:
     body = content.strip().replace("\n", " ")[:800]
     if not body:
         body = title
@@ -54,7 +54,9 @@ def _call_groq(title: str, content: str, is_global: bool = False) -> str:
                     timeout=15,
                 )
                 if res.status_code == 429:
-                    wait = min(2 ** attempt, 30)
+                    if fast_fail:
+                        return ""
+                    wait = 60 if attempt >= 1 else 5
                     print(f"[AI요약] 429 (attempt {attempt+1}/5), {wait}s 대기")
                     time.sleep(wait)
                     continue
@@ -106,11 +108,30 @@ def summarize_articles(articles: list[dict]) -> list[dict]:
 
         news_id = article.get("id")
         is_global = bool(article.get("is_global", 0))
-        summary = get_or_create_summary(
-            news_id=news_id,
-            title=article.get("title", ""),
-            content=article.get("content", ""),
-            is_global=is_global,
-        ) if news_id else ""
+        if not news_id:
+            result.append(article)
+            continue
+
+        with engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT ai_summary FROM news WHERE id = :id"), {"id": news_id}
+            ).fetchone()
+        cached = row.ai_summary if row else None
+        if cached:
+            result.append({**article, "ai_summary": cached})
+            continue
+
+        # 429 시 즉시 포기 — 이메일 발송 블로킹 방지
+        summary = _call_groq(
+            article.get("title", ""), article.get("content", ""),
+            is_global=is_global, fast_fail=True,
+        )
+        if summary:
+            with engine.connect() as conn:
+                conn.execute(
+                    text("UPDATE news SET ai_summary = :s WHERE id = :id"),
+                    {"s": summary, "id": news_id},
+                )
+                conn.commit()
         result.append({**article, "ai_summary": summary})
     return result

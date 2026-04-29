@@ -96,7 +96,7 @@
 
   /* ── 콘텐츠 래퍼 ── */
   .content {
-    max-width: 1280px;
+    max-width: 1700px;
     margin: 0 auto;
     padding: 28px 24px 48px;
   }
@@ -116,7 +116,8 @@
   .table-wrap {
     background: var(--surface);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   }
   table { width: 100%; border-collapse: collapse; }
@@ -525,21 +526,48 @@
       <p id="fetch-result" class="result-msg"></p>
     </div>
 
-    <div class="filter-bar">
-      <input type="text" id="news-search" placeholder="제목 검색..." oninput="filterNews()" style="width:280px;">
-      <select id="news-source-filter" onchange="filterNews()" style="width:160px;">
-        <option value="">전체 언론사</option>
-      </select>
-    </div>
-    <div class="table-wrap">
-      <table id="newsTable">
-        <thead>
-          <tr>
-            <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div style="display:flex;gap:24px;align-items:flex-start;">
+      <!-- 국내뉴스 -->
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:#D42B2B;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #D42B2B;">🇰🇷 국내뉴스</div>
+        <div class="filter-bar" style="margin-bottom:8px;">
+          <input type="text" id="news-search" placeholder="제목 검색..." oninput="filterNews()" style="width:200px;">
+          <select id="news-source-filter" onchange="filterNews()" style="width:140px;">
+            <option value="">전체 언론사</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table id="newsTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 해외뉴스 -->
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:#1d4ed8;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #1d4ed8;">🌍 해외뉴스</div>
+        <div class="filter-bar" style="margin-bottom:8px;">
+          <input type="text" id="global-news-search" placeholder="제목 검색..." oninput="filterGlobalNews()" style="width:200px;">
+          <select id="global-news-source-filter" onchange="filterGlobalNews()" style="width:140px;">
+            <option value="">전체 언론사</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table id="globalNewsTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -825,6 +853,18 @@
     });
   }
 
+  function filterGlobalNews() {
+    const search = document.getElementById('global-news-search').value.toLowerCase();
+    const source = document.getElementById('global-news-source-filter').value;
+    document.querySelectorAll('#globalNewsTable tbody tr').forEach(row => {
+      const title     = row.cells[1]?.textContent.toLowerCase() || '';
+      const rowSource = row.cells[2]?.textContent.trim() || '';
+      const matchSearch = !search || title.includes(search);
+      const matchSource = !source || rowSource === source;
+      row.style.display = matchSearch && matchSource ? '' : 'none';
+    });
+  }
+
   // ── 뉴스 글쓰기 ──
   async function submitNews() {
     const data = {
@@ -853,43 +893,52 @@
 
   // ── 뉴스 관리 ──
   const _newsMap = {};
+  function _buildNewsRow(n) {
+    const date  = n.created_at ? n.created_at.substring(0, 10) : '';
+    const badge = n.status === 'published'
+      ? `<span class="badge badge-published">발행</span>`
+      : `<span class="badge badge-draft">임시저장</span>`;
+    return `<tr>
+      <td>${n.id}</td>
+      <td>${n.title}</td>
+      <td>${n.source || ''}</td>
+      <td>${badge}</td>
+      <td>${date}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-gray" onclick="openEditModal(_newsMap[${n.id}])">편집</button>
+        <button class="btn btn-gray" onclick="toggleStatus(${n.id},'${n.status}')">
+          ${n.status === 'published' ? '임시저장으로' : '발행'}
+        </button>
+        <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
+      </td>
+    </tr>`;
+  }
+
+  function _populateSourceFilter(selEl, list) {
+    const currentVal = selEl.value;
+    const sources = [...new Set(list.map(n => n.source).filter(Boolean))].sort();
+    selEl.innerHTML = '<option value="">전체 언론사</option>';
+    sources.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (s === currentVal) opt.selected = true;
+      selEl.appendChild(opt);
+    });
+  }
+
   async function loadNews() {
     const res = await fetch(NEWS_API);
     const list = await res.json();
     list.forEach(n => { _newsMap[n.id] = n; });
 
-    const rows = list.map(n => {
-      const date  = n.created_at ? n.created_at.substring(0, 10) : '';
-      const badge = n.status === 'published'
-        ? `<span class="badge badge-published">발행</span>`
-        : `<span class="badge badge-draft">임시저장</span>`;
-      return `<tr>
-        <td>${n.id}</td>
-        <td>${n.title}</td>
-        <td>${n.source || ''}</td>
-        <td>${badge}</td>
-        <td>${date}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-gray" onclick="openEditModal(_newsMap[${n.id}])">편집</button>
-          <button class="btn btn-gray" onclick="toggleStatus(${n.id},'${n.status}')">
-            ${n.status === 'published' ? '임시저장으로' : '발행'}
-          </button>
-          <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
-        </td>
-      </tr>`;
-    });
-    document.querySelector('#newsTable tbody').innerHTML = rows.join('');
+    const domestic = list.filter(n => !n.is_global);
+    const global   = list.filter(n =>  n.is_global);
 
-    const sources = [...new Set(list.map(n => n.source).filter(Boolean))].sort();
-    const sel = document.getElementById('news-source-filter');
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="">전체 언론사</option>';
-    sources.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      if (s === currentVal) opt.selected = true;
-      sel.appendChild(opt);
-    });
+    document.querySelector('#newsTable tbody').innerHTML = domestic.map(_buildNewsRow).join('');
+    document.querySelector('#globalNewsTable tbody').innerHTML = global.map(_buildNewsRow).join('');
+
+    _populateSourceFilter(document.getElementById('news-source-filter'), domestic);
+    _populateSourceFilter(document.getElementById('global-news-source-filter'), global);
   }
 
   async function toggleStatus(id, current) {

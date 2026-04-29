@@ -43,7 +43,7 @@ body::before {
   align-items: center;
   position: relative;
 }
-.header-left { flex: 1; display: flex; flex-direction: row; align-items: center; gap: 14px; overflow: hidden; min-width: 0; }
+.header-left { flex: 1; display: flex; flex-direction: row; align-items: flex-end; gap: 14px; overflow: hidden; min-width: 0; }
 .header-left-meta { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
 
 /* ── 속보 티커 (날씨와 동일 방식) ── */
