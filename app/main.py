@@ -20,6 +20,53 @@ from app.routers.chat import router as chat_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
+_POLITICS_TERMS = [
+    "trump", "donald trump", "maga", "biden", "kamala", "harris",
+    "obama", "desantis", "ocasio-cortez", "pelosi", "mcconnell",
+    "u.s. congress", "senate", "white house", "manifesto", "impeach",
+    "indictment", "arraignment", "whcd", "correspondents dinner",
+    "mass shooting", "shooting rampage", "gunman",
+]
+
+def _reclassify_politics() -> int:
+    from sqlalchemy import text as _text
+    from app.services.global_news import _REROUTE_ECO, _REROUTE_INTL, _kw_match
+    conditions = " OR ".join(
+        f"LOWER(n.title) LIKE :t{i} OR LOWER(n.content) LIKE :t{i}"
+        for i in range(len(_POLITICS_TERMS))
+    )
+    params = {f"t{i}": f"%{t}%" for i, t in enumerate(_POLITICS_TERMS)}
+    with engine.connect() as conn:
+        cat_map = {
+            r.name: r.id
+            for r in conn.execute(_text("SELECT id, name FROM categories")).fetchall()
+        }
+        rows = conn.execute(_text(f"""
+            SELECT n.id, n.title, n.content FROM news n
+            JOIN categories c ON n.category_id = c.id
+            WHERE c.name IN ('문화', '예술', '연예', 'IT', '스포츠', '사회')
+              AND ({conditions})
+        """), params).fetchall()
+        reclassified = 0
+        for row in rows:
+            text_lower = ((row.title or "") + " " + (row.content or "")[:500]).lower()
+            if any(_kw_match(k, text_lower) for k in _REROUTE_ECO):
+                new_cat = "경제"
+            elif any(_kw_match(k, text_lower) for k in _REROUTE_INTL):
+                new_cat = "국제"
+            else:
+                new_cat = "정치"
+            new_id = cat_map.get(new_cat)
+            if new_id:
+                conn.execute(
+                    _text("UPDATE news SET category_id = :cid WHERE id = :id"),
+                    {"cid": new_id, "id": row.id},
+                )
+                reclassified += 1
+        conn.commit()
+    return reclassified
+
+
 try:
     with engine.connect() as conn:
         print("✅ DB 연결 성공!")
@@ -253,49 +300,9 @@ try:
 
         # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류
         try:
-            from app.services.global_news import _REROUTE_ECO, _REROUTE_INTL, _kw_match
-            politics_terms = [
-                "trump", "donald trump", "maga", "biden", "kamala", "harris",
-                "obama", "desantis", "ocasio-cortez", "pelosi", "mcconnell",
-                "congress", "senate", "white house", "manifesto", "impeach",
-                "indictment", "arraignment", "whcd", "correspondents dinner",
-                "mass shooting", "shooting rampage", "gunman",
-            ]
-            non_politics_cats = "('문화', '예술', '연예', 'IT', '스포츠', '사회')"
-            conditions = " OR ".join(
-                [f"LOWER(n.title) LIKE :term_{i} OR LOWER(n.content) LIKE :term_{i}"
-                 for i in range(len(politics_terms))]
-            )
-            params = {f"term_{i}": f"%{t}%" for i, t in enumerate(politics_terms)}
-            cat_map = {
-                r.name: r.id
-                for r in conn.execute(text("SELECT id, name FROM categories")).fetchall()
-            }
-            rows = conn.execute(text(f"""
-                SELECT n.id, n.title, n.content FROM news n
-                JOIN categories c ON n.category_id = c.id
-                WHERE c.name IN {non_politics_cats}
-                  AND ({conditions})
-            """), params).fetchall()
-            reclassified = 0
-            for row in rows:
-                text_lower = ((row.title or "") + " " + (row.content or "")[:500]).lower()
-                if any(_kw_match(k, text_lower) for k in _REROUTE_ECO):
-                    new_cat = "경제"
-                elif any(_kw_match(k, text_lower) for k in _REROUTE_INTL):
-                    new_cat = "국제"
-                else:
-                    new_cat = "정치"
-                new_id = cat_map.get(new_cat)
-                if new_id:
-                    conn.execute(
-                        text("UPDATE news SET category_id = :cid WHERE id = :id"),
-                        {"cid": new_id, "id": row.id}
-                    )
-                    reclassified += 1
-            conn.commit()
-            if reclassified:
-                print(f"✅ 정치 기사 재분류: {reclassified}건")
+            count = _reclassify_politics()
+            if count:
+                print(f"✅ 정치 기사 재분류: {count}건")
         except Exception as e:
             print(f"[정치 기사 재분류] {e}")
 
@@ -303,6 +310,7 @@ except Exception as e:
     print(f"❌ DB 연결 실패: {e}")
 
 KST = pytz.timezone("Asia/Seoul")
+
 
 def _newsletter_job():
     from app.routers.admin_api import run_newsletter_job
@@ -326,51 +334,9 @@ def _fetch_news_job():
 
     # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류 (수집 주기마다 실행)
     try:
-        from app.services.global_news import _REROUTE_ECO, _REROUTE_INTL, _kw_match
-        politics_terms = [
-            "trump", "donald trump", "maga", "biden", "kamala", "harris",
-            "obama", "desantis", "ocasio-cortez", "pelosi", "mcconnell",
-            "congress", "senate", "white house", "manifesto", "impeach",
-            "indictment", "arraignment", "whcd", "correspondents dinner",
-            "mass shooting", "shooting rampage", "gunman",
-        ]
-        non_politics_cats = "('문화', '예술', '연예', 'IT', '스포츠', '사회')"
-        conditions = " OR ".join(
-            [f"LOWER(n.title) LIKE :term_{i} OR LOWER(n.content) LIKE :term_{i}"
-             for i in range(len(politics_terms))]
-        )
-        params = {f"term_{i}": f"%{t}%" for i, t in enumerate(politics_terms)}
-        with engine.connect() as conn:
-            cat_map = {
-                r.name: r.id
-                for r in conn.execute(_text("SELECT id, name FROM categories")).fetchall()
-            }
-            rows = conn.execute(_text(f"""
-                SELECT n.id, n.title, n.content FROM news n
-                JOIN categories c ON n.category_id = c.id
-                WHERE c.name IN {non_politics_cats}
-                  AND ({conditions})
-            """), params).fetchall()
-
-            reclassified = 0
-            for row in rows:
-                text_lower = ((row.title or "") + " " + (row.content or "")[:500]).lower()
-                if any(_kw_match(k, text_lower) for k in _REROUTE_ECO):
-                    new_cat = "경제"
-                elif any(_kw_match(k, text_lower) for k in _REROUTE_INTL):
-                    new_cat = "국제"
-                else:
-                    new_cat = "정치"
-                new_id = cat_map.get(new_cat)
-                if new_id:
-                    conn.execute(
-                        _text("UPDATE news SET category_id = :cid WHERE id = :id"),
-                        {"cid": new_id, "id": row.id}
-                    )
-                    reclassified += 1
-            conn.commit()
-            if reclassified:
-                print(f"[정치 기사 재분류] {reclassified}건 이동")
+        count = _reclassify_politics()
+        if count:
+            print(f"[정치 기사 재분류] {count}건 이동")
     except Exception as e:
         print(f"[정치 기사 재분류] {e}")
 

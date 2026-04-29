@@ -110,7 +110,7 @@ REQUIRED: dict[str, list[str]] = {
         "royal", "king", "queen", "prime minister", "chancellor",
     ],
     "정치": [
-        "government", "president", "senate", "congress", "election",
+        "government", "president", "senate", "u.s. congress", "election",
         "vote", "policy", "court", "white house", "minister",
         "parliament", "democrat", "republican", "political",
         "legislation", "federal", "campaign", "administration",
@@ -121,7 +121,7 @@ REQUIRED: dict[str, list[str]] = {
 POLITICS_BLOCK_TERMS = [
     "trump", "donald trump", "biden", "kamala", "harris", "obama",
     "desantis", "pelosi", "mcconnell", "bernie", "aoc", "ocasio-cortez",
-    "congress", "senate", "white house", "oval office",
+    "u.s. congress", "senate", "white house", "oval office",
     "manifesto", "impeach", "indictment", "arraignment",
     "maga", "gop ", " gop,",
     "shooting rampage", "mass shooting", "gunman",

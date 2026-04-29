@@ -75,7 +75,7 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
             LIMIT 20
         """))]
         top_commented = [dict(r._mapping) for r in conn.execute(text("""
-            SELECT n.*, c.name as category_name,
+            SELECT n.id, n.title, n.created_at, c.name as category_name,
                    COUNT(nc.id) AS comment_count
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
@@ -86,7 +86,7 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
             LIMIT 5
         """))]
         top_liked = [dict(r._mapping) for r in conn.execute(text("""
-            SELECT n.*, c.name as category_name,
+            SELECT n.id, n.title, n.created_at, c.name as category_name,
                    COUNT(nl.id) AS like_count
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
@@ -777,7 +777,7 @@ async def search_page(request: Request, q: str = "", source: str = "") -> HTMLRe
             params["source"] = source
         where = " AND ".join(conditions)
         news_items = [dict(row._mapping) for row in conn.execute(
-            text(f"SELECT * FROM news WHERE {where} ORDER BY created_at DESC"),
+            text(f"SELECT id, title, source, created_at, content FROM news WHERE {where} ORDER BY created_at DESC LIMIT 100"),
             params
         )]
     return render(request, "search.html", news_items=news_items,
@@ -1046,6 +1046,38 @@ _AGE_GROUP_CONFIG = {
     },
 }
 
+# 태그 키워드 → {허용 카테고리, 제목 검색어} 맵
+# cats: 이 카테고리 안에서만 검색 (엉뚱한 카테고리 기사 차단)
+# terms: 제목에서 찾을 연관 키워드 목록
+_AGE_KEYWORD_MAP: dict[str, dict] = {
+    "취업":   {"cats": ["사회", "경제", "IT"],                 "terms": ["취업", "채용", "고용", "일자리", "인턴", "입사", "구직", "구인"]},
+    "IT":     {"cats": ["IT"],                                  "terms": ["IT", "인공지능", "AI", "소프트웨어", "앱", "반도체", "디지털", "클라우드", "빅데이터"]},
+    "연예":   {"cats": ["연예", "예술", "문화"],                "terms": ["연예", "아이돌", "드라마", "영화", "배우", "가수", "콘서트", "K-POP", "케이팝"]},
+    "게임":   {"cats": ["IT", "스포츠", "연예"],               "terms": ["게임", "e스포츠", "이스포츠", "롤", "배그", "모바일게임", "닌텐도"]},
+    "패션":   {"cats": ["문화", "연예", "사회"],               "terms": ["패션", "뷰티", "화장품", "의류", "스타일", "브랜드", "명품"]},
+    "SNS":    {"cats": ["IT", "문화", "연예", "사회"],         "terms": ["SNS", "소셜미디어", "인스타그램", "유튜브", "틱톡", "트위터"]},
+    "대학":   {"cats": ["사회", "경제"],                       "terms": ["대학", "교육", "입시", "수능", "대입", "학생", "교수", "대학원"]},
+    "주식":   {"cats": ["경제"],                               "terms": ["주식", "투자", "증권", "코스피", "코스닥", "주가", "펀드", "ETF"]},
+    "사회":   {"cats": ["사회", "정치"],                       "terms": ["사회", "복지", "환경", "노동", "인권", "시민", "갈등", "이슈"]},
+    "해외":   {"cats": ["국제", "문화", "IT", "경제"],         "terms": ["해외", "외국", "국제", "글로벌", "세계"]},
+    "부동산": {"cats": ["경제", "사회"],                       "terms": ["부동산", "아파트", "주택", "전세", "분양", "임대", "집값", "청약"]},
+    "재테크": {"cats": ["경제"],                               "terms": ["재테크", "자산관리", "펀드", "적금", "절세", "금융", "수익률"]},
+    "육아":   {"cats": ["사회", "경제"],                       "terms": ["육아", "아이", "유아", "어린이", "육아휴직", "보육", "출산"]},
+    "건강":   {"cats": ["사회"],                               "terms": ["건강", "의료", "병원", "질병", "치료", "약", "헬스", "운동", "다이어트"]},
+    "자동차": {"cats": ["경제", "IT", "사회"],                 "terms": ["자동차", "차량", "전기차", "수입차", "교통", "모빌리티"]},
+    "정치":   {"cats": ["정치", "사회"],                       "terms": ["정치", "국회", "대통령", "여당", "야당", "선거", "정부", "장관"]},
+    "창업":   {"cats": ["경제", "IT"],                         "terms": ["창업", "스타트업", "벤처", "비즈니스", "사업", "투자유치"]},
+    "여행":   {"cats": ["문화", "사회", "국제"],               "terms": ["여행", "관광", "해외여행", "국내여행", "관광지", "호텔", "항공"]},
+    "생활":   {"cats": ["사회", "경제", "문화"],               "terms": ["생활", "라이프", "소비", "물가", "가정", "생활비"]},
+    "경제":   {"cats": ["경제"],                               "terms": ["경제", "물가", "금리", "환율", "수출", "무역", "기업", "경기"]},
+    "의료":   {"cats": ["사회"],                               "terms": ["의료", "병원", "건강", "질병", "치료", "약", "의사", "수술"]},
+    "연금":   {"cats": ["사회", "경제", "정치"],               "terms": ["연금", "노후", "은퇴", "퇴직", "국민연금", "퇴직금"]},
+    "복지":   {"cats": ["사회", "정치"],                       "terms": ["복지", "사회보장", "지원", "수당", "기초생활", "돌봄"]},
+    "노후":   {"cats": ["사회", "경제"],                       "terms": ["노후", "은퇴", "퇴직", "연금", "고령", "시니어"]},
+    "문화":   {"cats": ["문화", "예술"],                       "terms": ["문화", "전통", "역사", "예술", "공연", "전시", "축제"]},
+    "지역":   {"cats": ["사회", "정치"],                       "terms": ["지역", "지방", "서울", "경기", "부산", "대구", "인천", "광주"]},
+}
+
 _AGE_PAGE_SIZE = 12
 
 _AGE_GROUP_LABEL = {
@@ -1114,6 +1146,16 @@ def age_news_page(request: Request, group: str = "teen", keyword: str = "", page
                   total=total)
 
 
+def _age_row(r) -> dict:
+    return {
+        "id": r.id,
+        "title": r.title,
+        "image_url": r.image_url or "",
+        "category_name": r.category_name or "",
+        "created_at": r.created_at.strftime("%Y.%m.%d") if r.created_at else "",
+    }
+
+
 @router.get("/api/age-news")
 def age_news(group: str = "teen", keyword: str = ""):
     config = _AGE_GROUP_CONFIG.get(group)
@@ -1123,19 +1165,60 @@ def age_news(group: str = "teen", keyword: str = ""):
     params: dict = {}
 
     if keyword:
-        # 특정 태그 클릭: 해당 키워드로만 필터
-        sql = """
-            SELECT n.id, n.title, n.image_url, n.created_at,
-                   c.name AS category_name
-            FROM news n
-            LEFT JOIN categories c ON n.category_id = c.id
-            WHERE n.status = 'published'
-              AND COALESCE(n.is_global, 0) = 0
-              AND n.title LIKE :kw
-            ORDER BY n.created_at DESC
-            LIMIT 6
-        """
-        params["kw"] = f"%{keyword}%"
+        # 태그 클릭: 연관 검색어 확장 후 title + content 검색
+        mapping = _AGE_KEYWORD_MAP.get(keyword, {"cats": [], "terms": [keyword]})
+        terms = mapping["terms"]
+        cats  = mapping["cats"]
+        kw_or = " OR ".join(f"n.title LIKE :t{i}" for i in range(len(terms)))
+        cat_ph = ", ".join(f":cat{i}" for i in range(len(cats))) if cats else ""
+        cat_filter = f"AND c.name IN ({cat_ph})" if cat_ph else ""
+        params.update({f"t{i}": f"%{t}%" for i, t in enumerate(terms)})
+        if cats:
+            params.update({f"cat{i}": c for i, c in enumerate(cats)})
+
+        with engine.connect() as conn:
+            # 1차: 카테고리 + 키워드 매칭
+            rows = conn.execute(text(f"""
+                SELECT n.id, n.title, n.image_url, n.created_at, c.name AS category_name
+                FROM news n
+                LEFT JOIN categories c ON n.category_id = c.id
+                WHERE n.status = 'published'
+                  AND COALESCE(n.is_global, 0) = 0
+                  {cat_filter}
+                  AND ({kw_or})
+                ORDER BY n.created_at DESC
+                LIMIT 6
+            """), params).fetchall()
+
+            # 2차: 6개 미만이면 title+content로 범위 넓혀 동일 주제 기사 보충
+            if len(rows) < 6 and cat_ph:
+                seen_ids = {r.id for r in rows}
+                need = 6 - len(rows)
+                ex_ph = ", ".join(f":ex{i}" for i in range(len(seen_ids)))
+                ex_clause = f"AND n.id NOT IN ({ex_ph})" if seen_ids else ""
+                kw_or2 = " OR ".join(
+                    f"n.title LIKE :t{i} OR n.content LIKE :t{i}"
+                    for i in range(len(terms))
+                )
+                fill_params = {f"t{i}": f"%{t}%" for i, t in enumerate(terms)}
+                fill_params.update({f"cat{i}": c for i, c in enumerate(cats)})
+                fill_params.update({f"ex{i}": eid for i, eid in enumerate(seen_ids)})
+                fill_params["need"] = need
+                extra = conn.execute(text(f"""
+                    SELECT n.id, n.title, n.image_url, n.created_at, c.name AS category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published'
+                      AND COALESCE(n.is_global, 0) = 0
+                      AND c.name IN ({cat_ph})
+                      AND ({kw_or2})
+                      {ex_clause}
+                    ORDER BY n.created_at DESC
+                    LIMIT :need
+                """), fill_params).fetchall()
+                rows = list(rows) + list(extra)
+
+        return [_age_row(r) for r in rows]
     else:
         # 연령대 전체: 카테고리 + 키워드 합산
         cats = config["categories"]
@@ -1162,16 +1245,7 @@ def age_news(group: str = "teen", keyword: str = ""):
     with engine.connect() as conn:
         rows = conn.execute(text(sql), params).fetchall()
 
-    return [
-        {
-            "id": r.id,
-            "title": r.title,
-            "image_url": r.image_url or "",
-            "category_name": r.category_name or "",
-            "created_at": r.created_at.strftime("%Y.%m.%d") if r.created_at else "",
-        }
-        for r in rows
-    ]
+    return [_age_row(r) for r in rows]
 
 
 @router.get("/api/market")
@@ -1211,21 +1285,3 @@ async def market_data():
             pass
 
     return result
-
-
-@router.get("/my-subscriptions")
-async def my_subscriptions(request: Request):
-    user = get_current_user(request)
-    if not user:
-        return JSONResponse([])
-    with engine.connect() as conn:
-        result = conn.execute(
-            text("""
-                SELECT c.id, c.name
-                FROM category_subscriptions cs
-                JOIN categories c ON cs.category_id = c.id
-                WHERE cs.user_id = :user_id
-            """),
-            {"user_id": user["id"]}
-        )
-        return JSONResponse([dict(row._mapping) for row in result])
