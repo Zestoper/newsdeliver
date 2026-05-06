@@ -36,23 +36,24 @@
   <!-- 네비게이션 -->
     <nav class="main-nav">
         <ul>
-            <li><a href="/" class="active"><span class="nav-icon">🏠</span>홈</a></li>
-            <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
-            <li><a href="/news" class="active"><span class="nav-icon">📰</span>뉴스</a></li>
-            <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
-            <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-            <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
-            <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+            <li><a href="/"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 9h2v8h5v-5h2v5h5V9h2L10 2z"/></svg></span>홈</a></li>
+            <li><a href="/about"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><line x1="10" y1="9" x2="10" y2="14"/><circle cx="10" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>소개</a></li>
+            <li><a href="/news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="4" width="16" height="2" rx="1"/><rect x="2" y="9" width="16" height="2" rx="1"/><rect x="2" y="14" width="10" height="2" rx="1"/></svg></span>뉴스</a></li>
+            <li><a href="/global-news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><path d="M10 2C10 2 7 6 7 10s3 8 3 8M10 2c0 0 3 4 3 8s-3 8-3 8M2 10h16"/></svg></span>해외뉴스</a></li>
+            <li><a href="/subscribe"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2a6 6 0 016 6c0 4 2 5 2 5H2s2-1 2-5a6 6 0 016-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg></span>구독</a></li>
+            <li><a href="/search"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/></svg></span>검색</a></li>
+            <li><a href="/contact" style="position:relative;"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="16" height="13" rx="2"/><polyline points="2,4 10,11 18,4"/></svg></span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
         </ul>
     </nav>
 </header>
+<script>(function(){var p=location.pathname;document.querySelectorAll('.main-nav a').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')===p);});})();</script>
 
 <!-- 콘텐츠 -->
 <main class="main-content">
 
   <!-- 페이지 타이틀 -->
   <div class="page-title-bar">
-    <h2>📰 뉴스 목록</h2>
+    <h2>뉴스 목록</h2>
     {% if selected_category %}
       <span class="cat-badge">{{ selected_category }}</span>
     {% endif %}
@@ -64,13 +65,6 @@
     {% for cat in categories %}
       <a href="/news?category={{ cat.name }}"
          class="cat-tab {% if selected_category == cat.name %}active{% endif %}">
-        {% if cat.name == '정치' %}🏛
-        {% elif cat.name == '경제' %}💰
-        {% elif cat.name == 'IT' %}💻
-        {% elif cat.name == '문화' %}🎭
-        {% elif cat.name == '스포츠' %}⚽
-        {% elif cat.name == '예술' %}🎨
-        {% endif %}
         {{ cat.name }}
       </a>
     {% endfor %}

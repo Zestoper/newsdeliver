@@ -171,8 +171,9 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
     id              INT         AUTO_INCREMENT PRIMARY KEY,
     user_id         VARCHAR(50) NOT NULL,
     user_name       VARCHAR(100),
+    category        VARCHAR(50) DEFAULT '일반문의',
     last_message_at DATETIME    DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_user (user_id)
+    UNIQUE KEY unique_user_category (user_id, category)
 );
 
 -- ──────────────────────────────────────────────

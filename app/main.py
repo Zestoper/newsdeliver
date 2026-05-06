@@ -88,6 +88,9 @@ try:
             ("ALTER TABLE category_subscriptions ADD COLUMN is_global TINYINT(1) DEFAULT 0", "category_subscriptions.is_global"),
             ("ALTER TABLE category_subscriptions DROP INDEX unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
             ("ALTER TABLE category_subscriptions ADD UNIQUE KEY unique_cat_sub_global (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
+            ("ALTER TABLE chat_rooms ADD COLUMN category VARCHAR(50) DEFAULT '일반문의'", "chat_rooms.category"),
+            ("ALTER TABLE chat_rooms DROP INDEX unique_user", "chat_rooms.drop_unique_user"),
+            ("ALTER TABLE chat_rooms ADD UNIQUE KEY unique_user_category (user_id, category)", "chat_rooms.unique_user_category"),
         ]
         # reports 테이블 생성
         try:

@@ -1,788 +1,1224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>관리자 페이지 - News Delivery</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --red:     #D42B2B;
-    --red-h:   #B82424;
-    --red-bg:  #FFF0F0;
-    --text:    #1A1A1A;
-    --muted:   #6B7280;
-    --light:   #9CA3AF;
-    --border:  #E5E4E0;
-    --bg:      #F4F3F0;
-    --surface: #FFFFFF;
-    --dark:    #0F0F14;
-  }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        <title>관리자 페이지 - News Delivery</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --red: #d42b2b;
+                --red-h: #b82424;
+                --red-bg: #fff0f0;
+                --text: #1a1a1a;
+                --muted: #6b7280;
+                --light: #9ca3af;
+                --border: #e5e4e0;
+                --bg: #f4f3f0;
+                --surface: #ffffff;
+                --dark: #0f0f14;
+            }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
+                background: var(--bg);
+                color: var(--text);
+            }
 
-  /* ── 헤더 ── */
-  .site-header {
-    background: var(--surface);
-    border-bottom: 3px solid var(--red);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  }
-  .header-top {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .header-logo a {
-    font-size: 22px;
-    font-weight: 900;
-    color: var(--red);
-    text-decoration: none;
-    letter-spacing: -1px;
-  }
-  .header-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 0.3px;
-  }
-  .header-back {
-    padding: 7px 16px;
-    background: var(--surface);
-    color: var(--red);
-    border: 1.5px solid var(--red);
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .header-back:hover { background: var(--red-bg); }
+            /* ── 헤더 ── */
+            .site-header {
+                background: var(--surface);
+                border-bottom: 3px solid var(--red);
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+            }
+            .header-top {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 12px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .header-logo a {
+                font-size: 22px;
+                font-weight: 900;
+                color: var(--red);
+                text-decoration: none;
+                letter-spacing: -1px;
+            }
+            .header-title {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--muted);
+                letter-spacing: 0.3px;
+            }
+            .header-back {
+                padding: 7px 16px;
+                background: var(--surface);
+                color: var(--red);
+                border: 1.5px solid var(--red);
+                border-radius: 7px;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: inherit;
+                text-decoration: none;
+                transition: all 0.2s;
+            }
+            .header-back:hover {
+                background: var(--red-bg);
+            }
 
-  /* ── 탭 ── */
-  .tabs {
-    display: flex;
-    background: var(--dark);
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0;
-  }
-  .tab {
-    padding: 13px 20px;
-    color: #9CA3AF;
-    cursor: pointer;
-    border: none;
-    background: none;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
-    letter-spacing: 0.2px;
-  }
-  .tab.active { color: #fff; border-bottom-color: var(--red); }
-  .tab:hover:not(.active) { color: #e5e7eb; }
+            /* ── 탭 ── */
+            .tabs {
+                display: flex;
+                background: var(--dark);
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0;
+            }
+            .tab {
+                padding: 13px 20px;
+                color: #9ca3af;
+                cursor: pointer;
+                border: none;
+                background: none;
+                font-size: 13px;
+                font-weight: 600;
+                font-family: inherit;
+                border-bottom: 3px solid transparent;
+                transition: all 0.2s;
+                letter-spacing: 0.2px;
+            }
+            .tab.active {
+                color: #fff;
+                border-bottom-color: var(--red);
+            }
+            .tab:hover:not(.active) {
+                color: #e5e7eb;
+            }
 
-  /* ── 콘텐츠 래퍼 ── */
-  .content {
-    max-width: 1700px;
-    margin: 0 auto;
-    padding: 28px 24px 48px;
-  }
-  .section { display: none; }
-  .section.active { display: block; }
+            /* ── 콘텐츠 래퍼 ── */
+            .content {
+                max-width: 1700px;
+                margin: 0 auto;
+                padding: 28px 24px 48px;
+            }
+            .section {
+                display: none;
+            }
+            .section.active {
+                display: block;
+            }
 
-  .section-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text);
-    margin-bottom: 20px;
-    padding-left: 12px;
-    border-left: 3px solid var(--red);
-  }
+            .section-title {
+                font-size: 16px;
+                font-weight: 800;
+                color: var(--text);
+                margin-bottom: 20px;
+                padding-left: 12px;
+                border-left: 3px solid var(--red);
+            }
 
-  /* ── 테이블 ── */
-  .table-wrap {
-    background: var(--surface);
-    border-radius: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
-  }
-  table { width: 100%; border-collapse: collapse; }
-  th {
-    background: #F8F7F4;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1.5px solid var(--border);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  td {
-    padding: 11px 16px;
-    font-size: 13px;
-    border-bottom: 1px solid #F5F4F1;
-    color: #333;
-    vertical-align: middle;
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #FAFAF8; }
+            /* ── 테이블 ── */
+            .table-wrap {
+                background: var(--surface);
+                border-radius: 12px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                box-shadow:
+                    0 1px 4px rgba(0, 0, 0, 0.06),
+                    0 4px 16px rgba(0, 0, 0, 0.05);
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th {
+                background: #f8f7f4;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 700;
+                padding: 12px 16px;
+                text-align: left;
+                border-bottom: 1.5px solid var(--border);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            td {
+                padding: 11px 16px;
+                font-size: 13px;
+                border-bottom: 1px solid #f5f4f1;
+                color: #333;
+                vertical-align: middle;
+            }
+            tr:last-child td {
+                border-bottom: none;
+            }
+            tr:hover td {
+                background: #fafaf8;
+            }
 
-  /* ── 입력 ── */
-  input, select, textarea {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 7px;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--text);
-    background: var(--surface);
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--red);
-    box-shadow: 0 0 0 3px rgba(212,43,43,0.08);
-  }
-  textarea { resize: vertical; }
+            /* ── 입력 ── */
+            input,
+            select,
+            textarea {
+                width: 100%;
+                padding: 9px 12px;
+                border: 1.5px solid var(--border);
+                border-radius: 7px;
+                font-size: 13px;
+                font-family: inherit;
+                color: var(--text);
+                background: var(--surface);
+                transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+            }
+            input:focus,
+            select:focus,
+            textarea:focus {
+                outline: none;
+                border-color: var(--red);
+                box-shadow: 0 0 0 3px rgba(212, 43, 43, 0.08);
+            }
+            textarea {
+                resize: vertical;
+            }
 
-  /* ── 버튼 ── */
-  .btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    transition: all 0.18s;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .btn-primary { background: var(--red); color: #fff; }
-  .btn-primary:hover { background: var(--red-h); transform: translateY(-1px); }
-  .btn-danger { background: #dc3545; color: #fff; }
-  .btn-danger:hover { background: #b02a37; transform: translateY(-1px); }
-  .btn-outline { background: var(--surface); color: var(--red); border: 1.5px solid var(--red); }
-  .btn-outline:hover { background: var(--red-bg); }
-  .btn-green { background: #22c55e; color: #fff; }
-  .btn-green:hover { background: #16a34a; }
-  .btn-red { background: #ef4444; color: #fff; }
-  .btn-red:hover { background: #dc2626; }
-  .btn-gray { background: #E9E8E4; color: var(--muted); }
-  .btn-gray:hover { background: #D6D5D1; }
+            /* ── 버튼 ── */
+            .btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 7px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+                font-family: inherit;
+                transition: all 0.18s;
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+            .btn-primary {
+                background: var(--red);
+                color: #fff;
+            }
+            .btn-primary:hover {
+                background: var(--red-h);
+                transform: translateY(-1px);
+            }
+            .btn-danger {
+                background: #dc3545;
+                color: #fff;
+            }
+            .btn-danger:hover {
+                background: #b02a37;
+                transform: translateY(-1px);
+            }
+            .btn-outline {
+                background: var(--surface);
+                color: var(--red);
+                border: 1.5px solid var(--red);
+            }
+            .btn-outline:hover {
+                background: var(--red-bg);
+            }
+            .btn-green {
+                background: #22c55e;
+                color: #fff;
+            }
+            .btn-green:hover {
+                background: #16a34a;
+            }
+            .btn-red {
+                background: #ef4444;
+                color: #fff;
+            }
+            .btn-red:hover {
+                background: #dc2626;
+            }
+            .btn-gray {
+                background: #e9e8e4;
+                color: var(--muted);
+            }
+            .btn-gray:hover {
+                background: #d6d5d1;
+            }
 
-  /* ── 카드/박스 ── */
-  .card {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 24px 28px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
-    margin-bottom: 16px;
-  }
+            /* ── 카드/박스 ── */
+            .card {
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 24px 28px;
+                box-shadow:
+                    0 1px 4px rgba(0, 0, 0, 0.06),
+                    0 4px 16px rgba(0, 0, 0, 0.05);
+                margin-bottom: 16px;
+            }
 
-  /* ── 폼 그룹 ── */
-  .form-label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .form-group { margin-bottom: 18px; }
-  .form-group:last-child { margin-bottom: 0; }
-  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .form-desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+            /* ── 폼 그룹 ── */
+            .form-label {
+                display: block;
+                margin-bottom: 6px;
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .form-group {
+                margin-bottom: 18px;
+            }
+            .form-group:last-child {
+                margin-bottom: 0;
+            }
+            .form-row {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .form-desc {
+                font-size: 13px;
+                color: var(--muted);
+                margin-bottom: 16px;
+                line-height: 1.6;
+            }
 
-  /* ── 도구 패널 ── */
-  .tool-panel {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 18px 22px;
-    margin-bottom: 18px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    border-left: 3px solid var(--red);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .tool-panel-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-  }
-  .tool-btns { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
-  .result-msg { font-size: 13px; font-weight: 600; min-height: 18px; width: 100%; padding-left: 4px; }
+            /* ── 도구 패널 ── */
+            .tool-panel {
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 18px 22px;
+                margin-bottom: 18px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+                border-left: 3px solid var(--red);
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                flex-wrap: wrap;
+            }
+            .tool-panel-label {
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+            }
+            .tool-btns {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                flex: 1;
+            }
+            .result-msg {
+                font-size: 13px;
+                font-weight: 600;
+                min-height: 18px;
+                width: 100%;
+                padding-left: 4px;
+            }
 
-  /* ── 필터 바 ── */
-  .filter-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .filter-bar input, .filter-bar select {
-    padding: 8px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 7px;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--text);
-    background: var(--surface);
-    width: auto;
-    transition: border-color 0.2s;
-  }
-  .filter-bar input:focus, .filter-bar select:focus {
-    outline: none;
-    border-color: var(--red);
-  }
-  .filter-count { font-size: 13px; color: var(--light); }
+            /* ── 필터 바 ── */
+            .filter-bar {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 14px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .filter-bar input,
+            .filter-bar select {
+                padding: 8px 12px;
+                border: 1.5px solid var(--border);
+                border-radius: 7px;
+                font-size: 13px;
+                font-family: inherit;
+                color: var(--text);
+                background: var(--surface);
+                width: auto;
+                transition: border-color 0.2s;
+            }
+            .filter-bar input:focus,
+            .filter-bar select:focus {
+                outline: none;
+                border-color: var(--red);
+            }
+            .filter-count {
+                font-size: 13px;
+                color: var(--light);
+            }
 
-  /* ── 뱃지 ── */
-  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .badge-published { background: var(--red-bg); color: var(--red); }
-  .badge-draft { background: #F1F0ED; color: var(--muted); }
+            /* ── 뱃지 ── */
+            .badge {
+                padding: 3px 10px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .badge-published {
+                background: var(--red-bg);
+                color: var(--red);
+            }
+            .badge-draft {
+                background: #f1f0ed;
+                color: var(--muted);
+            }
 
-  /* ── 뉴스 글쓰기: 2열 레이아웃 ── */
-  .write-layout {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 16px;
-    align-items: start;
-  }
-  @media (max-width: 860px) { .write-layout { grid-template-columns: 1fr; } }
+            /* ── 뉴스 글쓰기: 2열 레이아웃 ── */
+            .write-layout {
+                display: grid;
+                grid-template-columns: 1fr 300px;
+                gap: 16px;
+                align-items: start;
+            }
+            @media (max-width: 860px) {
+                .write-layout {
+                    grid-template-columns: 1fr;
+                }
+            }
 
-  /* ── 통계 그리드 ── */
-  .stat-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-  .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  @media (max-width: 860px) {
-    .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
-    .stat-grid-2 { grid-template-columns: 1fr; }
-  }
+            /* ── 통계 그리드 ── */
+            .stat-grid-4 {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 14px;
+                margin-bottom: 20px;
+            }
+            .stat-grid-2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                margin-bottom: 16px;
+            }
+            @media (max-width: 860px) {
+                .stat-grid-4 {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .stat-grid-2 {
+                    grid-template-columns: 1fr;
+                }
+            }
 
-  .stat-card {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 20px 18px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-    text-align: center;
-    border-top: 3px solid var(--red);
-  }
-  .stat-num {
-    font-size: 30px;
-    font-weight: 900;
-    color: var(--red);
-    letter-spacing: -1px;
-    margin-bottom: 4px;
-  }
-  .stat-label {
-    font-size: 11px;
-    color: var(--muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-  .stat-box {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 20px 22px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-  }
-  .stat-box-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--muted);
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1.5px solid var(--border);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .bar-label { font-size: 12px; font-weight: 600; color: var(--muted); width: 64px; flex-shrink: 0; text-align: right; }
-  .bar-track { flex: 1; background: #F1F0ED; border-radius: 4px; height: 16px; overflow: hidden; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--red), #E84545); border-radius: 4px; transition: width 0.5s ease; }
-  .bar-val { font-size: 12px; color: var(--muted); font-weight: 700; width: 32px; text-align: right; flex-shrink: 0; }
+            .stat-card {
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 20px 18px;
+                box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+                text-align: center;
+                border-top: 3px solid var(--red);
+            }
+            .stat-num {
+                font-size: 30px;
+                font-weight: 900;
+                color: var(--red);
+                letter-spacing: -1px;
+                margin-bottom: 4px;
+            }
+            .stat-label {
+                font-size: 11px;
+                color: var(--muted);
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+            .stat-box {
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 20px 22px;
+                box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+            }
+            .stat-box-title {
+                font-size: 11px;
+                font-weight: 800;
+                color: var(--muted);
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+                border-bottom: 1.5px solid var(--border);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .bar-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .bar-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+                width: 64px;
+                flex-shrink: 0;
+                text-align: right;
+            }
+            .bar-track {
+                flex: 1;
+                background: #f1f0ed;
+                border-radius: 4px;
+                height: 16px;
+                overflow: hidden;
+            }
+            .bar-fill {
+                height: 100%;
+                background: linear-gradient(90deg, var(--red), #e84545);
+                border-radius: 4px;
+                transition: width 0.5s ease;
+            }
+            .bar-val {
+                font-size: 12px;
+                color: var(--muted);
+                font-weight: 700;
+                width: 32px;
+                text-align: right;
+                flex-shrink: 0;
+            }
 
-  .top-news-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 8px 0;
-    border-bottom: 1px solid #F5F4F1;
-    gap: 10px;
-  }
-  .top-news-row:last-child { border-bottom: none; }
-  .top-news-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; flex: 1; text-decoration: none; }
-  .top-news-title:hover { color: var(--red); }
-  .top-news-views { font-size: 12px; color: var(--red); font-weight: 700; flex-shrink: 0; }
+            .top-news-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 8px 0;
+                border-bottom: 1px solid #f5f4f1;
+                gap: 10px;
+            }
+            .top-news-row:last-child {
+                border-bottom: none;
+            }
+            .top-news-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text);
+                line-height: 1.4;
+                flex: 1;
+                text-decoration: none;
+            }
+            .top-news-title:hover {
+                color: var(--red);
+            }
+            .top-news-views {
+                font-size: 12px;
+                color: var(--red);
+                font-weight: 700;
+                flex-shrink: 0;
+            }
 
-  /* ── 편집 모달 ── */
-  .edit-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .edit-modal-overlay.open { display: flex; }
-  .edit-modal {
-    background: var(--surface);
-    border-radius: 14px;
-    padding: 32px;
-    width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.22);
-  }
-  .edit-modal h3 {
-    font-size: 16px;
-    font-weight: 800;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1.5px solid var(--border);
-  }
-  .edit-modal .form-group { margin-bottom: 14px; }
-  .edit-modal .form-group label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .edit-row { display: flex; gap: 14px; }
-  .edit-row .form-group { flex: 1; }
-  .edit-modal-footer {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-</style>
-</head>
-<body>
-
-<!-- 헤더 -->
-<div class="site-header">
-  <div class="header-top">
-    <div class="header-logo">
-      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#c00;border-radius:7px;">
-          <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
-            <rect x="3" y="4" width="14" height="2" rx="1" fill="white"/>
-            <rect x="3" y="9" width="14" height="2" rx="1" fill="white"/>
-            <rect x="3" y="14" width="9" height="2" rx="1" fill="white"/>
-          </svg>
-        </span>
-        <span style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:white;"><span style="color:#ff6b6b;">News</span>Deliver</span>
-      </a>
-    </div>
-    <span class="header-title">🛠 관리자 페이지</span>
-    <button class="header-back" onclick="history.back()">← 뒤로가기</button>
-  </div>
-</div>
-
-<!-- 탭 -->
-<div class="tabs">
-  <button class="tab active" onclick="showTab('users', this)">👤 회원 관리</button>
-  <button class="tab" onclick="showTab('write', this)">📰 뉴스 글쓰기</button>
-  <button class="tab" onclick="showTab('newsList', this)">📚 뉴스 관리</button>
-  <button class="tab" onclick="showTab('email', this)">📧 이메일 발송</button>
-  <button class="tab" onclick="showTab('reports', this)">🚨 신고 관리</button>
-  <button class="tab" onclick="showTab('subscribers', this)">📬 구독자 목록</button>
-  <button class="tab" onclick="showTab('stats', this)">📊 통계</button>
-  <button class="tab" onclick="showTab('chat', this)" id="chatTabBtn" style="position:relative;">💬 채팅 문의<span id="chatTabBadge" style="display:none;position:absolute;top:4px;right:4px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:20px;align-items:center;justify-content:center;padding:0 4px;"></span></button>
-  <button class="tab" onclick="showTab('press', this)">🏢 언론사 승인</button>
-</div>
-
-<div class="content">
-
-  <!-- ① 회원 관리 -->
-  <div id="users" class="section active">
-    <div class="section-title">👤 회원 관리</div>
-    <div class="filter-bar">
-      <input type="text" id="user-search" placeholder="아이디 / 이름 / 이메일 검색..." oninput="filterUsers()" style="width:280px;">
-      <select id="user-role-filter" onchange="filterUsers()" style="width:120px;">
-        <option value="">전체 권한</option>
-        <option value="admin">관리자</option>
-        <option value="press">기자</option>
-        <option value="user">사용자</option>
-      </select>
-    </div>
-    <div class="table-wrap">
-      <table id="userTable">
-        <thead>
-          <tr>
-            <th>ID</th><th>이름</th><th>생년월일</th>
-            <th>이메일</th><th>전화번호</th><th>권한</th><th>관리</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ② 뉴스 글쓰기 -->
-  <div id="write" class="section">
-    <div class="section-title">📰 뉴스 글쓰기</div>
-    <div class="write-layout">
-      <!-- 메인: 제목 + 본문 -->
-      <div class="card">
-        <div class="form-group">
-          <label class="form-label">제목</label>
-          <input id="news-title" type="text" placeholder="뉴스 제목을 입력하세요">
+            /* ── 편집 모달 ── */
+            .edit-modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .edit-modal-overlay.open {
+                display: flex;
+            }
+            .edit-modal {
+                background: var(--surface);
+                border-radius: 14px;
+                padding: 32px;
+                width: 100%;
+                max-width: 700px;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+            }
+            .edit-modal h3 {
+                font-size: 16px;
+                font-weight: 800;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 1.5px solid var(--border);
+            }
+            .edit-modal .form-group {
+                margin-bottom: 14px;
+            }
+            .edit-modal .form-group label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--muted);
+                margin-bottom: 5px;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+            }
+            .edit-row {
+                display: flex;
+                gap: 14px;
+            }
+            .edit-row .form-group {
+                flex: 1;
+            }
+            .edit-modal-footer {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 20px;
+                padding-top: 16px;
+                border-top: 1px solid var(--border);
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 헤더 -->
+        <div class="site-header">
+            <div class="header-top">
+                <div class="header-logo">
+                    <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none">
+                        <span
+                            style="
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                width: 30px;
+                                height: 30px;
+                                background: #c00;
+                                border-radius: 7px;
+                            "
+                        >
+                            <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+                                <rect x="3" y="4" width="14" height="2" rx="1" fill="white" />
+                                <rect x="3" y="9" width="14" height="2" rx="1" fill="white" />
+                                <rect x="3" y="14" width="9" height="2" rx="1" fill="white" />
+                            </svg>
+                        </span>
+                        <span style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px; color: white"
+                            ><span style="color: #ff6b6b">News</span>Deliver</span
+                        >
+                    </a>
+                </div>
+                <span class="header-title"></span>관리자 페이지</span>
+                <button class="header-back" onclick="history.back()">← 뒤로가기</button>
+            </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">본문</label>
-          <textarea id="news-content" rows="16" placeholder="본문을 입력하세요"></textarea>
+
+        <!-- 탭 -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('users', this)">회원 관리</button>
+            <button class="tab" onclick="showTab('write', this)">뉴스 글쓰기</button>
+            <button class="tab" onclick="showTab('newsList', this)">뉴스 관리</button>
+            <button class="tab" onclick="showTab('email', this)">이메일 발송</button>
+            <button class="tab" onclick="showTab('reports', this)">신고 관리</button>
+            <button class="tab" onclick="showTab('subscribers', this)">구독자 목록</button>
+            <button class="tab" onclick="showTab('stats', this)">통계</button>
+            <button class="tab" onclick="showTab('chat', this)" id="chatTabBtn" style="position: relative">
+                채팅 문의<span
+                    id="chatTabBadge"
+                    style="
+                        display: none;
+                        position: absolute;
+                        top: 4px;
+                        right: 4px;
+                        background: #c00;
+                        color: white;
+                        font-size: 10px;
+                        font-weight: 900;
+                        min-width: 16px;
+                        height: 16px;
+                        border-radius: 20px;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0 4px;
+                    "
+                ></span>
+            </button>
+            <button class="tab" onclick="showTab('press', this)">언론사 승인</button>
         </div>
-        <div class="form-row">
-          <button class="btn btn-primary" onclick="submitNews()">저장</button>
-          <button class="btn btn-gray" onclick="clearForm()">초기화</button>
+
+        <div class="content">
+            <!-- ① 회원 관리 -->
+            <div id="users" class="section active">
+                <div class="section-title"> 회원 관리</div>
+                <div class="filter-bar">
+                    <input
+                        type="text"
+                        id="user-search"
+                        placeholder="아이디 / 이름 / 이메일 검색..."
+                        oninput="filterUsers()"
+                        style="width: 280px"
+                    />
+                    <select id="user-role-filter" onchange="filterUsers()" style="width: 120px">
+                        <option value="">전체 권한</option>
+                        <option value="admin">관리자</option>
+                        <option value="press">기자</option>
+                        <option value="user">사용자</option>
+                    </select>
+                </div>
+                <div class="table-wrap">
+                    <table id="userTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>이름</th>
+                                <th>생년월일</th>
+                                <th>이메일</th>
+                                <th>전화번호</th>
+                                <th>권한</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ② 뉴스 글쓰기 -->
+            <div id="write" class="section">
+                <div class="section-title">뉴스 글쓰기</div>
+                <div class="write-layout">
+                    <!-- 메인: 제목 + 본문 -->
+                    <div class="card">
+                        <div class="form-group">
+                            <label class="form-label">제목</label>
+                            <input id="news-title" type="text" placeholder="뉴스 제목을 입력하세요" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">본문</label>
+                            <textarea id="news-content" rows="16" placeholder="본문을 입력하세요"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <button class="btn btn-primary" onclick="submitNews()">저장</button>
+                            <button class="btn btn-gray" onclick="clearForm()">초기화</button>
+                        </div>
+                    </div>
+                    <!-- 사이드: 메타 정보 -->
+                    <div>
+                        <div class="card" style="margin-bottom: 12px">
+                            <div class="form-group">
+                                <label class="form-label">이미지 URL</label>
+                                <input id="news-image" type="text" placeholder="https://..." />
+                            </div>
+                            <label class="btn btn-gray" style="cursor: pointer; margin-top: 8px; width: auto">
+                                파일 선택
+                                <input
+                                    type="file"
+                                    id="news-image-file"
+                                    accept="image/*"
+                                    style="display: none"
+                                    onchange="uploadImage(this)"
+                                />
+                            </label>
+                            <p id="upload-status" style="font-size: 12px; color: var(--muted); margin-top: 6px"></p>
+                        </div>
+                        <div class="card">
+                            <div class="form-group">
+                                <label class="form-label">출처</label>
+                                <input id="news-source" type="text" placeholder="출처를 입력하세요" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">발행 상태</label>
+                                <select id="news-status">
+                                    <option value="published">발행</option>
+                                    <option value="draft">임시저장</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">카테고리</label>
+                                <select id="news-category">
+                                    <option value="">선택 안함</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ③ 뉴스 관리 -->
+            <div id="newsList" class="section">
+                <div class="section-title">뉴스 관리</div>
+
+                <!-- 콘텐츠 도구 패널 -->
+                <div class="tool-panel">
+                    <span class="tool-panel-label">콘텐츠 도구</span>
+                    <div class="tool-btns">
+                        <button class="btn btn-primary" onclick="fetchNews()">뉴스 가져오기</button>
+                        <button class="btn btn-primary" onclick="fetchGlobalNews()">해외뉴스 가져오기</button>
+                        <button class="btn btn-outline" onclick="recrawlContent()">본문 재수집</button>
+                        <button class="btn btn-outline" onclick="fixContentViaApi()">API로 본문 복원</button>
+                        <button class="btn btn-gray" onclick="cleanContent()">JS 쓰레기 정리</button>
+                    </div>
+                    <p id="fetch-result" class="result-msg"></p>
+                </div>
+
+                <div style="display: flex; gap: 24px; align-items: flex-start">
+                    <!-- 국내뉴스 -->
+                    <div style="flex: 1; min-width: 0">
+                        <div
+                            style="
+                                font-size: 14px;
+                                font-weight: 700;
+                                color: #d42b2b;
+                                margin-bottom: 10px;
+                                padding-bottom: 8px;
+                                border-bottom: 2px solid #d42b2b;
+                            "
+                        >
+                            국내뉴스
+                        </div>
+                        <div class="filter-bar" style="margin-bottom: 8px">
+                            <input
+                                type="text"
+                                id="news-search"
+                                placeholder="제목 검색..."
+                                oninput="filterNews()"
+                                style="width: 200px"
+                            />
+                            <select id="news-source-filter" onchange="filterNews()" style="width: 140px">
+                                <option value="">전체 언론사</option>
+                            </select>
+                        </div>
+                        <div class="table-wrap">
+                            <table id="newsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>제목</th>
+                                        <th>출처</th>
+                                        <th>상태</th>
+                                        <th>작성일</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 해외뉴스 -->
+                    <div style="flex: 1; min-width: 0">
+                        <div
+                            style="
+                                font-size: 14px;
+                                font-weight: 700;
+                                color: #1d4ed8;
+                                margin-bottom: 10px;
+                                padding-bottom: 8px;
+                                border-bottom: 2px solid #1d4ed8;
+                            "
+                        >
+                            해외뉴스
+                        </div>
+                        <div class="filter-bar" style="margin-bottom: 8px">
+                            <input
+                                type="text"
+                                id="global-news-search"
+                                placeholder="제목 검색..."
+                                oninput="filterGlobalNews()"
+                                style="width: 200px"
+                            />
+                            <select id="global-news-source-filter" onchange="filterGlobalNews()" style="width: 140px">
+                                <option value="">전체 언론사</option>
+                            </select>
+                        </div>
+                        <div class="table-wrap">
+                            <table id="globalNewsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>제목</th>
+                                        <th>출처</th>
+                                        <th>상태</th>
+                                        <th>작성일</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ④ 이메일 발송 -->
+            <div id="email" class="section">
+                <div class="section-title">이메일 발송</div>
+                <div style="max-width: 560px">
+                    <div class="card">
+                        <p class="form-desc">최신 발행된 뉴스를 전체 구독자에게 이메일로 발송합니다.</p>
+                        <button class="btn btn-primary" onclick="sendNewsletter()">전체 구독자에게 발송</button>
+                        <p id="send-result" class="result-msg" style="margin-top: 12px"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑥ 채팅 문의 -->
+            <div id="chat" class="section">
+                <div class="section-title">채팅 문의 관리</div>
+                <div style="display: flex; gap: 16px; height: 580px">
+                    <!-- 채팅방 목록 -->
+                    <div
+                        style="
+                            width: 240px;
+                            flex-shrink: 0;
+                            background: #f9f9f9;
+                            border-radius: 10px;
+                            border: 1px solid #e5e4e0;
+                            overflow-y: auto;
+                        "
+                    >
+                        <div
+                            style="
+                                padding: 14px 16px;
+                                font-size: 13px;
+                                font-weight: 700;
+                                color: #555;
+                                border-bottom: 1px solid #e5e4e0;
+                            "
+                        >
+                            문의 목록
+                        </div>
+                        <div id="chatRoomList"></div>
+                    </div>
+                    <!-- 채팅 내용 -->
+                    <div
+                        style="
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            background: white;
+                            border-radius: 10px;
+                            border: 1px solid #e5e4e0;
+                            overflow: hidden;
+                        "
+                    >
+                        <div
+                            id="chatRoomTitle"
+                            style="
+                                padding: 14px 20px;
+                                font-size: 14px;
+                                font-weight: 700;
+                                border-bottom: 1px solid #e5e4e0;
+                                color: #555;
+                            "
+                        >
+                            채팅방을 선택하세요
+                        </div>
+                        <div
+                            id="adminChatMessages"
+                            style="
+                                flex: 1;
+                                overflow-y: auto;
+                                padding: 16px;
+                                display: flex;
+                                flex-direction: column;
+                                gap: 10px;
+                                background: #f9f9f9;
+                            "
+                        ></div>
+                        <div
+                            style="
+                                padding: 12px 16px;
+                                border-top: 1px solid #eee;
+                                display: flex;
+                                gap: 8px;
+                                background: white;
+                                align-items: center;
+                            "
+                        >
+                            <label
+                                for="adminFileInput"
+                                style="
+                                    cursor: pointer;
+                                    padding: 8px 10px;
+                                    border: 1.5px solid #e5e4e0;
+                                    border-radius: 50%;
+                                    font-size: 16px;
+                                    line-height: 1;
+                                    flex-shrink: 0;
+                                "
+                                title="사진/동영상 첨부"
+                                >📎</label
+                            >
+                            <input
+                                id="adminFileInput"
+                                type="file"
+                                accept="image/*,video/mp4,video/webm,video/quicktime"
+                                style="display: none"
+                                onchange="adminSendFile(this)"
+                            />
+                            <input
+                                id="adminChatInput"
+                                type="text"
+                                placeholder="답변을 입력하세요..."
+                                maxlength="500"
+                                style="
+                                    flex: 1;
+                                    padding: 10px 14px;
+                                    border: 1.5px solid #e5e4e0;
+                                    border-radius: 24px;
+                                    font-size: 14px;
+                                    outline: none;
+                                "
+                                onkeydown="if (event.key === 'Enter' && !event.isComposing) adminSendMsg();"
+                            />
+                            <button
+                                onclick="adminSendMsg()"
+                                style="
+                                    padding: 10px 18px;
+                                    background: #c00;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 24px;
+                                    font-size: 13px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                "
+                            >
+                                전송
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑤ 신고 관리 -->
+            <div id="reports" class="section">
+                <div class="section-title">신고 관리</div>
+                <div class="table-wrap">
+                    <table id="reportTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>뉴스 제목</th>
+                                <th>신고자</th>
+                                <th>신고자 ID</th>
+                                <th>사유</th>
+                                <th>신고일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 32px">
+                    <div
+                        style="
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #868e96;
+                            padding-bottom: 10px;
+                            border-bottom: 1px solid #e5e4e0;
+                            margin-bottom: 12px;
+                        "
+                    >
+                        보관된 신고 내역
+                    </div>
+                    <div class="table-wrap">
+                        <table id="dismissedTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>뉴스 제목</th>
+                                    <th>신고자</th>
+                                    <th>신고자 ID</th>
+                                    <th>사유</th>
+                                    <th>신고일</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑥ 구독자 목록 -->
+            <div id="subscribers" class="section">
+                <div class="section-title">구독자 목록</div>
+                <div class="filter-bar">
+                    <input
+                        type="text"
+                        id="sub-search"
+                        placeholder="이름 / 이메일 / 아이디 검색..."
+                        oninput="filterSubscribers()"
+                        style="width: 280px"
+                    />
+                    <select id="sub-status-filter" onchange="filterSubscribers()" style="width: 130px">
+                        <option value="">전체 상태</option>
+                        <option value="verified">인증완료</option>
+                        <option value="pending">인증대기</option>
+                        <option value="inactive">구독취소</option>
+                    </select>
+                    <span id="sub-count" class="filter-count"></span>
+                </div>
+                <div class="table-wrap">
+                    <table id="subTable">
+                        <thead>
+                            <tr>
+                                <th>이름</th>
+                                <th>아이디</th>
+                                <th>이메일</th>
+                                <th>상태</th>
+                                <th>구독 카테고리</th>
+                                <th>가입일</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ⑦ 통계 대시보드 -->
+            <div id="stats" class="section">
+                <div class="section-title">통계 대시보드</div>
+
+                <div class="stat-grid-4">
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-users">-</div>
+                        <div class="stat-label">전체 회원</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-news">-</div>
+                        <div class="stat-label">발행 뉴스</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-views">-</div>
+                        <div class="stat-label">총 조회수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-subs">-</div>
+                        <div class="stat-label">구독자 (인증완료)</div>
+                    </div>
+                </div>
+
+                <div class="stat-grid-2">
+                    <div class="stat-box">
+                        <div class="stat-box-title">카테고리별 뉴스 수</div>
+                        <div id="stat-category-chart"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-title">조회수 TOP 5</div>
+                        <div id="stat-top-news"></div>
+                    </div>
+                </div>
+
+                <div class="stat-grid-2">
+                    <div class="stat-box">
+                        <div class="stat-box-title">최근 7일 발행 뉴스</div>
+                        <div id="stat-daily-news"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-title">최근 7일 신규 회원</div>
+                        <div id="stat-daily-users"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑨ 언론사 승인 -->
+            <div id="press" class="section">
+                <div class="section-title">언론사 회원 승인 관리</div>
+                <div class="table-wrap">
+                    <table id="pressTable">
+                        <thead>
+                            <tr>
+                                <th>아이디</th>
+                                <th>이름</th>
+                                <th>이메일</th>
+                                <th>연락처</th>
+                                <th>가입일</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
-      <!-- 사이드: 메타 정보 -->
-      <div>
-        <div class="card" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label class="form-label">이미지 URL</label>
-            <input id="news-image" type="text" placeholder="https://...">
-          </div>
-          <label class="btn btn-gray" style="cursor:pointer; margin-top:8px; width:auto;">
-            📁 파일 선택
-            <input type="file" id="news-image-file" accept="image/*" style="display:none;" onchange="uploadImage(this)">
-          </label>
-          <p id="upload-status" style="font-size:12px; color:var(--muted); margin-top:6px;"></p>
+        <!-- .content -->
+
+        <!-- 뉴스 편집 모달 -->
+        <div class="edit-modal-overlay" id="editModalOverlay" onclick="if (event.target === this) closeEditModal();">
+            <div class="edit-modal">
+                <h3>뉴스 편집</h3>
+                <input type="hidden" id="edit-news-id" />
+                <div class="form-group">
+                    <label>제목</label>
+                    <input id="edit-title" type="text" placeholder="뉴스 제목" />
+                </div>
+                <div class="form-group">
+                    <label>본문</label>
+                    <textarea id="edit-content" rows="10"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>이미지 URL</label>
+                    <input id="edit-image" type="text" placeholder="https://..." />
+                </div>
+                <div class="form-group">
+                    <label>출처</label>
+                    <input id="edit-source" type="text" />
+                </div>
+                <div class="edit-row">
+                    <div class="form-group">
+                        <label>상태</label>
+                        <select id="edit-status">
+                            <option value="published">발행</option>
+                            <option value="draft">임시저장</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>카테고리</label>
+                        <select id="edit-category">
+                            <option value="">선택 안함</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="edit-modal-footer">
+                    <button class="btn btn-gray" onclick="closeEditModal()">취소</button>
+                    <button class="btn btn-primary" onclick="saveEditNews()">저장</button>
+                </div>
+            </div>
         </div>
-        <div class="card">
-          <div class="form-group">
-            <label class="form-label">출처</label>
-            <input id="news-source" type="text" placeholder="출처를 입력하세요">
-          </div>
-          <div class="form-group">
-            <label class="form-label">발행 상태</label>
-            <select id="news-status">
-              <option value="published">발행</option>
-              <option value="draft">임시저장</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">카테고리</label>
-            <select id="news-category">
-              <option value="">선택 안함</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ③ 뉴스 관리 -->
-  <div id="newsList" class="section">
-    <div class="section-title">📚 뉴스 관리</div>
+        <script>
+            const _BASE = window.location.origin;
+            const USER_API = `${_BASE}/api/users`;
+            const NEWS_API = `${_BASE}/api/news`;
+            const ADMIN_API = `${_BASE}/api/admin`;
 
-    <!-- 콘텐츠 도구 패널 -->
-    <div class="tool-panel">
-      <span class="tool-panel-label">콘텐츠 도구</span>
-      <div class="tool-btns">
-        <button class="btn btn-primary" onclick="fetchNews()">📰 뉴스 가져오기</button>
-        <button class="btn btn-primary" onclick="fetchGlobalNews()">🌍 해외뉴스 가져오기</button>
-<button class="btn btn-outline" onclick="recrawlContent()">🔄 본문 재수집</button>
-        <button class="btn btn-outline" onclick="fixContentViaApi()">🔍 API로 본문 복원</button>
-        <button class="btn btn-gray" onclick="cleanContent()">🧹 JS 쓰레기 정리</button>
-      </div>
-      <p id="fetch-result" class="result-msg"></p>
-    </div>
+            function showTab(name, el) {
+                document.querySelectorAll('.section').forEach((s) => s.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+                document.getElementById(name).classList.add('active');
+                el.classList.add('active');
+                if (name === 'users') loadUsers();
+                if (name === 'newsList') loadNews();
+                if (name === 'reports') loadReports();
+                if (name === 'subscribers') loadSubscribers();
+                if (name === 'stats') loadStats();
+                if (name === 'chat') loadChatRooms();
+                if (name === 'press') loadPressMembers();
+            }
 
-    <div style="display:flex;gap:24px;align-items:flex-start;">
-      <!-- 국내뉴스 -->
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;color:#D42B2B;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #D42B2B;">🇰🇷 국내뉴스</div>
-        <div class="filter-bar" style="margin-bottom:8px;">
-          <input type="text" id="news-search" placeholder="제목 검색..." oninput="filterNews()" style="width:200px;">
-          <select id="news-source-filter" onchange="filterNews()" style="width:140px;">
-            <option value="">전체 언론사</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table id="newsTable">
-            <thead>
-              <tr>
-                <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 해외뉴스 -->
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;color:#1d4ed8;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #1d4ed8;">🌍 해외뉴스</div>
-        <div class="filter-bar" style="margin-bottom:8px;">
-          <input type="text" id="global-news-search" placeholder="제목 검색..." oninput="filterGlobalNews()" style="width:200px;">
-          <select id="global-news-source-filter" onchange="filterGlobalNews()" style="width:140px;">
-            <option value="">전체 언론사</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table id="globalNewsTable">
-            <thead>
-              <tr>
-                <th>ID</th><th>제목</th><th>출처</th><th>상태</th><th>작성일</th><th>관리</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ④ 이메일 발송 -->
-  <div id="email" class="section">
-    <div class="section-title">📧 이메일 발송</div>
-    <div style="max-width:560px;">
-      <div class="card">
-        <p class="form-desc">최신 발행된 뉴스를 전체 구독자에게 이메일로 발송합니다.</p>
-        <button class="btn btn-primary" onclick="sendNewsletter()">📨 전체 구독자에게 발송</button>
-        <p id="send-result" class="result-msg" style="margin-top:12px;"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑥ 채팅 문의 -->
-  <div id="chat" class="section">
-    <div class="section-title">💬 채팅 문의 관리</div>
-    <div style="display:flex;gap:16px;height:580px;">
-      <!-- 채팅방 목록 -->
-      <div style="width:240px;flex-shrink:0;background:#f9f9f9;border-radius:10px;border:1px solid #e5e4e0;overflow-y:auto;">
-        <div style="padding:14px 16px;font-size:13px;font-weight:700;color:#555;border-bottom:1px solid #e5e4e0;">문의 목록</div>
-        <div id="chatRoomList"></div>
-      </div>
-      <!-- 채팅 내용 -->
-      <div style="flex:1;display:flex;flex-direction:column;background:white;border-radius:10px;border:1px solid #e5e4e0;overflow:hidden;">
-        <div id="chatRoomTitle" style="padding:14px 20px;font-size:14px;font-weight:700;border-bottom:1px solid #e5e4e0;color:#555;">채팅방을 선택하세요</div>
-        <div id="adminChatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f9f9f9;"></div>
-        <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;background:white;align-items:center;">
-          <label for="adminFileInput" style="cursor:pointer;padding:8px 10px;border:1.5px solid #e5e4e0;border-radius:50%;font-size:16px;line-height:1;flex-shrink:0;" title="사진/동영상 첨부">📎</label>
-          <input id="adminFileInput" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none;" onchange="adminSendFile(this)">
-          <input id="adminChatInput" type="text" placeholder="답변을 입력하세요..." maxlength="500"
-            style="flex:1;padding:10px 14px;border:1.5px solid #e5e4e0;border-radius:24px;font-size:14px;outline:none;"
-            onkeydown="if(event.key==='Enter'&&!event.isComposing)adminSendMsg()">
-          <button onclick="adminSendMsg()" style="padding:10px 18px;background:#c00;color:white;border:none;border-radius:24px;font-size:13px;font-weight:700;cursor:pointer;">전송</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑤ 신고 관리 -->
-  <div id="reports" class="section">
-    <div class="section-title">🚨 신고 관리</div>
-    <div class="table-wrap">
-      <table id="reportTable">
-        <thead>
-          <tr>
-            <th>ID</th><th>뉴스 제목</th><th>신고자</th><th>신고자 ID</th>
-            <th>사유</th><th>신고일</th><th>관리</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div style="margin-top:32px;">
-      <div style="font-size:14px;font-weight:700;color:#868e96;padding-bottom:10px;border-bottom:1px solid #e5e4e0;margin-bottom:12px;">🗂 보관된 신고 내역</div>
-      <div class="table-wrap">
-        <table id="dismissedTable">
-          <thead>
-            <tr>
-              <th>ID</th><th>뉴스 제목</th><th>신고자</th><th>신고자 ID</th>
-              <th>사유</th><th>신고일</th><th>관리</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑥ 구독자 목록 -->
-  <div id="subscribers" class="section">
-    <div class="section-title">📬 구독자 목록</div>
-    <div class="filter-bar">
-      <input type="text" id="sub-search" placeholder="이름 / 이메일 / 아이디 검색..." oninput="filterSubscribers()" style="width:280px;">
-      <select id="sub-status-filter" onchange="filterSubscribers()" style="width:130px;">
-        <option value="">전체 상태</option>
-        <option value="verified">인증완료</option>
-        <option value="pending">인증대기</option>
-        <option value="inactive">구독취소</option>
-      </select>
-      <span id="sub-count" class="filter-count"></span>
-    </div>
-    <div class="table-wrap">
-      <table id="subTable">
-        <thead>
-          <tr>
-            <th>이름</th><th>아이디</th><th>이메일</th><th>상태</th><th>구독 카테고리</th><th>가입일</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ⑦ 통계 대시보드 -->
-  <div id="stats" class="section">
-    <div class="section-title">📊 통계 대시보드</div>
-
-    <div class="stat-grid-4">
-      <div class="stat-card"><div class="stat-num" id="stat-users">-</div><div class="stat-label">전체 회원</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-news">-</div><div class="stat-label">발행 뉴스</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-views">-</div><div class="stat-label">총 조회수</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-subs">-</div><div class="stat-label">구독자 (인증완료)</div></div>
-    </div>
-
-    <div class="stat-grid-2">
-      <div class="stat-box">
-        <div class="stat-box-title">카테고리별 뉴스 수</div>
-        <div id="stat-category-chart"></div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-title">조회수 TOP 5</div>
-        <div id="stat-top-news"></div>
-      </div>
-    </div>
-
-    <div class="stat-grid-2">
-      <div class="stat-box">
-        <div class="stat-box-title">최근 7일 발행 뉴스</div>
-        <div id="stat-daily-news"></div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-title">최근 7일 신규 회원</div>
-        <div id="stat-daily-users"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑨ 언론사 승인 -->
-  <div id="press" class="section">
-    <div class="section-title">🏢 언론사 회원 승인 관리</div>
-    <div class="table-wrap">
-      <table id="pressTable">
-        <thead><tr>
-          <th>아이디</th><th>이름</th><th>이메일</th><th>연락처</th><th>가입일</th><th>상태</th><th>관리</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- .content -->
-
-<!-- 뉴스 편집 모달 -->
-<div class="edit-modal-overlay" id="editModalOverlay" onclick="if(event.target===this)closeEditModal()">
-  <div class="edit-modal">
-    <h3>✏️ 뉴스 편집</h3>
-    <input type="hidden" id="edit-news-id">
-    <div class="form-group">
-      <label>제목</label>
-      <input id="edit-title" type="text" placeholder="뉴스 제목">
-    </div>
-    <div class="form-group">
-      <label>본문</label>
-      <textarea id="edit-content" rows="10"></textarea>
-    </div>
-    <div class="form-group">
-      <label>이미지 URL</label>
-      <input id="edit-image" type="text" placeholder="https://...">
-    </div>
-    <div class="form-group">
-      <label>출처</label>
-      <input id="edit-source" type="text">
-    </div>
-    <div class="edit-row">
-      <div class="form-group">
-        <label>상태</label>
-        <select id="edit-status">
-          <option value="published">발행</option>
-          <option value="draft">임시저장</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>카테고리</label>
-        <select id="edit-category">
-          <option value="">선택 안함</option>
-        </select>
-      </div>
-    </div>
-    <div class="edit-modal-footer">
-      <button class="btn btn-gray" onclick="closeEditModal()">취소</button>
-      <button class="btn btn-primary" onclick="saveEditNews()">저장</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  const USER_API  = 'http://127.0.0.1:8000/api/users';
-  const NEWS_API  = 'http://127.0.0.1:8000/api/news';
-  const ADMIN_API = 'http://127.0.0.1:8000/api/admin';
-
-  function showTab(name, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(name).classList.add('active');
-    el.classList.add('active');
-    if (name === 'users') loadUsers();
-    if (name === 'newsList') loadNews();
-    if (name === 'reports') loadReports();
-    if (name === 'subscribers') loadSubscribers();
-    if (name === 'stats') loadStats();
-    if (name === 'chat') loadChatRooms();
-    if (name === 'press') loadPressMembers();
-  }
-
-  // ── 회원 관리 ──
-  async function loadUsers() {
-    const res = await fetch(USER_API);
-    const users = await res.json();
-    const tbody = document.querySelector('#userTable tbody');
-    tbody.innerHTML = '';
-    users.forEach(u => {
-      tbody.innerHTML += `
+            // ── 회원 관리 ──
+            async function loadUsers() {
+                const res = await fetch(USER_API);
+                const users = await res.json();
+                const tbody = document.querySelector('#userTable tbody');
+                tbody.innerHTML = '';
+                users.forEach((u) => {
+                    tbody.innerHTML += `
         <tr id="row-${u.id}">
           <td>${u.id}</td>
           <td><input id="name-${u.id}" value="${u.name || ''}" style="width:90px;"></td>
@@ -791,9 +1227,9 @@
           <td><input id="tel-${u.id}" value="${u.tel || ''}" style="width:120px;"></td>
           <td>
             <select id="role-${u.id}" style="width:80px;">
-              <option value="admin" ${u.role==='admin'?'selected':''}>관리자</option>
-              <option value="press" ${u.role==='press'?'selected':''}>기자</option>
-              <option value="user"  ${u.role==='user' ?'selected':''}>사용자</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option>
+              <option value="press" ${u.role === 'press' ? 'selected' : ''}>기자</option>
+              <option value="user"  ${u.role === 'user' ? 'selected' : ''}>사용자</option>
             </select>
           </td>
           <td style="white-space:nowrap;">
@@ -801,104 +1237,111 @@
             <button class="btn btn-red"   onclick="deleteUser('${u.id}')">삭제</button>
           </td>
         </tr>`;
-    });
-  }
+                });
+            }
 
-  function filterUsers() {
-    const search = document.getElementById('user-search').value.toLowerCase();
-    const role   = document.getElementById('user-role-filter').value;
-    document.querySelectorAll('#userTable tbody tr').forEach(row => {
-      const id    = row.cells[0]?.textContent.toLowerCase() || '';
-      const name  = row.querySelector(`input[id^="name-"]`)?.value.toLowerCase() || '';
-      const email = row.querySelector(`input[id^="email-"]`)?.value.toLowerCase() || '';
-      const rowRole = row.querySelector(`select[id^="role-"]`)?.value || '';
-      const matchSearch = !search || id.includes(search) || name.includes(search) || email.includes(search);
-      const matchRole   = !role   || rowRole === role;
-      row.style.display = matchSearch && matchRole ? '' : 'none';
-    });
-  }
+            function filterUsers() {
+                const search = document.getElementById('user-search').value.toLowerCase();
+                const role = document.getElementById('user-role-filter').value;
+                document.querySelectorAll('#userTable tbody tr').forEach((row) => {
+                    const id = row.cells[0]?.textContent.toLowerCase() || '';
+                    const name = row.querySelector(`input[id^="name-"]`)?.value.toLowerCase() || '';
+                    const email = row.querySelector(`input[id^="email-"]`)?.value.toLowerCase() || '';
+                    const rowRole = row.querySelector(`select[id^="role-"]`)?.value || '';
+                    const matchSearch =
+                        !search || id.includes(search) || name.includes(search) || email.includes(search);
+                    const matchRole = !role || rowRole === role;
+                    row.style.display = matchSearch && matchRole ? '' : 'none';
+                });
+            }
 
-  async function updateUser(id) {
-    await fetch(`${USER_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name:  document.getElementById(`name-${id}`).value,
-        email: document.getElementById(`email-${id}`).value,
-        tel:   document.getElementById(`tel-${id}`).value,
-        role:  document.getElementById(`role-${id}`).value,
-      }),
-    });
-    alert('수정 완료!');
-    loadUsers();
-  }
+            async function updateUser(id) {
+                await fetch(`${USER_API}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById(`name-${id}`).value,
+                        email: document.getElementById(`email-${id}`).value,
+                        tel: document.getElementById(`tel-${id}`).value,
+                        role: document.getElementById(`role-${id}`).value,
+                    }),
+                });
+                alert('수정 완료!');
+                loadUsers();
+            }
 
-  async function deleteUser(id) {
-    if (!confirm(`${id} 회원을 삭제할까요?`)) return;
-    await fetch(`${USER_API}/${id}`, { method: 'DELETE' });
-    alert('삭제 완료!');
-    loadUsers();
-  }
+            async function deleteUser(id) {
+                if (!confirm(`${id} 회원을 삭제할까요?`)) return;
+                await fetch(`${USER_API}/${id}`, { method: 'DELETE' });
+                alert('삭제 완료!');
+                loadUsers();
+            }
 
-  // ── 뉴스 검색/필터 ──
-  function filterNews() {
-    const search = document.getElementById('news-search').value.toLowerCase();
-    const source = document.getElementById('news-source-filter').value;
-    document.querySelectorAll('#newsTable tbody tr').forEach(row => {
-      const title    = row.cells[1]?.textContent.toLowerCase() || '';
-      const rowSource = row.cells[2]?.textContent.trim() || '';
-      const matchSearch = !search || title.includes(search);
-      const matchSource = !source || rowSource === source;
-      row.style.display = matchSearch && matchSource ? '' : 'none';
-    });
-  }
+            // ── 뉴스 검색/필터 ──
+            function filterNews() {
+                const search = document.getElementById('news-search').value.toLowerCase();
+                const source = document.getElementById('news-source-filter').value;
+                document.querySelectorAll('#newsTable tbody tr').forEach((row) => {
+                    const title = row.cells[1]?.textContent.toLowerCase() || '';
+                    const rowSource = row.cells[2]?.textContent.trim() || '';
+                    const matchSearch = !search || title.includes(search);
+                    const matchSource = !source || rowSource === source;
+                    row.style.display = matchSearch && matchSource ? '' : 'none';
+                });
+            }
 
-  function filterGlobalNews() {
-    const search = document.getElementById('global-news-search').value.toLowerCase();
-    const source = document.getElementById('global-news-source-filter').value;
-    document.querySelectorAll('#globalNewsTable tbody tr').forEach(row => {
-      const title     = row.cells[1]?.textContent.toLowerCase() || '';
-      const rowSource = row.cells[2]?.textContent.trim() || '';
-      const matchSearch = !search || title.includes(search);
-      const matchSource = !source || rowSource === source;
-      row.style.display = matchSearch && matchSource ? '' : 'none';
-    });
-  }
+            function filterGlobalNews() {
+                const search = document.getElementById('global-news-search').value.toLowerCase();
+                const source = document.getElementById('global-news-source-filter').value;
+                document.querySelectorAll('#globalNewsTable tbody tr').forEach((row) => {
+                    const title = row.cells[1]?.textContent.toLowerCase() || '';
+                    const rowSource = row.cells[2]?.textContent.trim() || '';
+                    const matchSearch = !search || title.includes(search);
+                    const matchSource = !source || rowSource === source;
+                    row.style.display = matchSearch && matchSource ? '' : 'none';
+                });
+            }
 
-  // ── 뉴스 글쓰기 ──
-  async function submitNews() {
-    const data = {
-      title:       document.getElementById('news-title').value,
-      content:     document.getElementById('news-content').value,
-      image_url:   document.getElementById('news-image').value,
-      source:      document.getElementById('news-source').value,
-      status:      document.getElementById('news-status').value,
-      category_id: document.getElementById('news-category').value || null,
-    };
-    if (!data.title || !data.content) { alert('제목과 본문을 입력해주세요.'); return; }
-    await fetch(NEWS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    alert('저장 완료!');
-    clearForm();
-  }
+            // ── 뉴스 글쓰기 ──
+            async function submitNews() {
+                const data = {
+                    title: document.getElementById('news-title').value,
+                    content: document.getElementById('news-content').value,
+                    image_url: document.getElementById('news-image').value,
+                    source: document.getElementById('news-source').value,
+                    status: document.getElementById('news-status').value,
+                    category_id: document.getElementById('news-category').value || null,
+                };
+                if (!data.title || !data.content) {
+                    alert('제목과 본문을 입력해주세요.');
+                    return;
+                }
+                await fetch(NEWS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                alert('저장 완료!');
+                clearForm();
+            }
 
-  function clearForm() {
-    ['news-title','news-content','news-image','news-source'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('news-status').value = 'published';
-    document.getElementById('news-category').value = '';
-  }
+            function clearForm() {
+                ['news-title', 'news-content', 'news-image', 'news-source'].forEach(
+                    (id) => (document.getElementById(id).value = ''),
+                );
+                document.getElementById('news-status').value = 'published';
+                document.getElementById('news-category').value = '';
+            }
 
-  // ── 뉴스 관리 ──
-  const _newsMap = {};
-  function _buildNewsRow(n) {
-    const date  = n.created_at ? n.created_at.substring(0, 10) : '';
-    const badge = n.status === 'published'
-      ? `<span class="badge badge-published">발행</span>`
-      : `<span class="badge badge-draft">임시저장</span>`;
-    return `<tr>
+            // ── 뉴스 관리 ──
+            const _newsMap = {};
+            function _buildNewsRow(n) {
+                const date = n.created_at ? n.created_at.substring(0, 10) : '';
+                const badge =
+                    n.status === 'published'
+                        ? `<span class="badge badge-published">발행</span>`
+                        : `<span class="badge badge-draft">임시저장</span>`;
+                return `<tr>
       <td>${n.id}</td>
       <td>${n.title}</td>
       <td>${n.source || ''}</td>
@@ -912,310 +1355,349 @@
         <button class="btn btn-red" onclick="deleteNews(${n.id})">삭제</button>
       </td>
     </tr>`;
-  }
+            }
 
-  function _populateSourceFilter(selEl, list) {
-    const currentVal = selEl.value;
-    const sources = [...new Set(list.map(n => n.source).filter(Boolean))].sort();
-    selEl.innerHTML = '<option value="">전체 언론사</option>';
-    sources.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      if (s === currentVal) opt.selected = true;
-      selEl.appendChild(opt);
-    });
-  }
+            function _populateSourceFilter(selEl, list) {
+                const currentVal = selEl.value;
+                const sources = [...new Set(list.map((n) => n.source).filter(Boolean))].sort();
+                selEl.innerHTML = '<option value="">전체 언론사</option>';
+                sources.forEach((s) => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    if (s === currentVal) opt.selected = true;
+                    selEl.appendChild(opt);
+                });
+            }
 
-  async function loadNews() {
-    const res = await fetch(NEWS_API);
-    const list = await res.json();
-    list.forEach(n => { _newsMap[n.id] = n; });
+            async function loadNews() {
+                const res = await fetch(NEWS_API);
+                const list = await res.json();
+                list.forEach((n) => {
+                    _newsMap[n.id] = n;
+                });
 
-    const domestic = list.filter(n => !n.is_global);
-    const global   = list.filter(n =>  n.is_global);
+                const domestic = list.filter((n) => !n.is_global);
+                const global = list.filter((n) => n.is_global);
 
-    document.querySelector('#newsTable tbody').innerHTML = domestic.map(_buildNewsRow).join('');
-    document.querySelector('#globalNewsTable tbody').innerHTML = global.map(_buildNewsRow).join('');
+                document.querySelector('#newsTable tbody').innerHTML = domestic.map(_buildNewsRow).join('');
+                document.querySelector('#globalNewsTable tbody').innerHTML = global.map(_buildNewsRow).join('');
 
-    _populateSourceFilter(document.getElementById('news-source-filter'), domestic);
-    _populateSourceFilter(document.getElementById('global-news-source-filter'), global);
-  }
+                _populateSourceFilter(document.getElementById('news-source-filter'), domestic);
+                _populateSourceFilter(document.getElementById('global-news-source-filter'), global);
+            }
 
-  async function toggleStatus(id, current) {
-    await fetch(`${NEWS_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: current === 'published' ? 'draft' : 'published' }),
-    });
-    loadNews();
-  }
+            async function toggleStatus(id, current) {
+                await fetch(`${NEWS_API}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: current === 'published' ? 'draft' : 'published' }),
+                });
+                loadNews();
+            }
 
-  async function deleteNews(id) {
-    if (!confirm('뉴스를 삭제할까요?')) return;
-    await fetch(`${NEWS_API}/${id}`, { method: 'DELETE' });
-    alert('삭제 완료!');
-    loadNews();
-  }
+            async function deleteNews(id) {
+                if (!confirm('뉴스를 삭제할까요?')) return;
+                await fetch(`${NEWS_API}/${id}`, { method: 'DELETE' });
+                alert('삭제 완료!');
+                loadNews();
+            }
 
-  // ── 이메일 발송 ──
-  async function sendNewsletter() {
-    if (!confirm('최신 뉴스를 전체 구독자에게 발송할까요?')) return;
-    const el = document.getElementById('send-result');
-    const btn = document.querySelector('[onclick="sendNewsletter()"]');
+            // ── 이메일 발송 ──
+            async function sendNewsletter() {
+                if (!confirm('최신 뉴스를 전체 구독자에게 발송할까요?')) return;
+                const el = document.getElementById('send-result');
+                const btn = document.querySelector('[onclick="sendNewsletter()"]');
 
-    const res  = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
-    const data = await res.json();
+                const res = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
+                const data = await res.json();
 
-    if (!data.success) {
-      el.textContent = data.message;
-      el.style.color = '#ef4444';
-      return;
-    }
+                if (!data.success) {
+                    el.textContent = data.message;
+                    el.style.color = '#ef4444';
+                    return;
+                }
 
-    btn.disabled = true;
-    el.style.color = '#888';
-    el.textContent = data.message;
+                btn.disabled = true;
+                el.style.color = '#888';
+                el.textContent = data.message;
 
-    const poll = setInterval(async () => {
-      try {
-        const sr = await fetch(`${ADMIN_API}/newsletter-status`);
-        const st = await sr.json();
-        el.textContent = st.message;
-        if (!st.running) {
-          clearInterval(poll);
-          btn.disabled = false;
-          el.style.color = st.success ? '#16a34a' : '#ef4444';
-        }
-      } catch { clearInterval(poll); btn.disabled = false; }
-    }, 3000);
-  }
+                const poll = setInterval(async () => {
+                    try {
+                        const sr = await fetch(`${ADMIN_API}/newsletter-status`);
+                        const st = await sr.json();
+                        el.textContent = st.message;
+                        if (!st.running) {
+                            clearInterval(poll);
+                            btn.disabled = false;
+                            el.style.color = st.success ? '#16a34a' : '#ef4444';
+                        }
+                    } catch {
+                        clearInterval(poll);
+                        btn.disabled = false;
+                    }
+                }, 3000);
+            }
 
-  // ── 뉴스 API 도구 ──
-  async function fetchNews() {
-    const el = document.getElementById('fetch-result');
-    el.textContent = '뉴스 가져오는 중...'; el.style.color = '#888';
-    const res  = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
-    const data = await res.json();
-    el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
-  }
+            // ── 뉴스 API 도구 ──
+            async function fetchNews() {
+                const el = document.getElementById('fetch-result');
+                el.textContent = '뉴스 가져오는 중...';
+                el.style.color = '#888';
+                const res = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
+                const data = await res.json();
+                el.textContent = data.message;
+                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            }
 
-  async function fetchGlobalNews() {
-    const el = document.getElementById('fetch-result');
-    el.textContent = '해외뉴스 가져오는 중... (30~60초 소요)'; el.style.color = '#888';
-    const res  = await fetch(`${ADMIN_API}/fetch-global-news`, { method: 'POST' });
-    const data = await res.json();
-    el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
-  }
+            async function fetchGlobalNews() {
+                const el = document.getElementById('fetch-result');
+                el.textContent = '해외뉴스 가져오는 중... (30~60초 소요)';
+                el.style.color = '#888';
+                const res = await fetch(`${ADMIN_API}/fetch-global-news`, { method: 'POST' });
+                const data = await res.json();
+                el.textContent = data.message;
+                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            }
 
-  async function cleanContent() {
-    const el = document.getElementById('fetch-result');
-    el.textContent = '본문 정리 중...'; el.style.color = '#888';
-    const res  = await fetch(`${ADMIN_API}/clean-content`, { method: 'POST' });
-    const data = await res.json();
-    el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
-  }
+            async function cleanContent() {
+                const el = document.getElementById('fetch-result');
+                el.textContent = '본문 정리 중...';
+                el.style.color = '#888';
+                const res = await fetch(`${ADMIN_API}/clean-content`, { method: 'POST' });
+                const data = await res.json();
+                el.textContent = data.message;
+                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            }
 
-async function recrawlContent() {
-    const el = document.getElementById('fetch-result');
-    el.textContent = '본문 재수집 중...'; el.style.color = '#888';
-    const res  = await fetch(`${ADMIN_API}/recrawl-content`, { method: 'POST' });
-    const data = await res.json();
-    el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
-  }
+            async function recrawlContent() {
+                const el = document.getElementById('fetch-result');
+                el.textContent = '본문 재수집 중...';
+                el.style.color = '#888';
+                const res = await fetch(`${ADMIN_API}/recrawl-content`, { method: 'POST' });
+                const data = await res.json();
+                el.textContent = data.message;
+                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            }
 
-  async function fixContentViaApi() {
-    const el = document.getElementById('fetch-result');
-    el.textContent = 'API로 본문 복원 중... (100건씩, 약 15초 소요)'; el.style.color = '#888';
-    const res  = await fetch(`${ADMIN_API}/fix-content-via-api`, { method: 'POST' });
-    const data = await res.json();
-    el.textContent = data.message;
-    el.style.color = data.success ? '#16a34a' : '#ef4444';
-  }
+            async function fixContentViaApi() {
+                const el = document.getElementById('fetch-result');
+                el.textContent = 'API로 본문 복원 중... (100건씩, 약 15초 소요)';
+                el.style.color = '#888';
+                const res = await fetch(`${ADMIN_API}/fix-content-via-api`, { method: 'POST' });
+                const data = await res.json();
+                el.textContent = data.message;
+                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            }
 
-  // ── 이미지 업로드 ──
-  async function uploadImage(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const status = document.getElementById('upload-status');
-    status.textContent = '업로드 중...';
-    status.style.color = '#868e96';
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${ADMIN_API}/upload-image`, { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById('news-image').value = data.url;
-      status.textContent = '✅ 업로드 완료!';
-      status.style.color = '#16a34a';
-    } else {
-      status.textContent = `❌ ${data.message}`;
-      status.style.color = '#ef4444';
-    }
-    input.value = '';
-  }
+            // ── 이미지 업로드 ──
+            async function uploadImage(input) {
+                const file = input.files[0];
+                if (!file) return;
+                const status = document.getElementById('upload-status');
+                status.textContent = '업로드 중...';
+                status.style.color = '#868e96';
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch(`${ADMIN_API}/upload-image`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('news-image').value = data.url;
+                    status.textContent = '업로드 완료!';
+                    status.style.color = '#16a34a';
+                } else {
+                    status.textContent = `${data.message}`;
+                    status.style.color = '#ef4444';
+                }
+                input.value = '';
+            }
 
-  // ── 채팅 관리 ──
-  let _adminWs = null;
-  let _activeRoomId = null;
+            // ── 채팅 관리 ──
+            let _adminWs = null;
+            let _activeRoomId = null;
 
-  async function loadChatRooms() {
-    const res = await fetch('/api/chat/rooms');
-    const rooms = await res.json();
-    const list = document.getElementById('chatRoomList');
-    if (!Array.isArray(rooms) || !rooms.length) {
-      list.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;font-size:13px;">문의 없음</div>';
-      return;
-    }
-    list.innerHTML = rooms.map(r => `
-      <div onclick="openAdminRoom(${r.id},'${r.user_name}')"
+            async function loadChatRooms() {
+                const res = await fetch('/api/chat/rooms');
+                const rooms = await res.json();
+                const list = document.getElementById('chatRoomList');
+                if (!Array.isArray(rooms) || !rooms.length) {
+                    list.innerHTML =
+                        '<div style="padding:20px;text-align:center;color:#aaa;font-size:13px;">문의 없음</div>';
+                    return;
+                }
+                list.innerHTML = rooms
+                    .map(
+                        (r) => `
+      <div onclick="openAdminRoom(${r.id},'${r.user_name}','${(r.category || '일반문의').replace(/'/g, "\\'")}')"
         style="padding:12px 16px;border-bottom:1px solid #eee;cursor:pointer;transition:background 0.15s;"
         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background=''"
         id="room-item-${r.id}">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:13px;font-weight:700;color:#1a1a1a;">${r.user_name}</span>
+          <div>
+            <span style="font-size:13px;font-weight:700;color:#1a1a1a;">${r.user_name}</span>
+            <span style="font-size:11px;color:#c00;margin-left:6px;font-weight:600;">[${r.category || '일반문의'}]</span>
+          </div>
           ${r.unread > 0 ? `<span style="background:#c00;color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">${r.unread}</span>` : ''}
         </div>
         <div style="font-size:11px;color:#aaa;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.last_msg || ''}</div>
         <div style="font-size:10px;color:#ccc;margin-top:2px;">${r.last_message_at || ''}</div>
-      </div>`).join('');
-  }
+      </div>`,
+                    )
+                    .join('');
+            }
 
-  async function openAdminRoom(roomId, userName) {
-    _activeRoomId = roomId;
-    document.getElementById('chatRoomTitle').textContent = `${userName} 님과의 대화`;
+            async function openAdminRoom(roomId, userName, category) {
+                _activeRoomId = roomId;
+                const catLabel = category ? ` [${category}]` : '';
+                document.getElementById('chatRoomTitle').textContent = `${userName}${catLabel} 님과의 대화`;
 
-    const hist = await fetch(`/api/chat/room/${roomId}/messages`);
-    const msgs = await hist.json();
-    const box = document.getElementById('adminChatMessages');
-    box.innerHTML = '';
-    msgs.forEach(m => adminAppendMsg(m.sender, m.message, m.created_at, m.is_read, m.msg_type || 'text'));
-    updateChatBadge();
+                const hist = await fetch(`/api/chat/room/${roomId}/messages`);
+                const msgs = await hist.json();
+                const box = document.getElementById('adminChatMessages');
+                box.innerHTML = '';
+                msgs.forEach((m) => adminAppendMsg(m.sender, m.message, m.created_at, m.is_read, m.msg_type || 'text'));
+                updateChatBadge();
 
-    if (_adminWs) _adminWs.close();
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    _adminWs = new WebSocket(`${proto}://${location.host}/api/chat/ws/${roomId}`);
-    _adminWs.onmessage = e => {
-      const d = JSON.parse(e.data);
-      if (d.type === 'read_receipt') {
-        if (d.reader === 'user') {
-          document.querySelectorAll('.msg-status[data-sender="admin"]').forEach(el => {
-            el.textContent = '읽음';
-            el.style.color = '#16a34a';
-          });
-        }
-        return;
-      }
-      if (d.type === 'message' && d.sender !== 'admin') {
-        adminAppendMsg(d.sender, d.message, d.created_at, false, d.msg_type || 'text');
-        // 현재 이 방을 보고 있으면 즉시 읽음 처리
-        fetch(`/api/chat/room/${roomId}/read`, { method: 'POST' }).then(() => updateChatBadge());
-      }
-    };
-    // 읽음 처리 후 목록 뱃지 갱신
-    document.getElementById(`room-item-${roomId}`)
-      ?.querySelectorAll('span[style*="background:#c00"]')
-      .forEach(el => el.remove());
-  }
+                if (_adminWs) _adminWs.close();
+                const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+                _adminWs = new WebSocket(`${proto}://${location.host}/api/chat/ws/${roomId}`);
+                _adminWs.onmessage = (e) => {
+                    const d = JSON.parse(e.data);
+                    if (d.type === 'read_receipt') {
+                        if (d.reader === 'user') {
+                            document.querySelectorAll('.msg-status[data-sender="admin"]').forEach((el) => {
+                                el.textContent = '읽음';
+                                el.style.color = '#16a34a';
+                            });
+                        }
+                        return;
+                    }
+                    if (d.type === 'message' && d.sender !== 'admin') {
+                        adminAppendMsg(d.sender, d.message, d.created_at, false, d.msg_type || 'text');
+                        // 현재 이 방을 보고 있으면 즉시 읽음 처리
+                        fetch(`/api/chat/room/${roomId}/read`, { method: 'POST' }).then(() => updateChatBadge());
+                    }
+                };
+                // 읽음 처리 후 목록 뱃지 갱신
+                document
+                    .getElementById(`room-item-${roomId}`)
+                    ?.querySelectorAll('span[style*="background:#c00"]')
+                    .forEach((el) => el.remove());
+            }
 
-  function adminAppendMsg(sender, message, time, isRead, msgType) {
-    const box = document.getElementById('adminChatMessages');
-    const isAdmin = sender === 'admin';
-    const readText = isAdmin ? (isRead ? '읽음' : '안읽음') : '';
-    msgType = msgType || 'text';
-    let contentHtml;
-    if (msgType === 'image') {
-      contentHtml = `<a href="${message}" target="_blank"><img src="${message}" style="max-width:240px;max-height:200px;border-radius:10px;display:block;cursor:pointer;" loading="lazy"></a>`;
-    } else if (msgType === 'video') {
-      contentHtml = `<video src="${message}" controls style="max-width:240px;max-height:180px;border-radius:10px;display:block;"></video>`;
-    } else {
-      contentHtml = message;
-    }
-    const bubbleBg = msgType !== 'text' ? 'transparent' : (isAdmin ? '#c00' : 'white');
-    const bubbleColor = msgType !== 'text' ? 'inherit' : (isAdmin ? 'white' : '#1a1a1a');
-    const bubblePad = msgType !== 'text' ? '4px' : '9px 14px';
-    const div = document.createElement('div');
-    div.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin ? 'flex-end' : 'flex-start'};`;
-    div.innerHTML =
-      `<div style="max-width:280px;padding:${bubblePad};border-radius:${isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
+            function adminAppendMsg(sender, message, time, isRead, msgType) {
+                const box = document.getElementById('adminChatMessages');
+                const isAdmin = sender === 'admin';
+                const readText = isAdmin ? (isRead ? '읽음' : '안읽음') : '';
+                msgType = msgType || 'text';
+                let contentHtml;
+                if (msgType === 'image') {
+                    contentHtml = `<a href="${message}" target="_blank"><img src="${message}" style="max-width:240px;max-height:200px;border-radius:10px;display:block;cursor:pointer;" loading="lazy"></a>`;
+                } else if (msgType === 'video') {
+                    contentHtml = `<video src="${message}" controls style="max-width:240px;max-height:180px;border-radius:10px;display:block;"></video>`;
+                } else {
+                    contentHtml = message;
+                }
+                const bubbleBg = msgType !== 'text' ? 'transparent' : isAdmin ? '#c00' : 'white';
+                const bubbleColor = msgType !== 'text' ? 'inherit' : isAdmin ? 'white' : '#1a1a1a';
+                const bubblePad = msgType !== 'text' ? '4px' : '9px 14px';
+                const div = document.createElement('div');
+                div.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin ? 'flex-end' : 'flex-start'};`;
+                div.innerHTML = `<div style="max-width:280px;padding:${bubblePad};border-radius:${isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
         background:${bubbleBg};color:${bubbleColor};
         font-size:13px;line-height:1.6;box-shadow:${msgType !== 'text' ? 'none' : '0 1px 4px rgba(0,0,0,0.08)'};">${contentHtml}</div>
       <span style="font-size:10px;color:#aaa;margin-top:3px;display:flex;gap:6px;">
         ${isAdmin ? `<span class="msg-status" data-sender="admin" style="color:${isRead ? '#16a34a' : '#aaa'};">${readText}</span>` : ''}
         <span>${time}</span>
       </span>`;
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
-  }
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
 
-  function adminSendMsg() {
-    const input = document.getElementById('adminChatInput');
-    const msg = input.value.trim();
-    if (!msg || !_adminWs || _adminWs.readyState !== WebSocket.OPEN) return;
-    _adminWs.send(JSON.stringify({ sender: 'admin', message: msg, msg_type: 'text' }));
-    adminAppendMsg('admin', msg, new Date().toTimeString().slice(0,5), false, 'text');
-    input.value = '';
-  }
+            function adminSendMsg() {
+                const input = document.getElementById('adminChatInput');
+                const msg = input.value.trim();
+                if (!msg || !_adminWs || _adminWs.readyState !== WebSocket.OPEN) return;
+                _adminWs.send(JSON.stringify({ sender: 'admin', message: msg, msg_type: 'text' }));
+                adminAppendMsg('admin', msg, new Date().toTimeString().slice(0, 5), false, 'text');
+                input.value = '';
+            }
 
-  async function adminSendFile(input) {
-    if (!input.files || !input.files[0]) return;
-    if (!_activeRoomId) { alert('채팅방을 선택해주세요.'); return; }
-    const file = input.files[0];
-    if (file.size > 30 * 1024 * 1024) { alert('파일 크기는 30MB 이하만 가능합니다.'); input.value = ''; return; }
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch(`/api/chat/room/${_activeRoomId}/upload`, { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.error) { alert('업로드 실패: ' + data.error); input.value = ''; return; }
-    if (_adminWs && _adminWs.readyState === WebSocket.OPEN) {
-      _adminWs.send(JSON.stringify({ sender: 'admin', message: data.url, msg_type: data.type }));
-      adminAppendMsg('admin', data.url, new Date().toTimeString().slice(0,5), false, data.type);
-    }
-    input.value = '';
-  }
+            async function adminSendFile(input) {
+                if (!input.files || !input.files[0]) return;
+                if (!_activeRoomId) {
+                    alert('채팅방을 선택해주세요.');
+                    return;
+                }
+                const file = input.files[0];
+                if (file.size > 30 * 1024 * 1024) {
+                    alert('파일 크기는 30MB 이하만 가능합니다.');
+                    input.value = '';
+                    return;
+                }
+                const fd = new FormData();
+                fd.append('file', file);
+                const res = await fetch(`/api/chat/room/${_activeRoomId}/upload`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.error) {
+                    alert('업로드 실패: ' + data.error);
+                    input.value = '';
+                    return;
+                }
+                if (_adminWs && _adminWs.readyState === WebSocket.OPEN) {
+                    _adminWs.send(JSON.stringify({ sender: 'admin', message: data.url, msg_type: data.type }));
+                    adminAppendMsg('admin', data.url, new Date().toTimeString().slice(0, 5), false, data.type);
+                }
+                input.value = '';
+            }
 
-  // 탭 뱃지 폴링
-  async function updateChatBadge() {
-    const res = await fetch('/api/chat/unread');
-    const d = await res.json();
-    const b = document.getElementById('chatTabBadge');
-    if (b) {
-      if (d.rooms > 0) { b.textContent = d.rooms; b.style.display = 'inline-flex'; }
-      else { b.style.display = 'none'; }
-    }
-    // 채팅 탭이 열려 있으면 목록도 함께 갱신
-    const chatSection = document.getElementById('chat');
-    if (chatSection && chatSection.classList.contains('active')) {
-      loadChatRooms();
-    }
-  }
-  updateChatBadge();
-  setInterval(updateChatBadge, 10000);
+            // 탭 뱃지 폴링
+            async function updateChatBadge() {
+                const res = await fetch('/api/chat/unread');
+                const d = await res.json();
+                const b = document.getElementById('chatTabBadge');
+                if (b) {
+                    if (d.rooms > 0) {
+                        b.textContent = d.rooms;
+                        b.style.display = 'inline-flex';
+                    } else {
+                        b.style.display = 'none';
+                    }
+                }
+                // 채팅 탭이 열려 있으면 목록도 함께 갱신
+                const chatSection = document.getElementById('chat');
+                if (chatSection && chatSection.classList.contains('active')) {
+                    loadChatRooms();
+                }
+            }
+            updateChatBadge();
+            setInterval(updateChatBadge, 10000);
 
-  // ── 신고 관리 ──
-  async function loadReports() {
-    const res = await fetch(`${ADMIN_API}/reports`);
-    const list = await res.json();
-    const tbody = document.querySelector('#reportTable tbody');
-    tbody.innerHTML = '';
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:24px;">신고 내역이 없습니다.</td></tr>';
-      return;
-    }
-    const pending = list.filter(r => r.status === 'pending');
-    const dismissed = list.filter(r => r.status === 'dismissed');
-    // 반려 시 행 데이터 참조용 맵
-    window._reportMap = {};
-    list.forEach(r => { window._reportMap[r.id] = r; });
+            // ── 신고 관리 ──
+            async function loadReports() {
+                const res = await fetch(`${ADMIN_API}/reports`);
+                const list = await res.json();
+                const tbody = document.querySelector('#reportTable tbody');
+                tbody.innerHTML = '';
+                if (!list.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:24px;">신고 내역이 없습니다.</td></tr>';
+                    return;
+                }
+                const pending = list.filter((r) => r.status === 'pending');
+                const dismissed = list.filter((r) => r.status === 'dismissed');
+                // 반려 시 행 데이터 참조용 맵
+                window._reportMap = {};
+                list.forEach((r) => {
+                    window._reportMap[r.id] = r;
+                });
 
-    if (!pending.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:24px;">처리할 신고가 없습니다.</td></tr>';
-    } else {
-      pending.forEach(r => {
-        tbody.innerHTML += `
+                if (!pending.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:24px;">처리할 신고가 없습니다.</td></tr>';
+                } else {
+                    pending.forEach((r) => {
+                        tbody.innerHTML += `
           <tr id="report-row-${r.id}">
             <td>${r.id}</td>
             <td><a href="/news/${r.news_id}" target="_blank" style="color:var(--red);text-decoration:none;">${r.news_title || '(삭제된 기사)'}</a></td>
@@ -1229,23 +1711,24 @@ async function recrawlContent() {
               <button class="btn btn-gray"  style="font-size:12px;padding:5px 10px;" onclick="dismissReport(${r.id})">보관</button>
             </td>
           </tr>`;
-      });
-    }
+                    });
+                }
 
-    const dtbody = document.querySelector('#dismissedTable tbody');
-    dtbody.innerHTML = '';
-    if (!dismissed.length) {
-      dtbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:16px;">보관된 신고가 없습니다.</td></tr>';
-    } else {
-      dismissed.forEach(r => _addDismissedRow(r));
-    }
-  }
+                const dtbody = document.querySelector('#dismissedTable tbody');
+                dtbody.innerHTML = '';
+                if (!dismissed.length) {
+                    dtbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:16px;">보관된 신고가 없습니다.</td></tr>';
+                } else {
+                    dismissed.forEach((r) => _addDismissedRow(r));
+                }
+            }
 
-  function _addDismissedRow(r) {
-    const dtbody = document.querySelector('#dismissedTable tbody');
-    const placeholder = dtbody.querySelector('td[colspan]');
-    if (placeholder) placeholder.closest('tr').remove();
-    dtbody.innerHTML += `
+            function _addDismissedRow(r) {
+                const dtbody = document.querySelector('#dismissedTable tbody');
+                const placeholder = dtbody.querySelector('td[colspan]');
+                if (placeholder) placeholder.closest('tr').remove();
+                dtbody.innerHTML += `
       <tr id="dismissed-row-${r.id}" style="background:#fafafa;color:#868e96;">
         <td>${r.id}</td>
         <td><a href="/news/${r.news_id}" target="_blank" style="color:#868e96;text-decoration:none;">${r.news_title || '(삭제된 기사)'}</a></td>
@@ -1255,33 +1738,34 @@ async function recrawlContent() {
         <td style="font-size:12px;">${r.created_at}</td>
         <td><button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="restoreReport(${r.id})">↑ 신고 목록으로</button></td>
       </tr>`;
-  }
+            }
 
-  async function updateReport(id, status) {
-    await fetch(`${ADMIN_API}/reports/${id}?status=${status}`, { method: 'PUT' });
-    document.getElementById(`report-row-${id}`)?.remove();
-    _checkEmptyReports();
-  }
+            async function updateReport(id, status) {
+                await fetch(`${ADMIN_API}/reports/${id}?status=${status}`, { method: 'PUT' });
+                document.getElementById(`report-row-${id}`)?.remove();
+                _checkEmptyReports();
+            }
 
-  async function dismissReport(id) {
-    await fetch(`${ADMIN_API}/reports/${id}?status=dismissed`, { method: 'PUT' });
-    document.getElementById(`report-row-${id}`)?.remove();
-    _checkEmptyReports();
-    _addDismissedRow(window._reportMap[id]);
-  }
+            async function dismissReport(id) {
+                await fetch(`${ADMIN_API}/reports/${id}?status=dismissed`, { method: 'PUT' });
+                document.getElementById(`report-row-${id}`)?.remove();
+                _checkEmptyReports();
+                _addDismissedRow(window._reportMap[id]);
+            }
 
-  async function restoreReport(id) {
-    await fetch(`${ADMIN_API}/reports/${id}?status=pending`, { method: 'PUT' });
-    document.getElementById(`dismissed-row-${id}`)?.remove();
-    const dtbody = document.querySelector('#dismissedTable tbody');
-    if (!dtbody.querySelector('tr')) {
-      dtbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:16px;">보관된 신고가 없습니다.</td></tr>';
-    }
-    const r = window._reportMap[id];
-    const tbody = document.querySelector('#reportTable tbody');
-    const placeholder = tbody.querySelector('td[colspan]');
-    if (placeholder) placeholder.closest('tr').remove();
-    tbody.innerHTML += `
+            async function restoreReport(id) {
+                await fetch(`${ADMIN_API}/reports/${id}?status=pending`, { method: 'PUT' });
+                document.getElementById(`dismissed-row-${id}`)?.remove();
+                const dtbody = document.querySelector('#dismissedTable tbody');
+                if (!dtbody.querySelector('tr')) {
+                    dtbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:16px;">보관된 신고가 없습니다.</td></tr>';
+                }
+                const r = window._reportMap[id];
+                const tbody = document.querySelector('#reportTable tbody');
+                const placeholder = tbody.querySelector('td[colspan]');
+                if (placeholder) placeholder.closest('tr').remove();
+                tbody.innerHTML += `
       <tr id="report-row-${r.id}">
         <td>${r.id}</td>
         <td><a href="/news/${r.news_id}" target="_blank" style="color:var(--red);text-decoration:none;">${r.news_title || '(삭제된 기사)'}</a></td>
@@ -1295,50 +1779,53 @@ async function recrawlContent() {
           <button class="btn btn-gray"  style="font-size:12px;padding:5px 10px;" onclick="dismissReport(${r.id})">보관</button>
         </td>
       </tr>`;
-  }
+            }
 
-  async function deletePost(id) {
-    if (!confirm('기사를 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
-    await fetch(`${ADMIN_API}/reports/${id}/delete-post`, { method: 'POST' });
-    document.getElementById(`report-row-${id}`)?.remove();
-    _checkEmptyReports();
-  }
+            async function deletePost(id) {
+                if (!confirm('기사를 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+                await fetch(`${ADMIN_API}/reports/${id}/delete-post`, { method: 'POST' });
+                document.getElementById(`report-row-${id}`)?.remove();
+                _checkEmptyReports();
+            }
 
-  function _checkEmptyReports() {
-    const tbody = document.querySelector('#reportTable tbody');
-    if (!tbody.querySelector('tr')) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:24px;">처리할 신고가 없습니다.</td></tr>';
-    }
-  }
+            function _checkEmptyReports() {
+                const tbody = document.querySelector('#reportTable tbody');
+                if (!tbody.querySelector('tr')) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:24px;">처리할 신고가 없습니다.</td></tr>';
+                }
+            }
 
-  async function deleteReport(id) {
-    if (!confirm('신고 내역을 삭제할까요?')) return;
-    await fetch(`${ADMIN_API}/reports/${id}`, { method: 'DELETE' });
-    loadReports();
-  }
+            async function deleteReport(id) {
+                if (!confirm('신고 내역을 삭제할까요?')) return;
+                await fetch(`${ADMIN_API}/reports/${id}`, { method: 'DELETE' });
+                loadReports();
+            }
 
-  // ── 구독자 목록 ──
-  let _subData = [];
-  async function loadSubscribers() {
-    const res = await fetch(`${ADMIN_API}/subscribers`);
-    _subData = await res.json();
-    renderSubscribers(_subData);
-  }
-  function renderSubscribers(list) {
-    const tbody = document.querySelector('#subTable tbody');
-    tbody.innerHTML = '';
-    document.getElementById('sub-count').textContent = `총 ${list.length}명`;
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:24px;">구독자가 없습니다.</td></tr>';
-      return;
-    }
-    list.forEach(s => {
-      const badge = s.is_verified && s.is_active
-        ? `<span class="badge" style="background:#DCFCE7;color:#16a34a;">인증완료</span>`
-        : s.is_active && !s.is_verified
-        ? `<span class="badge" style="background:#FEF9C3;color:#854d0e;">인증대기</span>`
-        : `<span class="badge" style="background:#F1F0ED;color:#868e96;">구독취소</span>`;
-      tbody.innerHTML += `
+            // ── 구독자 목록 ──
+            let _subData = [];
+            async function loadSubscribers() {
+                const res = await fetch(`${ADMIN_API}/subscribers`);
+                _subData = await res.json();
+                renderSubscribers(_subData);
+            }
+            function renderSubscribers(list) {
+                const tbody = document.querySelector('#subTable tbody');
+                tbody.innerHTML = '';
+                document.getElementById('sub-count').textContent = `총 ${list.length}명`;
+                if (!list.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:24px;">구독자가 없습니다.</td></tr>';
+                    return;
+                }
+                list.forEach((s) => {
+                    const badge =
+                        s.is_verified && s.is_active
+                            ? `<span class="badge" style="background:#DCFCE7;color:#16a34a;">인증완료</span>`
+                            : s.is_active && !s.is_verified
+                              ? `<span class="badge" style="background:#FEF9C3;color:#854d0e;">인증대기</span>`
+                              : `<span class="badge" style="background:#F1F0ED;color:#868e96;">구독취소</span>`;
+                    tbody.innerHTML += `
         <tr data-verified="${s.is_verified}" data-active="${s.is_active}">
           <td>${s.name || '-'}</td>
           <td style="color:#868e96;font-size:12px;">${s.user_id}</td>
@@ -1347,158 +1834,181 @@ async function recrawlContent() {
           <td style="font-size:12px;color:#555;">${s.categories || '-'}</td>
           <td style="font-size:12px;color:#adb5bd;">${s.created_at || ''}</td>
         </tr>`;
-    });
-  }
-  function filterSubscribers() {
-    const search = document.getElementById('sub-search').value.toLowerCase();
-    const status = document.getElementById('sub-status-filter').value;
-    const filtered = _subData.filter(s => {
-      const matchSearch = !search ||
-        (s.name || '').toLowerCase().includes(search) ||
-        (s.email || '').toLowerCase().includes(search) ||
-        (s.user_id || '').toLowerCase().includes(search);
-      const matchStatus = !status ||
-        (status === 'verified' && s.is_verified && s.is_active) ||
-        (status === 'pending'  && s.is_active && !s.is_verified) ||
-        (status === 'inactive' && !s.is_active);
-      return matchSearch && matchStatus;
-    });
-    renderSubscribers(filtered);
-  }
+                });
+            }
+            function filterSubscribers() {
+                const search = document.getElementById('sub-search').value.toLowerCase();
+                const status = document.getElementById('sub-status-filter').value;
+                const filtered = _subData.filter((s) => {
+                    const matchSearch =
+                        !search ||
+                        (s.name || '').toLowerCase().includes(search) ||
+                        (s.email || '').toLowerCase().includes(search) ||
+                        (s.user_id || '').toLowerCase().includes(search);
+                    const matchStatus =
+                        !status ||
+                        (status === 'verified' && s.is_verified && s.is_active) ||
+                        (status === 'pending' && s.is_active && !s.is_verified) ||
+                        (status === 'inactive' && !s.is_active);
+                    return matchSearch && matchStatus;
+                });
+                renderSubscribers(filtered);
+            }
 
-  // ── 뉴스 편집 모달 ──
-  let _editCatsLoaded = false;
+            // ── 뉴스 편집 모달 ──
+            let _editCatsLoaded = false;
 
-  async function openEditModal(n) {
-    document.getElementById('edit-news-id').value  = n.id;
-    document.getElementById('edit-title').value    = n.title || '';
-    document.getElementById('edit-content').value  = '불러오는 중...';
-    document.getElementById('edit-image').value    = n.image_url || '';
-    document.getElementById('edit-source').value   = n.source || '';
-    document.getElementById('edit-status').value   = n.status || 'draft';
+            async function openEditModal(n) {
+                document.getElementById('edit-news-id').value = n.id;
+                document.getElementById('edit-title').value = n.title || '';
+                document.getElementById('edit-content').value = '불러오는 중...';
+                document.getElementById('edit-image').value = n.image_url || '';
+                document.getElementById('edit-source').value = n.source || '';
+                document.getElementById('edit-status').value = n.status || 'draft';
 
-    const catSel = document.getElementById('edit-category');
-    if (!_editCatsLoaded) {
-      fetch('/categories').then(r => r.json()).then(cats => {
-        cats.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = c.name;
-          catSel.appendChild(opt);
-        });
-        _editCatsLoaded = true;
-        catSel.value = n.category_id || '';
-      });
-    } else {
-      catSel.value = n.category_id || '';
-    }
+                const catSel = document.getElementById('edit-category');
+                if (!_editCatsLoaded) {
+                    fetch('/categories')
+                        .then((r) => r.json())
+                        .then((cats) => {
+                            cats.forEach((c) => {
+                                const opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.textContent = c.name;
+                                catSel.appendChild(opt);
+                            });
+                            _editCatsLoaded = true;
+                            catSel.value = n.category_id || '';
+                        });
+                } else {
+                    catSel.value = n.category_id || '';
+                }
 
-    document.getElementById('editModalOverlay').classList.add('open');
+                document.getElementById('editModalOverlay').classList.add('open');
 
-    // content는 개별 fetch (LONGTEXT라 목록에서 제외됨)
-    const full = await fetch(`${NEWS_API}/${n.id}`).then(r => r.json());
-    document.getElementById('edit-content').value  = full.content || '';
-    catSel.value = full.category_id || n.category_id || '';
-  }
+                // content는 개별 fetch (LONGTEXT라 목록에서 제외됨)
+                const full = await fetch(`${NEWS_API}/${n.id}`).then((r) => r.json());
+                document.getElementById('edit-content').value = full.content || '';
+                catSel.value = full.category_id || n.category_id || '';
+            }
 
-  function closeEditModal() {
-    document.getElementById('editModalOverlay').classList.remove('open');
-  }
+            function closeEditModal() {
+                document.getElementById('editModalOverlay').classList.remove('open');
+            }
 
-  async function saveEditNews() {
-    const id = document.getElementById('edit-news-id').value;
-    const catVal = document.getElementById('edit-category').value;
-    const body = {
-      title:       document.getElementById('edit-title').value,
-      content:     document.getElementById('edit-content').value,
-      image_url:   document.getElementById('edit-image').value,
-      source:      document.getElementById('edit-source').value,
-      status:      document.getElementById('edit-status').value,
-      category_id: catVal ? parseInt(catVal) : null,
-    };
-    const res = await fetch(`${NEWS_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      closeEditModal();
-      loadNews();
-    } else {
-      alert(data.message || '저장 실패');
-    }
-  }
+            async function saveEditNews() {
+                const id = document.getElementById('edit-news-id').value;
+                const catVal = document.getElementById('edit-category').value;
+                const body = {
+                    title: document.getElementById('edit-title').value,
+                    content: document.getElementById('edit-content').value,
+                    image_url: document.getElementById('edit-image').value,
+                    source: document.getElementById('edit-source').value,
+                    status: document.getElementById('edit-status').value,
+                    category_id: catVal ? parseInt(catVal) : null,
+                };
+                const res = await fetch(`${NEWS_API}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    closeEditModal();
+                    loadNews();
+                } else {
+                    alert(data.message || '저장 실패');
+                }
+            }
 
-  // ── 통계 대시보드 ──
-  function renderBarChart(containerId, data, labelKey, valueKey) {
-    const el = document.getElementById(containerId);
-    if (!data.length) { el.innerHTML = '<p style="color:#adb5bd;font-size:13px;">데이터 없음</p>'; return; }
-    const max = Math.max(...data.map(d => d[valueKey])) || 1;
-    el.innerHTML = data.map(d => `
+            // ── 통계 대시보드 ──
+            function renderBarChart(containerId, data, labelKey, valueKey) {
+                const el = document.getElementById(containerId);
+                if (!data.length) {
+                    el.innerHTML = '<p style="color:#adb5bd;font-size:13px;">데이터 없음</p>';
+                    return;
+                }
+                const max = Math.max(...data.map((d) => d[valueKey])) || 1;
+                el.innerHTML = data
+                    .map(
+                        (d) => `
       <div class="bar-row">
         <span class="bar-label">${d[labelKey]}</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d[valueKey]/max*100)}%"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((d[valueKey] / max) * 100)}%"></div></div>
         <span class="bar-val">${d[valueKey]}</span>
-      </div>`).join('');
-  }
+      </div>`,
+                    )
+                    .join('');
+            }
 
-  async function loadStats() {
-    const res = await fetch(`${ADMIN_API}/stats`);
-    const d = await res.json();
+            async function loadStats() {
+                const res = await fetch(`${ADMIN_API}/stats`);
+                const d = await res.json();
 
-    document.getElementById('stat-users').textContent = d.total_users.toLocaleString();
-    document.getElementById('stat-news').textContent  = d.total_news.toLocaleString();
-    document.getElementById('stat-views').textContent = d.total_views.toLocaleString();
-    document.getElementById('stat-subs').textContent  = d.total_subs.toLocaleString();
+                document.getElementById('stat-users').textContent = d.total_users.toLocaleString();
+                document.getElementById('stat-news').textContent = d.total_news.toLocaleString();
+                document.getElementById('stat-views').textContent = d.total_views.toLocaleString();
+                document.getElementById('stat-subs').textContent = d.total_subs.toLocaleString();
 
-    renderBarChart('stat-category-chart', d.by_category, 'category', 'count');
+                renderBarChart('stat-category-chart', d.by_category, 'category', 'count');
 
-    const topEl = document.getElementById('stat-top-news');
-    if (!d.top_news.length) { topEl.innerHTML = '<p style="color:#adb5bd;font-size:13px;">데이터 없음</p>'; }
-    else {
-      topEl.innerHTML = d.top_news.map((n, i) => `
+                const topEl = document.getElementById('stat-top-news');
+                if (!d.top_news.length) {
+                    topEl.innerHTML = '<p style="color:#adb5bd;font-size:13px;">데이터 없음</p>';
+                } else {
+                    topEl.innerHTML = d.top_news
+                        .map(
+                            (n, i) => `
         <div class="top-news-row">
-          <span style="font-size:13px;font-weight:800;color:var(--red);flex-shrink:0;margin-right:6px;">${i+1}</span>
+          <span style="font-size:13px;font-weight:800;color:var(--red);flex-shrink:0;margin-right:6px;">${i + 1}</span>
           <a href="/news/${n.id}" target="_blank" class="top-news-title">${n.title}</a>
-          <span class="top-news-views">👁 ${(n.view_count||0).toLocaleString()}</span>
-        </div>`).join('');
-    }
+          <span class="top-news-views">👁 ${(n.view_count || 0).toLocaleString()}</span>
+        </div>`,
+                        )
+                        .join('');
+                }
 
-    const fillDays = (raw, valueKey) => {
-      const map = {};
-      raw.forEach(r => { map[r.day] = r[valueKey]; });
-      const result = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
-        const label = `${d.getMonth()+1}/${d.getDate()}`;
-        result.push({ label, count: map[key] || 0 });
-      }
-      return result;
-    };
+                const fillDays = (raw, valueKey) => {
+                    const map = {};
+                    raw.forEach((r) => {
+                        map[r.day] = r[valueKey];
+                    });
+                    const result = [];
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const key = d.toISOString().slice(0, 10);
+                        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+                        result.push({ label, count: map[key] || 0 });
+                    }
+                    return result;
+                };
 
-    renderBarChart('stat-daily-news',  fillDays(d.daily_news,  'count'), 'label', 'count');
-    renderBarChart('stat-daily-users', fillDays(d.daily_users, 'count'), 'label', 'count');
-  }
+                renderBarChart('stat-daily-news', fillDays(d.daily_news, 'count'), 'label', 'count');
+                renderBarChart('stat-daily-users', fillDays(d.daily_users, 'count'), 'label', 'count');
+            }
 
-  // ── 초기 로드 ──
-  async function loadCategories() {
-    const res = await fetch('/categories');
-    const cats = await res.json();
-    const sel = document.getElementById('news-category');
-    cats.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
-  }
+            // ── 초기 로드 ──
+            async function loadCategories() {
+                const res = await fetch('/categories');
+                const cats = await res.json();
+                const sel = document.getElementById('news-category');
+                cats.forEach((c) => (sel.innerHTML += `<option value="${c.id}">${c.name}</option>`));
+            }
 
-  // ── 언론사 승인 ──
-  async function loadPressMembers() {
-    const res = await fetch(`${ADMIN_API}/press-members`);
-    const list = await res.json();
-    const tbody = document.querySelector('#pressTable tbody');
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">등록된 언론사 회원이 없습니다.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = list.map(u => `
+            // ── 언론사 승인 ──
+            async function loadPressMembers() {
+                const res = await fetch(`${ADMIN_API}/press-members`);
+                const list = await res.json();
+                const tbody = document.querySelector('#pressTable tbody');
+                if (!list.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">등록된 언론사 회원이 없습니다.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list
+                    .map(
+                        (u) => `
       <tr id="press-row-${u.id}">
         <td>${u.id}</td>
         <td>${u.name}</td>
@@ -1506,31 +2016,35 @@ async function recrawlContent() {
         <td>${u.tel || '-'}</td>
         <td>${u.created_at || '-'}</td>
         <td>
-          ${u.press_approved
-            ? '<span style="background:#d3f9d8;color:#2f9e44;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">✅ 승인됨</span>'
-            : '<span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">⏳ 대기 중</span>'}
+          ${
+              u.press_approved
+                  ? '<span style="background:#d3f9d8;color:#2f9e44;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">승인됨</span>'
+                  : '<span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">대기 중</span>'
+          }
         </td>
         <td style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${!u.press_approved ? `<button class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="approvePress('${u.id}')">✅ 승인</button>` : ''}
-          <button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="rejectPress('${u.id}')">🗑 거절·삭제</button>
+          ${!u.press_approved ? `<button class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="approvePress('${u.id}')">승인</button>` : ''}
+          <button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="rejectPress('${u.id}')">거절·삭제</button>
         </td>
       </tr>
-    `).join('');
-  }
+    `,
+                    )
+                    .join('');
+            }
 
-  async function approvePress(userId) {
-    await fetch(`${ADMIN_API}/press/${userId}/approve`, { method: 'POST' });
-    loadPressMembers();
-  }
+            async function approvePress(userId) {
+                await fetch(`${ADMIN_API}/press/${userId}/approve`, { method: 'POST' });
+                loadPressMembers();
+            }
 
-  async function rejectPress(userId) {
-    if (!confirm('거절 시 해당 언론사 계정과 작성 기사가 모두 삭제됩니다. 계속할까요?')) return;
-    await fetch(`${ADMIN_API}/press/${userId}/reject`, { method: 'POST' });
-    loadPressMembers();
-  }
+            async function rejectPress(userId) {
+                if (!confirm('거절 시 해당 언론사 계정과 작성 기사가 모두 삭제됩니다. 계속할까요?')) return;
+                await fetch(`${ADMIN_API}/press/${userId}/reject`, { method: 'POST' });
+                loadPressMembers();
+            }
 
-  loadUsers();
-  loadCategories();
-</script>
-</body>
+            loadUsers();
+            loadCategories();
+        </script>
+    </body>
 </html>

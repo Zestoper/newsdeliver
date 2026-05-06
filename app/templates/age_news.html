@@ -44,13 +44,13 @@
   </div>
   <nav class="main-nav">
     <ul>
-      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
-      <li><a href="/about"><span class="nav-icon">ℹ️</span>소개</a></li>
-      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
-      <li><a href="/global-news"><span class="nav-icon">🌍</span>해외뉴스</a></li>
-      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
-      <li><a href="/contact"><span class="nav-icon">✉️</span>문의</a></li>
+      <li><a href="/"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 9h2v8h5v-5h2v5h5V9h2L10 2z"/></svg></span>홈</a></li>
+      <li><a href="/about"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><line x1="10" y1="9" x2="10" y2="14"/><circle cx="10" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>소개</a></li>
+      <li><a href="/news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="4" width="16" height="2" rx="1"/><rect x="2" y="9" width="16" height="2" rx="1"/><rect x="2" y="14" width="10" height="2" rx="1"/></svg></span>뉴스</a></li>
+      <li><a href="/global-news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><path d="M10 2C10 2 7 6 7 10s3 8 3 8M10 2c0 0 3 4 3 8s-3 8-3 8M2 10h16"/></svg></span>해외뉴스</a></li>
+      <li><a href="/subscribe"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2a6 6 0 016 6c0 4 2 5 2 5H2s2-1 2-5a6 6 0 016-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg></span>구독</a></li>
+      <li><a href="/search"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/></svg></span>검색</a></li>
+      <li><a href="/contact"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="16" height="13" rx="2"/><polyline points="2,4 10,11 18,4"/></svg></span>문의</a></li>
     </ul>
   </nav>
 </header>
@@ -59,18 +59,18 @@
 
   <!-- 페이지 타이틀 -->
   <div class="page-title-bar">
-    <h2>🎯 연령대별 추천 뉴스</h2>
+    <h2>연령대별 추천 뉴스</h2>
     <a href="/" class="more-link" style="font-size:13px;">← 홈으로</a>
   </div>
 
   <!-- 연령대 탭 -->
   <div class="category-tabs" style="margin-bottom:20px;">
     <a href="/age-news/teen"
-       class="cat-tab {% if group == 'teen' %}active{% endif %}">🔥 10~20대</a>
+       class="cat-tab {% if group == 'teen' %}active{% endif %}">10~20대</a>
     <a href="/age-news/adult"
-       class="cat-tab {% if group == 'adult' %}active{% endif %}">💼 30~40대</a>
+       class="cat-tab {% if group == 'adult' %}active{% endif %}">30~40대</a>
     <a href="/age-news/senior"
-       class="cat-tab {% if group == 'senior' %}active{% endif %}">🌿 50~70대</a>
+       class="cat-tab {% if group == 'senior' %}active{% endif %}">50~70대</a>
   </div>
 
   <!-- 키워드 태그 필터 -->
@@ -136,7 +136,7 @@
         {% if news.image_url and news.image_url.startswith('http') %}
           <div class="card-img" style="background-image:url('{{ news.image_url }}')"></div>
         {% else %}
-          <div class="card-img no-img">📰</div>
+          <div class="card-img no-img"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg></div>
         {% endif %}
         <div class="card-body">
           {% if news.category_name %}

@@ -32,11 +32,11 @@
   </div>
   <nav class="main-nav">
     <ul>
-      <li><a href="/"><span class="nav-icon">🏠</span>홈</a></li>
-      <li><a href="/news"><span class="nav-icon">📰</span>뉴스</a></li>
-      <li><a href="/search"><span class="nav-icon">🔍</span>검색</a></li>
-      <li><a href="/subscribe"><span class="nav-icon">🔔</span>구독</a></li>
-      <li><a href="/contact" style="position:relative;"><span class="nav-icon">✉️</span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
+      <li><a href="/"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 9h2v8h5v-5h2v5h5V9h2L10 2z"/></svg></span>홈</a></li>
+      <li><a href="/news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="4" width="16" height="2" rx="1"/><rect x="2" y="9" width="16" height="2" rx="1"/><rect x="2" y="14" width="10" height="2" rx="1"/></svg></span>뉴스</a></li>
+      <li><a href="/search"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/></svg></span>검색</a></li>
+      <li><a href="/subscribe"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2a6 6 0 016 6c0 4 2 5 2 5H2s2-1 2-5a6 6 0 016-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg></span>구독</a></li>
+      <li><a href="/contact" style="position:relative;"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="16" height="13" rx="2"/><polyline points="2,4 10,11 18,4"/></svg></span>문의<span id="navChatBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:#c00;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a></li>
     </ul>
   </nav>
 </header>
@@ -83,21 +83,21 @@
       <button class="btn-like" id="btn-like" data-liked="{{ 'true' if liked else 'false' }}" onclick="toggleLike(NEWS_ID)">
         ♥ <span id="like-count">{{ like_count }}</span>
       </button>
-      <button class="btn-share" onclick="copyUrl()">🔗 URL 복사</button>
+      <button class="btn-share" onclick="copyUrl()">URL 복사</button>
       {% if current_user %}
       <button class="btn-bookmark" id="btn-bookmark" data-bookmarked="{{ 'true' if bookmarked else 'false' }}" onclick="toggleBookmark(NEWS_ID)">
-        🔖 <span id="bookmark-label">{% if bookmarked %}저장됨{% else %}스크랩{% endif %}</span>
+        <span id="bookmark-label">{% if bookmarked %}저장됨{% else %}스크랩{% endif %}</span>
       </button>
       {% endif %}
 
       {% if current_user %}
         {% if current_user.role == 'admin' or current_user.id == news.author_id %}
-        <a href="/news/{{ news.id }}/delete" onclick="return confirm('삭제할까요?');" class="btn-delete">🗑 삭제</a>
+        <a href="/news/{{ news.id }}/delete" onclick="return confirm('삭제할까요?');" class="btn-delete">삭제</a>
         {% endif %}
         {% if current_user.role != 'admin' %}
         <button onclick="openReportModal()" style="padding:9px 18px;background:white;color:#adb5bd;border:1.5px solid #dee2e6;border-radius:24px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all 0.2s;"
           onmouseover="this.style.color='#fa5252';this.style.borderColor='#fa5252';" onmouseout="this.style.color='#adb5bd';this.style.borderColor='#dee2e6';">
-          🚨 신고
+          신고
         </button>
         {% endif %}
       {% endif %}
@@ -107,7 +107,7 @@
   <!-- 신고 모달 -->
   <div id="report-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:12px; padding:32px 28px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.15);">
-      <h3 style="font-size:17px; font-weight:800; margin-bottom:6px;">🚨 게시글 신고</h3>
+      <h3 style="font-size:17px; font-weight:800; margin-bottom:6px;">게시글 신고</h3>
       <p style="font-size:13px; color:#868e96; margin-bottom:20px;">신고 사유를 선택하거나 직접 입력해주세요.</p>
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
         {% for r in ['허위 정보', '스팸/광고', '혐오 표현', '저작권 침해', '기타'] %}
@@ -131,7 +131,7 @@
 
   <!-- 댓글 -->
   <div class="comment-box">
-    <h3>💬 댓글</h3>
+    <h3>댓글</h3>
 
     {% if current_user %}
     <form class="comment-form" onsubmit="submitComment(event)">
@@ -149,7 +149,7 @@
 
   {% if related_news %}
   <div class="related-box">
-    <h3>📰 관련 뉴스</h3>
+    <h3>관련 뉴스</h3>
     <div class="related-grid">
       {% for r in related_news %}
       <a href="/news/{{ r.id }}" class="related-card">
@@ -185,7 +185,7 @@
     navigator.clipboard.writeText(location.href).then(() => {
       const btn = document.querySelector('.btn-share');
       const orig = btn.textContent;
-      btn.textContent = '✅ 복사됨!';
+      btn.textContent = '복사됨';
       btn.style.background = '#d3f9d8';
       btn.style.color = '#2f9e44';
       btn.style.borderColor = '#8ce99a';

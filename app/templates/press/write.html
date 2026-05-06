@@ -32,7 +32,7 @@
 </header>
 
 <div class="write-container">
-  <h2>📰 뉴스 작성</h2>
+  <h2>뉴스 작성</h2>
   <div class="write-box">
     <form action="/press/write" method="post">
       <div class="write-group">
@@ -50,7 +50,7 @@
           <label style="flex-shrink:0; padding:8px 14px; background:#f1f3f5; color:#495057;
                         border:1.5px solid #dee2e6; border-radius:6px; font-size:13px;
                         font-weight:600; cursor:pointer; white-space:nowrap;">
-            📁 파일 선택
+            파일 선택
             <input type="file" accept="image/*" style="display:none;" onchange="uploadImage(this)">
           </label>
         </div>
@@ -97,10 +97,10 @@
     const data = await res.json();
     if (data.success) {
       document.getElementById('image_url').value = data.url;
-      status.textContent = '✅ 업로드 완료!';
+      status.textContent = '업로드 완료!';
       status.style.color = '#2f9e44';
     } else {
-      status.textContent = `❌ ${data.message}`;
+      status.textContent = `${data.message}`;
       status.style.color = '#fa5252';
     }
     input.value = '';

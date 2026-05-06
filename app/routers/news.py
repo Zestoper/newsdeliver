@@ -30,7 +30,7 @@ def get_news():
     with engine.connect() as conn:
         result = conn.execute(text("""
             SELECT id, title, source, status, category_id, image_url, is_global, created_at
-            FROM news ORDER BY created_at DESC LIMIT 300
+            FROM news ORDER BY created_at DESC LIMIT 5000
         """))
         return [dict(row._mapping) for row in result]
 

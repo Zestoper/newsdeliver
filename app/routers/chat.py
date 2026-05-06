@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, UploadFile, File
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
@@ -43,25 +43,50 @@ manager = _ConnectionManager()
 
 
 @router.get("/room")
-def get_or_create_room(request: Request):
+def get_or_create_room(request: Request, category: str = Query(default="일반문의")):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "login_required"}, status_code=401)
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id FROM chat_rooms WHERE user_id = :uid"),
-            {"uid": user["id"]},
+            text("SELECT id FROM chat_rooms WHERE user_id = :uid AND category = :cat"),
+            {"uid": user["id"], "cat": category},
         ).fetchone()
         if row:
             room_id = row.id
         else:
             result = conn.execute(
-                text("INSERT INTO chat_rooms (user_id, user_name) VALUES (:uid, :name)"),
-                {"uid": user["id"], "name": user["name"]},
+                text("INSERT INTO chat_rooms (user_id, user_name, category) VALUES (:uid, :name, :cat)"),
+                {"uid": user["id"], "name": user["name"], "cat": category},
             )
             conn.commit()
             room_id = result.lastrowid
-    return {"room_id": room_id}
+    return {"room_id": room_id, "category": category}
+
+
+@router.get("/my-rooms")
+def list_my_rooms(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "login_required"}, status_code=401)
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT r.id, r.category, r.last_message_at,
+                   (SELECT message FROM chat_messages
+                    WHERE room_id = r.id ORDER BY created_at DESC LIMIT 1) AS last_msg,
+                   (SELECT COUNT(*) FROM chat_messages
+                    WHERE room_id = r.id AND sender = 'admin' AND is_read = 0) AS unread
+            FROM chat_rooms r
+            WHERE r.user_id = :uid
+            ORDER BY r.last_message_at DESC
+        """), {"uid": user["id"]}).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r._mapping)
+        if d["last_message_at"]:
+            d["last_message_at"] = d["last_message_at"].strftime("%m.%d %H:%M")
+        result.append(d)
+    return result
 
 
 @router.get("/rooms")
@@ -71,7 +96,7 @@ def list_rooms(request: Request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
     with engine.connect() as conn:
         rows = conn.execute(text("""
-            SELECT r.id, r.user_id, r.user_name, r.last_message_at,
+            SELECT r.id, r.user_id, r.user_name, r.category, r.last_message_at,
                    (SELECT message FROM chat_messages
                     WHERE room_id = r.id ORDER BY created_at DESC LIMIT 1) AS last_msg,
                    (SELECT COUNT(*) FROM chat_messages
@@ -161,15 +186,12 @@ def get_unread(request: Request):
             ).scalar() or 0
             return {"count": int(count), "rooms": int(rooms)}
         else:
-            room = conn.execute(
-                text("SELECT id FROM chat_rooms WHERE user_id=:uid"), {"uid": user["id"]}
-            ).fetchone()
-            count = 0
-            if room:
-                count = conn.execute(
-                    text("SELECT COUNT(*) FROM chat_messages WHERE room_id=:rid AND sender='admin' AND is_read=0"),
-                    {"rid": room.id},
-                ).scalar() or 0
+            count = conn.execute(
+                text("""SELECT COUNT(*) FROM chat_messages cm
+                        JOIN chat_rooms cr ON cm.room_id = cr.id
+                        WHERE cr.user_id=:uid AND cm.sender='admin' AND cm.is_read=0"""),
+                {"uid": user["id"]},
+            ).scalar() or 0
     return {"count": int(count)}
 
 
