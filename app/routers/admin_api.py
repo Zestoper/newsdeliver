@@ -30,7 +30,7 @@ def _load_subscriber_articles() -> list[dict]:
     """구독자별 카테고리별로 최신 기사 5개씩 — 카테고리마다 별도 이메일 발송용."""
     with engine.connect() as conn:
         subs = conn.execute(
-            text("SELECT user_id, email FROM subscriptions WHERE is_active = 1 AND is_verified = 1")
+            text("SELECT user_id, email FROM subscriptions WHERE is_active = TRUE AND is_verified = 1")
         ).fetchall()
 
         result = []
@@ -446,7 +446,7 @@ def get_stats():
         total_users = conn.execute(text("SELECT COUNT(*) FROM news_users")).scalar() or 0
         total_news = conn.execute(text("SELECT COUNT(*) FROM news WHERE status='published'")).scalar() or 0
         total_views = conn.execute(text("SELECT COALESCE(SUM(view_count),0) FROM news WHERE status='published'")).scalar() or 0
-        total_subs = conn.execute(text("SELECT COUNT(*) FROM subscriptions WHERE is_active=1 AND is_verified=1")).scalar() or 0
+        total_subs = conn.execute(text("SELECT COUNT(*) FROM subscriptions WHERE is_active=TRUE AND is_verified=1")).scalar() or 0
 
         by_category = [
             dict(row._mapping) for row in conn.execute(text("""

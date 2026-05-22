@@ -63,7 +63,7 @@ def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
                     SELECT id FROM subscriptions 
                     WHERE email = :email 
                     AND user_id != :user_id 
-                    AND is_active = 1
+                    AND is_active = TRUE
                     AND is_verified = 1
                 """),
                 {"email": email, "user_id": user_id}
@@ -71,9 +71,9 @@ def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
         else:
             result = conn.execute(
                 text("""
-                    SELECT id FROM subscriptions 
-                    WHERE email = :email 
-                    AND is_active = 1 
+                    SELECT id FROM subscriptions
+                    WHERE email = :email
+                    AND is_active = TRUE
                     AND is_verified = 1
                 """),
                 {"email": email}
@@ -90,12 +90,12 @@ def add_subscription(email: str, user_id: str) -> None:
         ).fetchone()
         if existing:
             conn.execute(
-                text("UPDATE subscriptions SET email = :email, is_active = 1 WHERE user_id = :user_id"),
+                text("UPDATE subscriptions SET email = :email, is_active = TRUE WHERE user_id = :user_id"),
                 {"email": email, "user_id": user_id}
             )
         else:
             conn.execute(
-                text("INSERT INTO subscriptions (user_id, email, is_active) VALUES (:user_id, :email, 1)"),
+                text("INSERT INTO subscriptions (user_id, email, is_active) VALUES (:user_id, :email, TRUE)"),
                 {"user_id": user_id, "email": email}
             )
         conn.commit()
@@ -109,12 +109,12 @@ def add_subscription(email: str, user_id: str) -> str:
         ).fetchone()
         if existing:
             conn.execute(
-                text("UPDATE subscriptions SET email=:email, is_active=1, is_verified=0, verify_token=:token WHERE user_id=:user_id"),
+                text("UPDATE subscriptions SET email=:email, is_active=TRUE, is_verified=0, verify_token=:token WHERE user_id=:user_id"),
                 {"email": email, "user_id": user_id, "token": token}
             )
         else:
             conn.execute(
-                text("INSERT INTO subscriptions (user_id, email, is_active, is_verified, verify_token) VALUES (:user_id, :email, 1, 0, :token)"),
+                text("INSERT INTO subscriptions (user_id, email, is_active, is_verified, verify_token) VALUES (:user_id, :email, TRUE, 0, :token)"),
                 {"user_id": user_id, "email": email, "token": token}
             )
         conn.commit()

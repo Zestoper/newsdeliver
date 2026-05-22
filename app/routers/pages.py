@@ -259,7 +259,7 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
             ).fetchone()
             if sub:
                 current_email = sub.email
-                is_subscribed = sub.is_active == 1
+                is_subscribed = bool(sub.is_active)
                 is_verified = sub.is_verified == 1
                 if not is_verified and sub.verify_token:
                     base = settings.SERVER_BASE_URL.rstrip('/')
@@ -306,7 +306,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                 {"user_id": user["id"]}
             ).fetchone()
             current_email = sub.email if sub else None
-            is_subscribed = sub.is_active == 1 if sub else False
+            is_subscribed = bool(sub.is_active) if sub else False
             is_verified = sub.is_verified == 1 if sub else False
         return categories, domestic_ids, global_ids, current_email, is_subscribed, is_verified
 
@@ -405,7 +405,7 @@ def _do_verify(token: str) -> bool:
         if not row:
             return False
         conn.execute(
-            text("UPDATE subscriptions SET is_verified = 1, is_active = 1 WHERE verify_token = :token"),
+            text("UPDATE subscriptions SET is_verified = 1, is_active = TRUE WHERE verify_token = :token"),
             {"token": token}
         )
         conn.commit()
@@ -443,7 +443,7 @@ async def unsubscribe(request: Request):
         return RedirectResponse(url="/login", status_code=303)
     with engine.connect() as conn:
         conn.execute(
-            text("UPDATE subscriptions SET is_active = 0 WHERE user_id = :user_id"),
+            text("UPDATE subscriptions SET is_active = FALSE WHERE user_id = :user_id"),
             {"user_id": user["id"]}
         )
         conn.commit()
