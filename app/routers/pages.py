@@ -348,7 +348,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
     try:
         send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
     except Exception as e:
-        logger.error("인증메일 발송 실패: %s", e)
+        print(f"[EMAIL] pages 발송 실패: {e}")
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
@@ -388,7 +388,7 @@ async def subscribe_payment_success(
     try:
         send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
     except Exception as e:
-        logger.error("인증메일 발송 실패: %s", e)
+        print(f"[EMAIL] pages 발송 실패: {e}")
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
