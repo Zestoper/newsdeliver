@@ -601,6 +601,34 @@ body::before {
 .footer-links a:hover { color: rgba(255,255,255,0.75); }
 .footer-copy { font-size: 11px; color: #3a3a3a; }
 
+/* ── 햄버거 버튼 ── */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+.nav-hamburger span {
+  display: block;
+  height: 2px;
+  background: rgba(255,255,255,0.75);
+  border-radius: 2px;
+  transition: all 0.28s ease;
+  transform-origin: center;
+}
+.nav-hamburger.nav-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.nav-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hamburger.nav-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 /* ── 반응형 ── */
 @media (max-width: 900px) {
   .news-ticker-pill { display: none; }
@@ -608,14 +636,60 @@ body::before {
   .header-left-meta { display: none; }
 }
 @media (max-width: 768px) {
+  /* 헤더 */
+  .header-top     { flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
+  .header-logo    { position: static; transform: none; order: -1; flex: 1; }
+  .header-left    { display: none; }
+  .header-actions { gap: 6px; flex-wrap: wrap; }
+  .user-name      { display: none; }
+  .header-btn     { padding: 5px 10px; font-size: 12px; }
+
+  /* 네비게이션 햄버거 */
+  .nav-hamburger  { display: flex; }
+  .main-nav       { position: relative; }
+  .main-nav ul {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #0F0F14;
+    border-top: 1px solid rgba(212,43,43,0.3);
+    padding: 8px 0;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .main-nav ul.nav-open { display: flex; }
+  .main-nav ul li { width: 100%; }
+  .main-nav ul li a {
+    padding: 12px 20px;
+    border-radius: 0;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .main-nav ul li a.active {
+    border-radius: 0;
+    background: linear-gradient(90deg, var(--red), transparent);
+  }
+
+  /* 콘텐츠 */
+  .main-content   { padding: 0 14px; margin: 16px auto; }
   .headline-card  { flex-direction: column; }
   .headline-img   { width: 100%; min-height: 200px; }
-  .news-grid      { grid-template-columns: repeat(2, 1fr); }
-  .header-top     { flex-direction: column; gap: 10px; }
-  .header-logo    { position: static; transform: none; }
-  .header-actions { justify-content: center; flex-wrap: wrap; }
+  .headline-info  { padding: 20px 16px; }
+  .headline-title { font-size: 18px; }
+  .news-grid      { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .section-header h2 { font-size: 15px; }
+  .list-img       { width: 64px; height: 48px; }
 }
-@media (max-width: 480px) { .news-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .news-grid      { grid-template-columns: 1fr; }
+  .header-top     { padding: 8px 12px; }
+  .main-content   { padding: 0 12px; }
+  .big5-content   { padding: 12px; }
+  .big5-title     { font-size: 14px; }
+  .popular-grid   { grid-template-columns: 1fr; }
+}
 
 /* ── 카드 등장 ── */
 @keyframes fadeSlideUp {
