@@ -328,12 +328,12 @@ def get_subscribers():
         rows = conn.execute(text("""
             SELECT s.id, s.user_id, u.name, s.email,
                    s.is_active, s.is_verified, s.created_at,
-                   GROUP_CONCAT(c.name ORDER BY c.name SEPARATOR ', ') AS categories
+                   STRING_AGG(c.name, ', ' ORDER BY c.name) AS categories
             FROM subscriptions s
             LEFT JOIN news_users u ON s.user_id = u.id
             LEFT JOIN category_subscriptions cs ON cs.user_id = s.user_id
             LEFT JOIN categories c ON cs.category_id = c.id
-            GROUP BY s.id
+            GROUP BY s.id, s.user_id, u.name, s.email, s.is_active, s.is_verified, s.created_at
             ORDER BY s.created_at DESC
         """)).fetchall()
     result = []
@@ -470,7 +470,7 @@ def get_stats():
             dict(row._mapping) for row in conn.execute(text("""
                 SELECT DATE(created_at) as day, COUNT(*) as count
                 FROM news WHERE status='published'
-                  AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                  AND created_at >= CURRENT_DATE - INTERVAL '6 days'
                 GROUP BY day ORDER BY day
             """))
         ]
@@ -480,7 +480,7 @@ def get_stats():
                 SELECT DATE(created_at) as day, COUNT(*) as count
                 FROM news_users
                 WHERE created_at IS NOT NULL
-                  AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                  AND created_at >= CURRENT_DATE - INTERVAL '6 days'
                 GROUP BY day ORDER BY day
             """))
         ]

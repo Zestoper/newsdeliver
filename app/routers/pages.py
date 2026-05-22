@@ -81,7 +81,7 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
             LEFT JOIN categories c ON n.category_id = c.id
             LEFT JOIN news_comments nc ON n.id = nc.news_id
             WHERE n.status = 'published'
-            GROUP BY n.id
+            GROUP BY n.id, n.title, n.created_at, c.name
             ORDER BY comment_count DESC
             LIMIT 5
         """))]
@@ -92,7 +92,7 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
             LEFT JOIN categories c ON n.category_id = c.id
             LEFT JOIN news_likes nl ON n.id = nl.news_id
             WHERE n.status = 'published'
-            GROUP BY n.id
+            GROUP BY n.id, n.title, n.created_at, c.name
             ORDER BY like_count DESC
             LIMIT 5
         """))]
@@ -863,7 +863,7 @@ async def get_comments(request: Request, news_id: int):
                 JOIN news_users u ON c.user_id = u.id
                 LEFT JOIN comment_likes cl ON cl.comment_id = c.id
                 WHERE c.news_id = :news_id
-                GROUP BY c.id
+                GROUP BY c.id, c.content, c.created_at, c.user_id, c.parent_id, u.name
                 ORDER BY COALESCE(c.parent_id, c.id), c.id ASC
             """),
             {"news_id": news_id}
@@ -974,7 +974,7 @@ async def report_news(request: Request, news_id: int, reason: str = Form("")):
     with engine.connect() as conn:
         # 하루 신고 횟수 체크 (최대 10건)
         today_count = conn.execute(
-            text("SELECT COUNT(*) FROM reports WHERE reporter_id=:uid AND DATE(created_at)=CURDATE()"),
+            text("SELECT COUNT(*) FROM reports WHERE reporter_id=:uid AND DATE(created_at)=CURRENT_DATE"),
             {"uid": user["id"]}
         ).scalar()
         if today_count >= 10:
