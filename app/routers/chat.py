@@ -56,11 +56,11 @@ def get_or_create_room(request: Request, category: str = Query(default="일반�
             room_id = row.id
         else:
             result = conn.execute(
-                text("INSERT INTO chat_rooms (user_id, user_name, category) VALUES (:uid, :name, :cat)"),
+                text("INSERT INTO chat_rooms (user_id, user_name, category) VALUES (:uid, :name, :cat) RETURNING id"),
                 {"uid": user["id"], "name": user["name"], "cat": category},
             )
             conn.commit()
-            room_id = result.lastrowid
+            room_id = result.fetchone().id
     return {"room_id": room_id, "category": category}
 
 
