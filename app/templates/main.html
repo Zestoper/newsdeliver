@@ -44,7 +44,10 @@
 
     <!-- 네비게이션 -->
     <nav class="main-nav">
-        <ul>
+        <button class="nav-hamburger" id="navHamburger" aria-label="메뉴 열기">
+            <span></span><span></span><span></span>
+        </button>
+        <ul id="navList">
             <li><a href="/"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 9h2v8h5v-5h2v5h5V9h2L10 2z"/></svg></span>홈</a></li>
             <li><a href="/about"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><line x1="10" y1="9" x2="10" y2="14"/><circle cx="10" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>소개</a></li>
             <li><a href="/news"><span class="nav-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="4" width="16" height="2" rx="1"/><rect x="2" y="9" width="16" height="2" rx="1"/><rect x="2" y="14" width="10" height="2" rx="1"/></svg></span>뉴스</a></li>
@@ -55,7 +58,20 @@
         </ul>
     </nav>
 </header>
-<script>(function(){var p=location.pathname;document.querySelectorAll('.main-nav a').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')===p);});})();</script>
+<script>
+(function(){
+  var p=location.pathname;
+  document.querySelectorAll('.main-nav a').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')===p);});
+  var btn=document.getElementById('navHamburger');
+  var list=document.getElementById('navList');
+  btn.addEventListener('click',function(){
+    var open=list.classList.toggle('nav-open');
+    btn.classList.toggle('nav-open',open);
+    btn.setAttribute('aria-label', open?'메뉴 닫기':'메뉴 열기');
+  });
+  list.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){list.classList.remove('nav-open');btn.classList.remove('nav-open');});});
+})();
+</script>
 
 <!-- 메인 콘텐츠 -->
 <div class="main-with-sidebar">

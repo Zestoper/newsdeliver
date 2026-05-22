@@ -187,7 +187,14 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
 /* ── 반응형 ── */
 @media (max-width: 768px) {
   .login-page    { flex-direction: column; }
-  .login-brand   { padding: 48px 28px; }
-  .brand-tagline { font-size: 28px; }
-  .login-box     { width: 100%; padding: 32px 28px; }
+  .login-brand   { padding: 36px 24px; flex: none; }
+  .brand-tagline { font-size: 24px; }
+  .login-box     { width: 100%; padding: 32px 24px; }
+}
+@media (max-width: 480px) {
+  .login-brand   { padding: 24px 20px; }
+  .brand-tagline { font-size: 20px; }
+  .brand-desc    { font-size: 13px; }
+  .login-box     { padding: 28px 20px; }
+  .input-field   { font-size: 16px; }
 }
