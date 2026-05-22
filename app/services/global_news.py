@@ -63,7 +63,8 @@ RSS_SOURCES = [
     {"url": "https://feeds.marketwatch.com/marketwatch/topstories/",          "db_category": "경제",   "limit": 20},
     {"url": "https://www.investing.com/rss/news.rss",                         "db_category": "경제",   "limit": 15},
     # ── 스포츠 (기존) ────────────────────────────────────────────────────
-    {"url": "https://www.espn.com/espn/rss/news",                             "db_category": "스포츠", "limit": 25},
+    {"url": "https://feeds.bbci.co.uk/sport/rss.xml",                         "db_category": "스포츠", "limit": 20},
+    {"url": "https://www.skysports.com/rss/12040",                             "db_category": "스포츠", "limit": 15},
     # ── 연예 (기존) ──────────────────────────────────────────────────────
     {"url": "https://variety.com/feed/",                                       "db_category": "연예",   "limit": 20},
     {"url": "https://www.hollywoodreporter.com/t/entertainment/feed/",        "db_category": "연예",   "limit": 15},
