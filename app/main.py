@@ -274,11 +274,11 @@ try:
         # 문화·예술 카테고리 중 naver_link 있는 기사는 국내로 보정
         try:
             r = conn.execute(text("""
-                UPDATE news n
-                JOIN categories c ON n.category_id = c.id
-                SET n.is_global = 0
-                WHERE c.name IN ('문화', '예술')
-                  AND n.naver_link IS NOT NULL AND n.naver_link != ''
+                UPDATE news SET is_global = 0
+                FROM categories c
+                WHERE news.category_id = c.id
+                  AND c.name IN ('문화', '예술')
+                  AND news.naver_link IS NOT NULL AND news.naver_link != ''
             """))
             conn.commit()
             if r.rowcount:
