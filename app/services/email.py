@@ -248,12 +248,13 @@ def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0
 
     msg.attach(MIMEText(html_body, "html"))
 
+    print(f"[EMAIL] 발송 시도: host={SMTP_HOST} user={SMTP_USER} to={to_email}")
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SMTP_USER, to_email, msg.as_string())
-        logger.info("인증메일 발송 성공: %s", to_email)
+        print(f"[EMAIL] 발송 성공: {to_email}")
     except Exception as e:
-        logger.error("인증메일 발송 실패 host=%s user=%s error=%s", SMTP_HOST, SMTP_USER, e)
+        print(f"[EMAIL] 발송 실패: host={SMTP_HOST} user={SMTP_USER} error={e}")
         raise
