@@ -134,7 +134,7 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
                 for row in sent_log:
                     try:
                         conn.execute(
-                            text("INSERT IGNORE INTO newsletter_sent (email, news_id) VALUES (:email, :news_id)"),
+                            text("INSERT INTO newsletter_sent (email, news_id) VALUES (:email, :news_id) ON CONFLICT DO NOTHING"),
                             row,
                         )
                     except Exception:

@@ -770,7 +770,7 @@ async def search_page(request: Request, q: str = "", source: str = "") -> HTMLRe
         conditions = ["status = 'published'"]
         params = {}
         if q:
-            conditions.append("(title LIKE :q OR content LIKE :q)")
+            conditions.append("(title ILIKE :q OR content ILIKE :q)")
             params["q"] = f"%{q}%"
         if source:
             conditions.append("source = :source")
@@ -1097,13 +1097,13 @@ def age_news_page(request: Request, group: str = "teen", keyword: str = "", page
     params: dict = {}
 
     if keyword:
-        where = "n.status = 'published' AND COALESCE(n.is_global,0) = 0 AND n.title LIKE :kw"
+        where = "n.status = 'published' AND COALESCE(n.is_global,0) = 0 AND n.title ILIKE :kw"
         params["kw"] = f"%{keyword}%"
     else:
         cats = config["categories"]
         kws  = config["keywords"]
         cat_ph = ", ".join(f":c{i}" for i in range(len(cats)))
-        kw_or  = " OR ".join(f"n.title LIKE :kw{i}" for i in range(len(kws)))
+        kw_or  = " OR ".join(f"n.title ILIKE :kw{i}" for i in range(len(kws)))
         params.update({f"c{i}": c for i, c in enumerate(cats)})
         params.update({f"kw{i}": f"%{kw}%" for i, kw in enumerate(kws)})
         where = f"n.status = 'published' AND COALESCE(n.is_global,0) = 0 AND (c.name IN ({cat_ph}) OR ({kw_or}))"
@@ -1169,7 +1169,7 @@ def age_news(group: str = "teen", keyword: str = ""):
         mapping = _AGE_KEYWORD_MAP.get(keyword, {"cats": [], "terms": [keyword]})
         terms = mapping["terms"]
         cats  = mapping["cats"]
-        kw_or = " OR ".join(f"n.title LIKE :t{i}" for i in range(len(terms)))
+        kw_or = " OR ".join(f"n.title ILIKE :t{i}" for i in range(len(terms)))
         cat_ph = ", ".join(f":cat{i}" for i in range(len(cats))) if cats else ""
         cat_filter = f"AND c.name IN ({cat_ph})" if cat_ph else ""
         params.update({f"t{i}": f"%{t}%" for i, t in enumerate(terms)})
@@ -1197,7 +1197,7 @@ def age_news(group: str = "teen", keyword: str = ""):
                 ex_ph = ", ".join(f":ex{i}" for i in range(len(seen_ids)))
                 ex_clause = f"AND n.id NOT IN ({ex_ph})" if seen_ids else ""
                 kw_or2 = " OR ".join(
-                    f"n.title LIKE :t{i} OR n.content LIKE :t{i}"
+                    f"n.title ILIKE :t{i} OR n.content ILIKE :t{i}"
                     for i in range(len(terms))
                 )
                 fill_params = {f"t{i}": f"%{t}%" for i, t in enumerate(terms)}
@@ -1224,7 +1224,7 @@ def age_news(group: str = "teen", keyword: str = ""):
         cats = config["categories"]
         kws  = config["keywords"]
         cat_placeholders = ", ".join(f":c{i}" for i in range(len(cats)))
-        kw_conditions    = " OR ".join(f"n.title LIKE :kw{i}" for i in range(len(kws)))
+        kw_conditions    = " OR ".join(f"n.title ILIKE :kw{i}" for i in range(len(kws)))
         params.update({f"c{i}": c for i, c in enumerate(cats)})
         params.update({f"kw{i}": f"%{kw}%" for i, kw in enumerate(kws)})
         sql = f"""

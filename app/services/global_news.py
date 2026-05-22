@@ -329,12 +329,13 @@ def _save(article: dict, category_id: int, category_name: str, seen: set,
     with engine.connect() as conn:
         conn.execute(
             text("""
-                INSERT IGNORE INTO news
+                INSERT INTO news
                     (title, content, source, image_url, link, naver_link,
                      status, category_id, is_global)
                 VALUES
                     (:title, :content, :source, :image_url, :link, '',
                      'published', :category_id, 1)
+                ON CONFLICT DO NOTHING
             """),
             {
                 "title": title, "content": full_content,

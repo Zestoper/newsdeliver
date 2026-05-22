@@ -351,8 +351,9 @@ def fetch_and_save_news():
             with engine.connect() as conn:
                 conn.execute(
                     text("""
-                        INSERT IGNORE INTO news (title, content, source, image_url, link, naver_link, status, category_id)
+                        INSERT INTO news (title, content, source, image_url, link, naver_link, status, category_id)
                         VALUES (:title, :content, :source, :image_url, :link, :naver_link, 'published', :category_id)
+                        ON CONFLICT DO NOTHING
                     """),
                     {
                         "title": title,
