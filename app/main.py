@@ -72,37 +72,37 @@ try:
         print("✅ DB 연결 성공!")
         from sqlalchemy import text
         migrations = [
-            ("ALTER TABLE news ADD COLUMN link VARCHAR(500)", "news.link"),
-            ("ALTER TABLE news ADD COLUMN is_global TINYINT(1) DEFAULT 0", "news.is_global"),
-            ("ALTER TABLE news ADD COLUMN naver_link VARCHAR(500)", "news.naver_link"),
-            ("ALTER TABLE news ADD COLUMN view_count INT DEFAULT 0", "news.view_count"),
-            ("ALTER TABLE subscriptions ADD COLUMN is_verified TINYINT(1) DEFAULT 0", "subscriptions.is_verified"),
-            ("ALTER TABLE subscriptions ADD COLUMN verify_token VARCHAR(100)", "subscriptions.verify_token"),
-            ("ALTER TABLE subscriptions DROP INDEX unique_email", "subscriptions.unique_email 제약 제거"),
-            ("ALTER TABLE news_comments ADD COLUMN parent_id INT DEFAULT NULL", "news_comments.parent_id"),
-            ("ALTER TABLE news_users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
-            ("ALTER TABLE news ADD COLUMN ai_summary TEXT NULL", "news.ai_summary"),
-            ("ALTER TABLE chat_messages ADD COLUMN message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
-            ("ALTER TABLE news_users ADD COLUMN press_approved TINYINT(1) DEFAULT 0", "news_users.press_approved"),
-            ("ALTER TABLE news_users ADD COLUMN press_notified TINYINT(1) DEFAULT 0", "news_users.press_notified"),
-            ("ALTER TABLE category_subscriptions ADD COLUMN is_global TINYINT(1) DEFAULT 0", "category_subscriptions.is_global"),
-            ("ALTER TABLE category_subscriptions DROP INDEX unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
-            ("ALTER TABLE category_subscriptions ADD UNIQUE KEY unique_cat_sub_global (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
-            ("ALTER TABLE chat_rooms ADD COLUMN category VARCHAR(50) DEFAULT '일반문의'", "chat_rooms.category"),
-            ("ALTER TABLE chat_rooms DROP INDEX unique_user", "chat_rooms.drop_unique_user"),
-            ("ALTER TABLE chat_rooms ADD UNIQUE KEY unique_user_category (user_id, category)", "chat_rooms.unique_user_category"),
+            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS link VARCHAR(500)", "news.link"),
+            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "news.is_global"),
+            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS naver_link VARCHAR(500)", "news.naver_link"),
+            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0", "news.view_count"),
+            ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_verified SMALLINT DEFAULT 0", "subscriptions.is_verified"),
+            ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS verify_token VARCHAR(100)", "subscriptions.verify_token"),
+            ("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS unique_email", "subscriptions.unique_email 제약 제거"),
+            ("ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL", "news_comments.parent_id"),
+            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
+            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_summary TEXT NULL", "news.ai_summary"),
+            ("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
+            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_approved SMALLINT DEFAULT 0", "news_users.press_approved"),
+            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_notified SMALLINT DEFAULT 0", "news_users.press_notified"),
+            ("ALTER TABLE category_subscriptions ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "category_subscriptions.is_global"),
+            ("ALTER TABLE category_subscriptions DROP CONSTRAINT IF EXISTS unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
+            ("ALTER TABLE category_subscriptions ADD CONSTRAINT unique_cat_sub_global UNIQUE (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
+            ("ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT '일반문의'", "chat_rooms.category"),
+            ("ALTER TABLE chat_rooms DROP CONSTRAINT IF EXISTS unique_user", "chat_rooms.drop_unique_user"),
+            ("ALTER TABLE chat_rooms ADD CONSTRAINT unique_user_category UNIQUE (user_id, category)", "chat_rooms.unique_user_category"),
         ]
         # reports 테이블 생성
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS reports (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     news_id INT NOT NULL,
                     reporter_id VARCHAR(50) NOT NULL,
                     reporter_name VARCHAR(100) NOT NULL,
                     reason VARCHAR(500) DEFAULT '',
                     status VARCHAR(20) DEFAULT 'pending',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
             conn.commit()
@@ -114,11 +114,11 @@ try:
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS bookmarks (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     user_id VARCHAR(50) NOT NULL,
                     news_id INT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_bookmark (user_id, news_id)
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_bookmark UNIQUE (user_id, news_id)
                 )
             """))
             conn.commit()
@@ -130,10 +130,10 @@ try:
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS comment_likes (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     comment_id INT NOT NULL,
                     user_id VARCHAR(50) NOT NULL,
-                    UNIQUE KEY unique_comment_like (comment_id, user_id)
+                    CONSTRAINT unique_comment_like UNIQUE (comment_id, user_id)
                 )
             """))
             conn.commit()
@@ -142,7 +142,7 @@ try:
             pass
         # news.title 중복 방지 UNIQUE 인덱스
         try:
-            conn.execute(text("ALTER TABLE news ADD UNIQUE INDEX unique_title (title(191))"))
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS unique_title ON news (title)"))
             conn.commit()
             print("✅ news.title unique index")
         except Exception:
@@ -150,10 +150,10 @@ try:
 
         # 소셜 로그인용 컬럼 추가 및 pw NULL 허용
         oauth_migrations = [
-            ("ALTER TABLE news_users MODIFY pw VARCHAR(255) NULL", "news_users.pw nullable"),
-            ("ALTER TABLE news_users ADD COLUMN oauth_provider VARCHAR(20) NULL", "news_users.oauth_provider"),
-            ("ALTER TABLE news_users ADD COLUMN oauth_id VARCHAR(100) NULL", "news_users.oauth_id"),
-            ("ALTER TABLE news_users ADD UNIQUE KEY oauth_unique (oauth_provider, oauth_id)", "news_users.oauth_unique"),
+            ("ALTER TABLE news_users ALTER COLUMN pw DROP NOT NULL", "news_users.pw nullable"),
+            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL", "news_users.oauth_provider"),
+            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(100) NULL", "news_users.oauth_id"),
+            ("ALTER TABLE news_users ADD CONSTRAINT oauth_unique UNIQUE (oauth_provider, oauth_id)", "news_users.oauth_unique"),
         ]
         for sql, col in oauth_migrations:
             try:
@@ -175,21 +175,21 @@ try:
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS chat_rooms (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     user_id VARCHAR(50) NOT NULL,
                     user_name VARCHAR(100),
-                    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_user (user_id)
+                    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_user UNIQUE (user_id)
                 )
             """))
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS chat_messages (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     room_id INT NOT NULL,
                     sender VARCHAR(10) NOT NULL,
                     message TEXT NOT NULL,
-                    is_read TINYINT(1) DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    is_read SMALLINT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
             conn.commit()
@@ -201,11 +201,11 @@ try:
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS newsletter_sent (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     email VARCHAR(255) NOT NULL,
                     news_id INT NOT NULL,
-                    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_sent (email, news_id)
+                    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_sent UNIQUE (email, news_id)
                 )
             """))
             conn.commit()
@@ -217,7 +217,7 @@ try:
         new_cats = ["연예", "국제", "사회"]
         for cat in new_cats:
             try:
-                conn.execute(text("INSERT IGNORE INTO categories (name) VALUES (:name)"), {"name": cat})
+                conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
                 conn.commit()
                 print(f"✅ 카테고리 추가: {cat}")
             except Exception:
@@ -228,7 +228,7 @@ try:
                        "해외사회", "해외스포츠", "해외연예", "해외예술", "해외정치"]
         for cat in global_cats:
             try:
-                conn.execute(text("INSERT IGNORE INTO categories (name) VALUES (:name)"), {"name": cat})
+                conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
                 conn.commit()
                 print(f"✅ 카테고리 추가: {cat}")
             except Exception:

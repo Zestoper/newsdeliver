@@ -7,7 +7,7 @@ _ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=str(_ENV_FILE), env_file_encoding="utf-8")
 
-    DB_URL: str = "mysql+pymysql://root:@localhost:3306/newsdelivery"
+    DB_URL: str = "postgresql+psycopg2://postgres:password@localhost:5432/newsdelivery"
 
     NAVER_CLIENT_ID: str = ""
     NAVER_CLIENT_SECRET: str = ""
