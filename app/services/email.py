@@ -1,8 +1,11 @@
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 SMTP_HOST = settings.SMTP_HOST
 SMTP_PORT = settings.SMTP_PORT
@@ -245,7 +248,12 @@ def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0
 
     msg.attach(MIMEText(html_body, "html"))
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, to_email, msg.as_string())
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+        logger.info("인증메일 발송 성공: %s", to_email)
+    except Exception as e:
+        logger.error("인증메일 발송 실패 host=%s user=%s error=%s", SMTP_HOST, SMTP_USER, e)
+        raise
