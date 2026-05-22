@@ -262,7 +262,7 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
                 is_subscribed = sub.is_active == 1
                 is_verified = sub.is_verified == 1
                 if not is_verified and sub.verify_token:
-                    base = str(request.base_url).rstrip('/')
+                    base = settings.SERVER_BASE_URL.rstrip('/')
                     verify_link = f"{base}/verify-email?token={sub.verify_token}"
     if not user:
         domestic_subscribed_ids = []
@@ -343,7 +343,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       is_verified=is_verified, verify_link=None)
 
     try:
-        send_verify_email(email, token, base_url=str(request.base_url))
+        send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
     except Exception:
         pass
 
@@ -383,7 +383,7 @@ async def subscribe_payment_success(
         return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
     try:
-        send_verify_email(email, token, base_url=str(request.base_url))
+        send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
     except Exception:
         pass
 

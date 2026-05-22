@@ -155,7 +155,7 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
 def send_newsletter_api(request: Request):
     if _newsletter_status["running"]:
         return {"success": False, "message": "이미 발송 중입니다. 잠시 후 다시 시도해주세요."}
-    base_url = str(request.base_url).rstrip("/")
+    base_url = settings.SERVER_BASE_URL.rstrip("/")
     threading.Thread(target=run_newsletter_job, args=(base_url,), daemon=True).start()
     return {"success": True, "message": "뉴스레터 발송을 시작했습니다. AI 요약 생성 후 순차 발송됩니다."}
 
