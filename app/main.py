@@ -110,7 +110,7 @@ try:
             conn.commit()
             print("✅ reports 테이블")
         except Exception:
-            pass
+            conn.rollback()
 
         # bookmarks 테이블 생성
         try:
@@ -126,7 +126,7 @@ try:
             conn.commit()
             print("✅ bookmarks 테이블")
         except Exception:
-            pass
+            conn.rollback()
 
         # comment_likes 테이블 생성 (없을 때만)
         try:
@@ -141,14 +141,14 @@ try:
             conn.commit()
             print("✅ comment_likes 테이블")
         except Exception:
-            pass
+            conn.rollback()
         # news.title 중복 방지 UNIQUE 인덱스
         try:
             conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS unique_title ON news (title)"))
             conn.commit()
             print("✅ news.title unique index")
         except Exception:
-            pass
+            conn.rollback()
 
         # 소셜 로그인용 컬럼 추가 및 pw NULL 허용
         oauth_migrations = [
@@ -163,7 +163,7 @@ try:
                 conn.commit()
                 print(f"✅ {col}")
             except Exception:
-                pass
+                conn.rollback()
 
         for sql, col in migrations:
             try:
@@ -171,7 +171,7 @@ try:
                 conn.commit()
                 print(f"✅ {col}")
             except Exception:
-                pass  # 이미 처리됨
+                conn.rollback()
 
         # chat 테이블 생성
         try:
@@ -197,7 +197,7 @@ try:
             conn.commit()
             print("✅ chat 테이블")
         except Exception:
-            pass
+            conn.rollback()
 
         # newsletter_sent 테이블 생성
         try:
@@ -213,7 +213,7 @@ try:
             conn.commit()
             print("✅ newsletter_sent 테이블")
         except Exception:
-            pass
+            conn.rollback()
 
         # 새 카테고리 추가
         new_cats = ["연예", "국제", "사회"]
@@ -260,6 +260,7 @@ try:
             if total_remapped:
                 print(f"✅ 해외뉴스 카테고리 재분류: {total_remapped}건")
         except Exception as e:
+            conn.rollback()
             print(f"[해외뉴스 재분류] {e}")
 
         # naver_link 가 있는 기사 → 무조건 국내 (is_global = 0)
@@ -271,6 +272,7 @@ try:
             if r.rowcount:
                 print(f"✅ 국내뉴스 is_global 보정: {r.rowcount}건")
         except Exception as e:
+            conn.rollback()
             print(f"[is_global 국내 보정] {e}")
 
         # 문화·예술 카테고리 중 naver_link 있는 기사는 국내로 보정
@@ -286,6 +288,7 @@ try:
             if r.rowcount:
                 print(f"✅ 문화·예술 국내 보정: {r.rowcount}건")
         except Exception as e:
+            conn.rollback()
             print(f"[문화·예술 보정] {e}")
 
         # 해외뉴스 재분류 정리 — 카테고리 개선 후 1회만 실행
@@ -301,6 +304,7 @@ try:
                 conn.commit()
                 print(f"✅ 해외뉴스 전체 삭제: {r.rowcount}건 → 점수 기반 재분류 후 재수집 예정")
         except Exception as e:
+            conn.rollback()
             print(f"[해외뉴스 정리] {e}")
 
         # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류
@@ -309,6 +313,7 @@ try:
             if count:
                 print(f"✅ 정치 기사 재분류: {count}건")
         except Exception as e:
+            conn.rollback()
             print(f"[정치 기사 재분류] {e}")
 
 except Exception as e:
