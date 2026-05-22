@@ -637,7 +637,7 @@ async def global_news_page(request: Request, category: str = "", page: int = 1) 
         categories = [dict(row._mapping) for row in conn.execute(text(
             "SELECT * FROM categories WHERE name IN "
             "('정치','경제','IT','문화','스포츠','예술','연예','국제','사회') "
-            "ORDER BY FIELD(name,'정치','경제','IT','문화','스포츠','예술','연예','국제','사회')"
+            "ORDER BY array_position(ARRAY['정치','경제','IT','문화','스포츠','예술','연예','국제','사회']::text[], name)"
         ))]
         base = "n.status = 'published' AND n.is_global = 1"
         if category:
