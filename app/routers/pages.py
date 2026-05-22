@@ -1,7 +1,10 @@
 from pathlib import Path
 import base64
+import logging
 from datetime import date as _date
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -344,8 +347,8 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
 
     try:
         send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("인증메일 발송 실패: %s", e)
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
@@ -384,8 +387,8 @@ async def subscribe_payment_success(
 
     try:
         send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("인증메일 발송 실패: %s", e)
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
