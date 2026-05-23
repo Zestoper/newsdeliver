@@ -4,7 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/main.css?v=3.7">
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/search.css') }}?v=4.0">
+<link rel="stylesheet" href="/static/css/search.css?v=4.0">
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -24,10 +24,10 @@
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
-        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+        <a href="/logout" class="header-btn outline">로그아웃</a>
       {% else %}
-        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
-        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+        <a href="/login" class="header-btn outline">로그인</a>
+        <a href="/signup" class="header-btn">회원가입</a>
       {% endif %}
     </div>
   </div>

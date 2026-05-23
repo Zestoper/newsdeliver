@@ -403,7 +403,13 @@
 
     /* 모바일 공통 */
     html, body { overflow-x: hidden; max-width: 100%; }
-    .api-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .api-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 6px;
+    }
+    /* width:100%를 override해서 테이블이 최소 너비 확보 → 가로 스크롤 가능 */
+    .api-table-wrap .api-table { min-width: 480px; }
     @media (max-width: 600px) {
       .about-wrap { padding: 0 14px 60px; }
       .about-hero { padding: 28px 14px 24px; }
@@ -433,10 +439,10 @@
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
-        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+        <a href="/logout" class="header-btn outline">로그아웃</a>
       {% else %}
-        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
-        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+        <a href="/login" class="header-btn outline">로그인</a>
+        <a href="/signup" class="header-btn">회원가입</a>
       {% endif %}
     </div>
   </div>
@@ -797,7 +803,7 @@
     <h2>지금 바로 시작해보세요</h2>
     <p>무료로 회원가입하고 관심 카테고리를 구독하면<br>매일 아침·저녁 맞춤 뉴스레터가 찾아옵니다.</p>
     <div class="cta-btns">
-      <a href="{{ request.url_for('signup_page') }}" class="cta-btn white">무료 회원가입</a>
+      <a href="/signup" class="cta-btn white">무료 회원가입</a>
       <a href="/subscribe" class="cta-btn outline">뉴스레터 구독</a>
     </div>
   </div>

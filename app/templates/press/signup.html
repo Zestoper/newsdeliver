@@ -3,7 +3,7 @@
 {% block title %}언론사 회원가입 - News Delivery{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/signup.css') }}?v=3.0">
+  <link rel="stylesheet" href="/static/css/signup.css?v=3.0">
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -103,7 +103,7 @@
       <span>이미 계정이 있으신가요?</span>
       <a href="/login">로그인</a>
       <span>|</span>
-      <a href="{{ request.url_for('signup_page') }}">일반 회원가입</a>
+      <a href="/signup">일반 회원가입</a>
     </div>
   </div>
 

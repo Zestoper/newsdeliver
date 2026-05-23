@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %}구독하기 - News Delivery{% endblock %} {% block head %}
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/main.css') }}?v=3.7" />
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/subscribe.css') }}?v=3.1" />
+<link rel="stylesheet" href="/static/css/main.css?v=3.7" />
+<link rel="stylesheet" href="/static/css/subscribe.css?v=3.1" />
 <script src="https://js.tosspayments.com/v1/payment"></script>
 {% endblock %} {% block back_btn %}{% endblock %} {% block content %}
 
@@ -17,10 +17,10 @@
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}
-        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+        <a href="/logout" class="header-btn outline">로그아웃</a>
       {% else %}
-        <a href="{{ request.url_for('login_page') }}" class="header-btn outline">로그인</a>
-        <a href="{{ request.url_for('signup_page') }}" class="header-btn">회원가입</a>
+        <a href="/login" class="header-btn outline">로그인</a>
+        <a href="/signup" class="header-btn">회원가입</a>
       {% endif %}
     </div>
   </div>
@@ -145,7 +145,7 @@
         <p style="font-size: 14px; color: #777; margin-bottom: 28px; line-height: 1.7;">
             뉴스레터 구독과 카테고리 설정을 이용하려면<br>먼저 로그인해주세요.
         </p>
-        <a href="{{ request.url_for('login_page') }}"
+        <a href="/login"
            style="display:inline-block; padding:12px 32px; background:#c00; color:white;
                   border-radius:6px; font-size:15px; font-weight:700; text-decoration:none;
                   transition:background 0.2s;"
@@ -154,7 +154,7 @@
         </a>
         <p style="margin-top:16px; font-size:13px; color:#adb5bd;">
             계정이 없으신가요?
-            <a href="{{ request.url_for('signup_page') }}"
+            <a href="/signup"
                style="color:#c00; font-weight:600; text-decoration:none;">회원가입</a>
         </p>
     </div>

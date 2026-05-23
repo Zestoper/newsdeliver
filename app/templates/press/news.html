@@ -3,7 +3,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/main.css?v=3.7">
-<link rel="stylesheet" href="{{ request.url_for('static', path='css/write.css') }}?v=2">
+<link rel="stylesheet" href="/static/css/write.css?v=2">
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -17,7 +17,7 @@
       {% if current_user %}
         <span class="user-name">{{ current_user.name }}님</span>
         <a href="/mypage" class="header-btn outline">마이페이지</a>
-        <a href="{{ request.url_for('logout') }}" class="header-btn outline">로그아웃</a>
+        <a href="/logout" class="header-btn outline">로그아웃</a>
       {% endif %}
     </div>
   </div>
