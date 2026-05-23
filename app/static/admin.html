@@ -87,10 +87,12 @@
             .tabs {
                 display: flex;
                 background: var(--dark);
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 0;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
             }
+            .tabs::-webkit-scrollbar { display: none; }
             .tab {
                 padding: 13px 20px;
                 color: #9ca3af;
@@ -103,6 +105,8 @@
                 border-bottom: 3px solid transparent;
                 transition: all 0.2s;
                 letter-spacing: 0.2px;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
             .tab.active {
                 color: #fff;
@@ -609,8 +613,8 @@
                                 <rect x="3" y="14" width="9" height="2" rx="1" fill="white" />
                             </svg>
                         </span>
-                        <span style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px; color: white"
-                            ><span style="color: #ff6b6b">News</span>Deliver</span
+                        <span style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px; color: #1a1a1a"
+                            ><span style="color: #d42b2b">News</span>Deliver</span
                         >
                     </a>
                 </div>
