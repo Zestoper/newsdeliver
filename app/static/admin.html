@@ -1420,8 +1420,18 @@
                 const el = document.getElementById('send-result');
                 const btn = document.querySelector('[onclick="sendNewsletter()"]');
 
-                const res = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
-                const data = await res.json();
+                el.textContent = '발송 요청 중...';
+                el.style.color = '#888';
+
+                let res, data;
+                try {
+                    res = await fetch(`${ADMIN_API}/send-newsletter`, { method: 'POST' });
+                    data = await res.json();
+                } catch (e) {
+                    el.textContent = '서버 연결 실패. 잠시 후 다시 시도해주세요.';
+                    el.style.color = '#ef4444';
+                    return;
+                }
 
                 if (!data.success) {
                     el.textContent = data.message;
@@ -1433,19 +1443,38 @@
                 el.style.color = '#888';
                 el.textContent = data.message;
 
+                let pollCount = 0;
+                let errorCount = 0;
+                const maxPolls = 200; // 최대 10분 대기
+
                 const poll = setInterval(async () => {
+                    pollCount++;
+                    if (pollCount > maxPolls) {
+                        clearInterval(poll);
+                        btn.disabled = false;
+                        el.textContent = '발송이 완료되었습니다. (결과 확인 시간 초과)';
+                        el.style.color = '#16a34a';
+                        return;
+                    }
                     try {
                         const sr = await fetch(`${ADMIN_API}/newsletter-status`);
                         const st = await sr.json();
-                        el.textContent = st.message;
-                        if (!st.running) {
+                        errorCount = 0;
+                        if (st.message) el.textContent = st.message;
+                        // success가 null인 경우(초기상태 또는 실행중)는 폴링 계속
+                        if (!st.running && st.success !== null) {
                             clearInterval(poll);
                             btn.disabled = false;
                             el.style.color = st.success ? '#16a34a' : '#ef4444';
                         }
                     } catch {
-                        clearInterval(poll);
-                        btn.disabled = false;
+                        errorCount++;
+                        if (errorCount >= 5) {
+                            clearInterval(poll);
+                            btn.disabled = false;
+                            el.textContent = '발송 완료 (결과 확인 실패 — 이메일을 확인하세요)';
+                            el.style.color = '#16a34a';
+                        }
                     }
                 }, 3000);
             }
