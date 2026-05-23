@@ -415,6 +415,13 @@
                     grid-template-columns: 1fr;
                 }
             }
+            @media (max-width: 600px) {
+                .header-top  { padding: 10px 16px; gap: 8px; }
+                .header-title { display: none; }
+                .header-logo a span:last-child { font-size: 15px; }
+                .content { padding: 16px 14px 40px; }
+                .tab { padding: 10px 12px; font-size: 12px; }
+            }
 
             .stat-card {
                 background: var(--surface);

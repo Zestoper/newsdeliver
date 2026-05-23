@@ -10,6 +10,8 @@
     .report-badge.resolved { background:#DCFCE7; color:#16a34a; }
     .report-badge.deleted  { background:#FEE2E2; color:#dc2626; }
     .report-badge.dismissed{ background:#F1F0ED; color:#868e96; }
+    .mypage-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media (max-width: 640px) { .mypage-grid { grid-template-columns:1fr; } }
   </style>
 {% endblock %}
 
@@ -60,7 +62,7 @@
   {% set pw_error = request.query_params.get('pw_error') %}
   {% set pw_success = request.query_params.get('pw_success') %}
 
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+  <div class="mypage-grid">
 
     <!-- 내 정보 수정 -->
     <div style="background:white; border-radius:8px; padding:28px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
