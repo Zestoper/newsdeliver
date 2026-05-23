@@ -690,6 +690,9 @@ body::before {
   .big5-content   { padding: 12px; }
   .big5-title     { font-size: 14px; }
   .popular-grid   { grid-template-columns: 1fr; }
+  .header-btn     { padding: 5px 8px; font-size: 11px; }
+  .header-actions { gap: 4px; }
+  .list-img       { display: none; }
 }
 
 /* ── 카드 등장 ── */

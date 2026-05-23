@@ -155,3 +155,18 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
   transition: color 0.2s;
 }
 .helper-link:hover { color: var(--red); }
+
+@media (max-width: 600px) {
+  .subscribe-container { padding: 0 14px; margin: 24px auto 40px; }
+  .subscribe-container h1 { font-size: 20px; }
+  .category-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .category-btn  { padding: 16px 8px; font-size: 13px; }
+  .email-section-box { padding: 24px 18px; }
+  .email-form    { flex-direction: column; }
+  .btn-subscribe { width: 100%; padding: 12px; }
+  .news-type-tabs { gap: 6px; }
+  .type-tab { padding: 8px 20px; font-size: 14px; }
+}
+@media (max-width: 380px) {
+  .category-grid { grid-template-columns: 1fr; }
+}

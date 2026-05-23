@@ -317,11 +317,18 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
   .detail-header-inner { padding: 0 14px; gap: 12px; }
   .detail-nav    { gap: 2px; }
   .detail-nav a  { padding: 5px 8px; font-size: 12px; }
+  .detail-container { padding: 0 14px; margin: 16px auto 60px; }
+  .detail-box    { padding: 24px 20px; }
+  .detail-title  { font-size: 20px; }
+  .detail-actions { gap: 7px; }
+  .btn-like, .btn-subscribe, .btn-bookmark, .btn-share, .btn-delete { padding: 7px 14px; font-size: 13px; }
 }
 @media (max-width: 480px) {
   .detail-nav    { display: none; }
   .comment-form  { flex-direction: column; }
   .btn-comment   { width: 100%; padding: 10px; }
+  .detail-box    { padding: 20px 16px; }
+  .detail-title  { font-size: 18px; }
 }
 
 /* ── 댓글 ── */
