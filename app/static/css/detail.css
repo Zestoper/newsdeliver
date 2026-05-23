@@ -11,6 +11,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: hidden; max-width: 100%; }
 body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
 /* ── 상단 네비게이션 ── */

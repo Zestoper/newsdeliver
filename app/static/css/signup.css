@@ -9,6 +9,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: hidden; max-width: 100%; }
 body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; }
 
 .signup-page { display: flex; min-height: 100vh; }
