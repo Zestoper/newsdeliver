@@ -170,3 +170,10 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
 @media (max-width: 380px) {
   .category-grid { grid-template-columns: 1fr; }
 }
+
+/* 구독 안내 섹션 모바일 */
+@media (max-width: 600px) {
+  .sub-info-wrap { padding: 0 14px !important; margin-bottom: 32px !important; }
+  .sub-benefits-grid { grid-template-columns: 1fr !important; }
+  .sub-benefit-card { padding: 16px !important; gap: 10px !important; }
+}

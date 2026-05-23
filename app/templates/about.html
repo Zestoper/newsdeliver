@@ -400,6 +400,18 @@
       .pipeline-steps { grid-template-columns: 1fr; }
       .db-grid { grid-template-columns: 1fr; }
     }
+
+    /* 모바일 공통 */
+    html, body { overflow-x: hidden; max-width: 100%; }
+    .api-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    @media (max-width: 600px) {
+      .about-wrap { padding: 0 14px 60px; }
+      .about-hero { padding: 28px 14px 24px; }
+      .about-hero h1 { font-size: 30px; letter-spacing: -1px; }
+      .about-hero-desc { font-size: 13px; }
+      .cta-box { padding: 28px 16px; }
+      .cta-box h2 { font-size: 18px; }
+    }
   </style>
 {% endblock %}
 
@@ -675,6 +687,7 @@
     <p>FastAPI + MySQL 기반의 RESTful API 서버. 7개 라우터, 14개 DB 테이블로 구성된 뉴스 플랫폼입니다.</p>
 
     <div class="subsection-label">API Endpoints</div>
+    <div class="api-table-wrap">
     <table class="api-table">
       <thead>
         <tr>
@@ -736,6 +749,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
 
     <div class="subsection-label">Database Schema — 14 Tables</div>
     <div class="db-grid">
