@@ -30,7 +30,7 @@
       <div class="message {{ message_type }}">{{ message }}</div>
     {% endif %}
 
-    <form class="signup-form" action="{{ request.url_for('signup') }}" method="post" onsubmit="return validateForm()">
+    <form class="signup-form" action="/signup" method="post" onsubmit="return validateForm()">
       <div class="form-row">
         <div class="input-group">
           <label for="name">이름</label>
