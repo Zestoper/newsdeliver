@@ -3,7 +3,7 @@
 {% block title %}회원가입 - News Delivery{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/signup.css') }}?v=2.0">
+  <link rel="stylesheet" href="/static/css/signup.css?v=2.0">
 {% endblock %}
 
 {% block back_btn %}{% endblock %}
@@ -104,7 +104,7 @@
 
     <div class="signup-footer">
       <span>이미 계정이 있으신가요?</span>
-      <a href="{{ request.url_for('login_page') }}">로그인</a>
+      <a href="/login">로그인</a>
       <span>|</span>
       <a href="/press/signup">언론사로 가입</a>
     </div>
