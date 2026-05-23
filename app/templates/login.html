@@ -29,7 +29,7 @@
       <div class="message {{ message_type }}">{{ message }}</div>
     {% endif %}
 
-    <form class="login-form" action="{{ request.url_for('login') }}" method="post">
+    <form class="login-form" action="/login" method="post">
       <div class="input-group">
         <label for="user_id">아이디</label>
         <input id="user_id" name="user_id" type="text"

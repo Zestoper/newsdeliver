@@ -91,7 +91,7 @@
             {% endif %}
         </p>
         <!-- 이메일 변경 폼 (항상 노출) -->
-        <form class="email-form" action="{{ request.url_for('subscribe') }}" method="post" style="margin-bottom:10px">
+        <form class="email-form" action="/subscribe" method="post" style="margin-bottom:10px">
             <input type="email" name="email" placeholder="새 이메일 주소 입력" required />
             <button type="submit" class="btn-subscribe">이메일 변경</button>
         </form>
@@ -104,7 +104,7 @@
         <!-- 미구독 상태: 이메일 입력 폼 -->
         {% if skip_payment %}
         <!-- 테스트 모드: 결제 없이 바로 구독 -->
-        <form class="email-form" action="{{ request.url_for('subscribe') }}" method="post">
+        <form class="email-form" action="/subscribe" method="post">
             <input
                 type="email"
                 name="email"
