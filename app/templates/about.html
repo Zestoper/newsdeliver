@@ -419,6 +419,33 @@
       .about-hero-desc { font-size: 13px; }
       .cta-box { padding: 28px 16px; }
       .cta-box h2 { font-size: 18px; }
+
+      /* API 테이블 → 모바일 카드 레이아웃 */
+      .api-table-wrap { overflow-x: visible; border-radius: 8px; border: 1px solid #e8e8e8; }
+      .api-table-wrap .api-table { min-width: 0; width: 100%; }
+      .api-table thead { display: none; }
+      .api-table tbody, .api-table tr, .api-table td { display: block; }
+      .api-table tr {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .api-table tr:last-child { border-bottom: none; }
+      .api-table tr:hover td { background: transparent; }
+      .api-table td { padding: 0; border: none; }
+      .api-table td:first-child { flex-shrink: 0; }
+      .api-table td:nth-child(2) { flex: 0 0 auto; max-width: calc(100% - 70px); }
+      .api-table td:nth-child(3) {
+        flex: 0 0 100%;
+        font-size: 12px;
+        color: #666;
+        padding-top: 4px;
+        line-height: 1.5;
+      }
+      .endpoint-code { font-size: 11px; word-break: break-all; }
     }
   </style>
 {% endblock %}
