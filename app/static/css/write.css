@@ -1,5 +1,5 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+* { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
 
 /* ── 언론사 뉴스 관리 ── */
 .press-container {
@@ -165,3 +165,43 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: #f5f5f5;
   transition: background 0.2s;
 }
 .btn-back:hover { background: #e9ecef; }
+
+@media (max-width: 600px) {
+  .press-container {
+    padding: 0 16px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+  }
+  .press-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .press-table thead { display: none; }
+  .press-table,
+  .press-table tbody,
+  .press-table tr,
+  .press-table td { display: block; width: 100%; }
+  .press-table tr {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f3f5;
+  }
+  .press-table tr:last-child { border-bottom: none; }
+  .press-table td {
+    padding: 3px 0;
+    border: none;
+    font-size: 13px;
+  }
+  .press-table td:first-child {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a1a;
+  }
+  .write-container {
+    padding: 0 16px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+  }
+  .write-box { padding: 20px 16px; }
+  .write-btns { flex-wrap: wrap; }
+}
