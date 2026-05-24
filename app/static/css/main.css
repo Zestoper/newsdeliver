@@ -11,9 +11,16 @@
   --border:   #E5E4E0;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overflow-x: hidden; max-width: 100%; }
-body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+* { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+img, video, iframe { max-width: 100%; height: auto; display: block; }
+body {
+  font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
+}
 a { text-decoration: none; }
 
 /* ── 상단 강조선 ── */
@@ -574,7 +581,7 @@ body::before {
   color: inherit;
 }
 .headline-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.13); transform: translateY(-2px); }
-.headline-img { width: 480px; min-height: 280px; background-size: cover; background-position: center; flex-shrink: 0; }
+.headline-img { width: 480px; max-width: 100%; min-height: 280px; background-size: cover; background-position: center; flex-shrink: 0; }
 .headline-img.no-img {
   background: linear-gradient(135deg, var(--red), #7a0000);
   display: flex; align-items: center; justify-content: center; font-size: 56px;

@@ -8,9 +8,8 @@
   --surface: #FFFFFF;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overflow-x: hidden; max-width: 100%; }
-body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+* { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
 
 .search-container { max-width: 860px; margin: 28px auto 60px; padding: 0 24px; }
 

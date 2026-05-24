@@ -3,7 +3,7 @@
 {% block title %}회사 소개 - NewsDeliver{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="/static/css/main.css?v=3.7">
+  <link rel="stylesheet" href="/static/css/main.css?v=3.8">
   <style>
     .about-hero {
       background: #fff;
@@ -402,7 +402,9 @@
     }
 
     /* 모바일 공통 */
-    html, body { overflow-x: hidden; max-width: 100%; }
+    * { min-width: 0; }
+    body { overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
+    img, video, iframe { max-width: 100%; height: auto; display: block; }
     .api-table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
