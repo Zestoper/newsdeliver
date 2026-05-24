@@ -10,9 +10,9 @@
   --surface: #FFFFFF;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overflow-x: hidden; max-width: 100%; }
-body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+* { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+img, video, iframe { max-width: 100%; height: auto; display: block; }
+body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
 
 /* ── 상단 네비게이션 ── */
 .detail-header {
