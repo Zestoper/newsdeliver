@@ -29,15 +29,16 @@
                 box-sizing: border-box;
                 margin: 0;
                 padding: 0;
-                min-width: 0;
             }
             body {
                 font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
                 background: var(--bg);
                 color: var(--text);
                 overflow-x: hidden;
-                word-break: break-word;
-                overflow-wrap: break-word;
+            }
+            /* flex/grid 자식 overflow 방지 (table 셀 제외) */
+            div, span, a, p, li, section, article, aside, header, footer, nav, main {
+                min-width: 0;
             }
 
             /* ── 헤더 ── */
