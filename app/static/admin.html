@@ -29,11 +29,15 @@
                 box-sizing: border-box;
                 margin: 0;
                 padding: 0;
+                min-width: 0;
             }
             body {
                 font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
                 background: var(--bg);
                 color: var(--text);
+                overflow-x: hidden;
+                word-break: break-word;
+                overflow-wrap: break-word;
             }
 
             /* ── 헤더 ── */
@@ -440,6 +444,27 @@
                 .chat-content-panel {
                     min-height: 380px;
                 }
+
+                /* 뉴스 관리: 국내/해외 2열 → 1열 */
+                .news-dual-panel {
+                    flex-direction: column !important;
+                }
+
+                /* 카드 패딩 축소 */
+                .card { padding: 18px 16px; }
+
+                /* 필터바 입력 너비 해제 */
+                .filter-bar { flex-wrap: wrap; }
+                .filter-bar input,
+                .filter-bar select { width: 100% !important; }
+
+                /* 모달 패딩 축소 + edit-row 세로 정렬 */
+                .edit-modal { padding: 20px 16px; }
+                .edit-row { flex-direction: column; gap: 0; }
+
+                /* 통계 카드 한 줄 패딩 축소 */
+                .stat-card { padding: 16px 12px; }
+                .stat-num { font-size: 24px; }
             }
 
             .stat-card {
@@ -786,7 +811,7 @@
                     <p id="fetch-result" class="result-msg"></p>
                 </div>
 
-                <div style="display: flex; gap: 24px; align-items: flex-start">
+                <div class="news-dual-panel" style="display: flex; gap: 24px; align-items: flex-start">
                     <!-- 국내뉴스 -->
                     <div style="flex: 1; min-width: 0">
                         <div
