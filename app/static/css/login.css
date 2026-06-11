@@ -196,5 +196,5 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; overflow-x: hidden; 
   .brand-tagline { font-size: 20px; }
   .brand-desc    { font-size: 13px; }
   .login-box     { padding: 28px 20px; }
-  .input-field   { font-size: 16px; }
+  .input-group input { font-size: 16px; }
 }
