@@ -1,5 +1,7 @@
 :root {
   --red:     #D42B2B;
+  --red-h:   #B82424;
+  --red-bg:  #FFF0F0;
   --text:    #1A1A1A;
   --muted:   #6B7280;
   --light:   #9CA3AF;
@@ -63,7 +65,7 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
   transition: background 0.2s, transform 0.2s;
   white-space: nowrap;
 }
-.search-btn:hover { background: #B82424; transform: translateY(-1px); }
+.search-btn:hover { background: var(--red-h); transform: translateY(-1px); }
 
 .search-result-info { margin-bottom: 16px; font-size: 14px; color: var(--muted); }
 
