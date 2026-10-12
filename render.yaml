@@ -10,6 +10,13 @@ services:
         sync: false
       - key: SECRET_KEY
         generateValue: true
+      # React 프론트엔드(Vercel) 주소 — CORS 허용, 이메일 링크, 소셜 로그인·결제 후 이동에 사용
+      - key: FRONTEND_URL
+        sync: false
+      # 외부 크론(cron-job.org)이 /internal/jobs/* 를 호출할 때 쓰는 비밀 키
+      # 설정하면 서버 안의 스케줄러 대신 외부 크론 모드로 동작한다
+      - key: CRON_SECRET
+        sync: false
       - key: NAVER_CLIENT_ID
         sync: false
       - key: NAVER_CLIENT_SECRET

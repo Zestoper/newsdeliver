@@ -9,11 +9,12 @@
 | 항목         | 내용                                                                            |
 | ------------ | ------------------------------------------------------------------------------- |
 | 서비스명     | NewsDeliver                                                                     |
-| 백엔드       | Python · FastAPI · SQLAlchemy · APScheduler                                     |
+| 프론트엔드   | React · TypeScript · Vite (Vercel)                                              |
+| 백엔드       | Python · FastAPI · SQLAlchemy · APScheduler (Render)                            |
 | 데이터베이스 | MySQL                                                                           |
 | 외부 API     | 네이버 뉴스 API · Groq API (AI 요약) · OAuth (소셜 로그인) · NewsAPI (해외뉴스) |
 | 실시간       | WebSocket 채팅                                                                  |
-| 배포         | uvicorn                                                                         |
+| 배포         | 프론트엔드 Vercel · 백엔드 Render · 예약 작업 cron-job.org                      |
 
 ---
 
@@ -47,7 +48,7 @@
 
 - 일반 회원가입 / 로그인 (이메일 인증 포함)
 - **OAuth 소셜 로그인** 지원: 카카오 / 네이버 / 구글 (`oauth_provider` / `oauth_id`)
-- 쿠키 기반 세션 인증
+- React 화면은 서명된 Bearer 토큰으로 인증하고 관리자·언론사 페이지(서버 렌더링)는 로그인 쿠키를 그대로 사용
 
 ### 5. 언론사 회원 시스템
 
@@ -205,7 +206,18 @@ SKIP_PAYMENT=true
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-> 서버 시작 시 DB 마이그레이션과 뉴스 초기 수집이 자동으로 실행됩니다.
+> 서버 시작 시 DB 마이그레이션과 뉴스 초기 수집이 자동으로 실행됩니다. (`CRON_SECRET`을 설정하면 초기 수집은 건너뜁니다)
+
+### 4. 프론트엔드 실행
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000" > .env
+npm run dev   # http://localhost:5173
+```
+
+백엔드 `.env`에 `FRONTEND_URL=http://localhost:5173`을 넣으면 CORS 허용 · 이메일 링크 · 소셜 로그인 후 이동이 프론트엔드 기준으로 동작합니다.
 
 ---
 
@@ -228,6 +240,18 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ---
 
+## 첫 로딩 개선 (React 전환)
+
+Render 무료 플랜은 15분 동안 요청이 없으면 서버가 잠들고 다음 요청에서 깨어나는 데 1분 가까이 걸립니다.
+예전에는 Jinja2로 서버가 HTML을 그렸기 때문에 서버가 깨어날 때까지 화면이 아예 뜨지 않았습니다.
+
+- 사용자 화면을 React로 옮겨 Vercel(정적 호스팅)에서 바로 띄우고 FastAPI는 JSON API(`/api/v1/*`)만 담당
+- 로그인 상태는 브라우저에 저장된 토큰으로 먼저 그리고 서버 확인은 뒤에서 처리
+- 접속하자마자 `/health`로 서버를 깨우고 응답이 늦으면 하단에 안내 배너 표시
+- 조회 요청은 서버가 깨어나는 동안 실패로 보여주지 않고 자리표시(skeleton)를 띄운 채 다시 시도
+- 예전 주소(`/news/3` 등)로 들어오면 프론트엔드의 같은 주소로 307 리다이렉트
+- 관리자·언론사 작성 페이지는 서버 렌더링을 유지하고 `/auth/sso`로 로그인 상태를 넘김
+
 ## ⏰ 스케줄러
 
 | 작업                  | 주기                     |
@@ -235,6 +259,16 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 | 뉴스 자동 수집 (국내) | 2시간마다 + 서버 시작 시 |
 | 해외뉴스 수집         | 3시간마다                |
 | 뉴스레터 발송         | 매일 07:30 / 18:30 (KST) |
+
+서버가 잠들어 있으면 내부 스케줄러도 멈추기 때문에 배포 환경에서는 외부 크론을 씁니다.
+`CRON_SECRET`을 설정하면 내부 스케줄러는 꺼지고 아래 엔드포인트를 cron-job.org가 정해진 시간에 호출합니다.
+
+| 엔드포인트                        | 예약 시간 (KST)      |
+| --------------------------------- | -------------------- |
+| `POST /internal/jobs/fetch-news`  | 2시간마다            |
+| `POST /internal/jobs/newsletter`  | 매일 07:30 / 18:30   |
+
+요청 헤더에 `X-Cron-Secret: <CRON_SECRET>`을 넣어야 실행됩니다.
 
 ---
 

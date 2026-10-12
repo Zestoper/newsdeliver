@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from app.database import engine
 from app.config import settings
-from app.auth import set_login_cookie
+from app.auth import issue_token, set_login_cookie
 
 router = APIRouter(prefix="/oauth")
 
@@ -72,9 +72,20 @@ def _upsert_oauth_user(provider: str, oauth_id: str, name: str, email: str | Non
 
 
 def _redirect_logged_in(user_id: str) -> RedirectResponse:
+    # React 프론트엔드가 있으면 토큰을 URL 해시(#)로 넘긴다 — 해시는 서버 로그에 남지 않는다
+    if settings.FRONTEND_URL:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback#token={issue_token(user_id)}",
+            status_code=303,
+        )
     resp = RedirectResponse(url="/", status_code=303)
     set_login_cookie(resp, user_id)
     return resp
+
+
+def _login_error(provider: str) -> RedirectResponse:
+    base = settings.FRONTEND_URL.rstrip("/") if settings.FRONTEND_URL else ""
+    return RedirectResponse(url=f"{base}/login?social_error={provider}")
 
 
 # ── 카카오 ────────────────────────────────────────────────────────────────
@@ -82,7 +93,7 @@ def _redirect_logged_in(user_id: str) -> RedirectResponse:
 @router.get("/kakao")
 async def kakao_login():
     if not settings.KAKAO_CLIENT_ID:
-        return RedirectResponse(url="/login?social_error=kakao")
+        return _login_error("kakao")
     url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={settings.KAKAO_CLIENT_ID}"
@@ -95,7 +106,7 @@ async def kakao_login():
 @router.get("/kakao/callback")
 async def kakao_callback(code: str = "", error: str = ""):
     if error or not code:
-        return RedirectResponse(url="/login?social_error=kakao")
+        return _login_error("kakao")
 
     with httpx.Client(timeout=10) as client:
         token_data = {
@@ -112,7 +123,7 @@ async def kakao_callback(code: str = "", error: str = ""):
             data=token_data,
         )
         if token_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=kakao")
+            return _login_error("kakao")
         access_token = token_res.json().get("access_token", "")
 
         info_res = client.get(
@@ -120,7 +131,7 @@ async def kakao_callback(code: str = "", error: str = ""):
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if info_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=kakao")
+            return _login_error("kakao")
         data = info_res.json()
 
     oauth_id = str(data.get("id", ""))
@@ -137,7 +148,7 @@ async def kakao_callback(code: str = "", error: str = ""):
 @router.get("/naver")
 async def naver_login():
     if not settings.NAVER_OAUTH_CLIENT_ID:
-        return RedirectResponse(url="/login?social_error=naver")
+        return _login_error("naver")
     state = secrets.token_hex(8)
     url = (
         "https://nid.naver.com/oauth2.0/authorize"
@@ -152,7 +163,7 @@ async def naver_login():
 @router.get("/naver/callback")
 async def naver_callback(code: str = "", error: str = ""):
     if error or not code:
-        return RedirectResponse(url="/login?social_error=naver")
+        return _login_error("naver")
 
     with httpx.Client(timeout=10) as client:
         token_res = client.post(
@@ -166,7 +177,7 @@ async def naver_callback(code: str = "", error: str = ""):
             },
         )
         if token_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=naver")
+            return _login_error("naver")
         access_token = token_res.json().get("access_token", "")
 
         info_res = client.get(
@@ -174,7 +185,7 @@ async def naver_callback(code: str = "", error: str = ""):
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if info_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=naver")
+            return _login_error("naver")
         resp = info_res.json().get("response", {})
 
     oauth_id = str(resp.get("id", ""))
@@ -190,7 +201,7 @@ async def naver_callback(code: str = "", error: str = ""):
 @router.get("/google")
 async def google_login():
     if not settings.GOOGLE_CLIENT_ID:
-        return RedirectResponse(url="/login?social_error=google")
+        return _login_error("google")
     url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
         f"?client_id={settings.GOOGLE_CLIENT_ID}"
@@ -206,7 +217,7 @@ async def google_login():
 @router.get("/google/callback")
 async def google_callback(code: str = "", error: str = ""):
     if error or not code:
-        return RedirectResponse(url="/login?social_error=google")
+        return _login_error("google")
 
     with httpx.Client(timeout=10) as client:
         token_res = client.post(
@@ -220,7 +231,7 @@ async def google_callback(code: str = "", error: str = ""):
             },
         )
         if token_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=google")
+            return _login_error("google")
         access_token = token_res.json().get("access_token", "")
 
         info_res = client.get(
@@ -228,7 +239,7 @@ async def google_callback(code: str = "", error: str = ""):
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if info_res.status_code != 200:
-            return RedirectResponse(url="/login?social_error=google")
+            return _login_error("google")
         data = info_res.json()
 
     oauth_id = str(data.get("id", ""))

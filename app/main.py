@@ -19,6 +19,8 @@ from app.routers.press import router as press_router
 from app.routers.admin_api import router as admin_api_router, upload_router as admin_upload_router
 from app.routers.oauth import router as oauth_router
 from app.routers.chat import router as chat_router
+from app.routers.api import router as api_router
+from app.routers.jobs import router as jobs_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -324,7 +326,8 @@ KST = pytz.timezone("Asia/Seoul")
 
 def _newsletter_job():
     from app.routers.admin_api import run_newsletter_job
-    run_newsletter_job(base_url=settings.SERVER_BASE_URL)
+    from app.config import public_base_url
+    run_newsletter_job(base_url=public_base_url())
 
 def _fetch_news_job():
     from app.services.naver_news import fetch_and_save_news
@@ -352,6 +355,14 @@ def _fetch_news_job():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # CRON_SECRET 이 있으면 외부 크론 모드 — 예약 작업은 /internal/jobs/* 호출로만 실행한다.
+    # (Render 무료 플랜은 서버가 잠들어 내부 스케줄러가 돌지 않고,
+    #  깨어날 때마다 수집을 돌리면 첫 응답까지 느려지기 때문)
+    if settings.CRON_SECRET:
+        print("✅ 외부 크론 모드 — 내부 스케줄러와 시작 시 수집을 건너뜁니다")
+        yield
+        return
+
     import threading
     threading.Thread(target=_fetch_news_job, daemon=True).start()
     print("✅ 서버 시작 시 뉴스 수집 중...")
@@ -369,10 +380,40 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="News Delivery MVP", lifespan=lifespan)
 
+# React 프론트엔드가 있으면, 예전 서버 렌더링 페이지 주소로 들어온 브라우저를 프론트엔드의 같은 주소로 보낸다.
+# (이메일·북마크·검색엔진에 남아 있는 옛 링크 대응. 관리자·언론사 작성 페이지는 서버에 그대로 둔다)
+import re as _re
+from fastapi import Request as _Request
+from fastapi.responses import RedirectResponse as _Redirect
+
+_FRONTEND_PAGES = _re.compile(
+    r"^/(|news|news/\d+|global-news|search|about|contact|login|signup|subscribe|mypage|"
+    r"verify-email|age-news/[a-z]+|press/signup)$"
+)
+
+
+@app.middleware("http")
+async def _redirect_pages_to_frontend(request: _Request, call_next):
+    if (
+        settings.FRONTEND_URL
+        and request.method == "GET"
+        and _FRONTEND_PAGES.match(request.url.path)
+        and "text/html" in request.headers.get("accept", "")
+    ):
+        target = settings.FRONTEND_URL.rstrip("/") + request.url.path
+        if request.url.query:
+            target += "?" + request.url.query
+        return _Redirect(url=target, status_code=307)
+    return await call_next(request)
+
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # 프론트엔드 주소가 있으면 그 주소와 로컬 개발 주소만 허용한다
+    allow_origins=(
+        [settings.FRONTEND_URL.rstrip("/"), "http://localhost:5173", "http://127.0.0.1:5173"]
+        if settings.FRONTEND_URL else ["*"]
+    ),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -386,6 +427,14 @@ app.include_router(press_router)
 app.include_router(admin_api_router)
 app.include_router(admin_upload_router)
 app.include_router(chat_router)
+app.include_router(api_router)
+app.include_router(jobs_router)
+
+
+# UptimeRobot 등 외부 핑용 헬스체크 (무료 UptimeRobot은 HEAD 요청이라 HEAD도 허용)
+@app.api_route("/health", methods=["GET", "HEAD"])
+def health_check():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
