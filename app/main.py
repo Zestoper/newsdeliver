@@ -352,6 +352,13 @@ def _fetch_news_job():
     except Exception as e:
         print(f"[정치 기사 재분류] {e}")
 
+    # 다음 뉴스레터에 들어갈 기사 요약을 미리 만들어 둔다 (발송 시 대기 시간 단축)
+    try:
+        from app.routers.admin_api import prewarm_newsletter_summaries
+        prewarm_newsletter_summaries()
+    except Exception as e:
+        print(f"[뉴스레터 요약 준비] {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

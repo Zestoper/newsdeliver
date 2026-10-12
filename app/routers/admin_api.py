@@ -120,6 +120,28 @@ def _load_subscriber_articles() -> list[dict]:
     return result
 
 
+def prewarm_newsletter_summaries(limit: int = 8) -> int:
+    """다음 뉴스레터에 들어갈 기사 중 요약이 없는 것을 미리 요약해 둔다.
+
+    Groq 무료 한도 때문에 요약은 6초에 1건씩만 만들 수 있어서
+    발송 시점에 한꺼번에 만들면 기사 수 × 6초만큼 발송이 늦어진다.
+    뉴스 수집 크론(30분마다)이 끝날 때 조금씩 미리 만들어 두면 발송은 캐시만 쓰고 바로 끝난다.
+    """
+    subscriber_data = _load_subscriber_articles()
+    pending = {
+        a["id"]: a
+        for sub in subscriber_data
+        for a in sub["articles"]
+        if a.get("id") and not a.get("ai_summary")
+    }
+    targets = list(pending.values())[:limit]
+    if not targets:
+        return 0
+    done = sum(1 for a in summarize_articles(targets) if a.get("ai_summary"))
+    print(f"[뉴스레터 요약 준비] {done}/{len(targets)}건 (남은 대상 {len(pending)}건)")
+    return done
+
+
 def run_newsletter_job(base_url: str | None = None) -> dict:
     """뉴스레터 일괄 발송 — 스케줄러·외부 크론·API 엔드포인트 공용"""
     base_url = base_url or public_base_url()

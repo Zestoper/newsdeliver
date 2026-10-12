@@ -23,7 +23,7 @@ from app.routers.pages import (
     _NEWS_PAGE_SIZE,
     _do_verify,
 )
-from app.services.email import send_verify_email
+from app.services.email import send_verify_email_async
 from app.services.store import (
     add_subscription,
     add_user,
@@ -452,10 +452,7 @@ def _start_subscription(user: dict, email: str) -> dict:
         token = add_subscription(email, user_id=user["id"])
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    try:
-        send_verify_email(email, token, base_url=public_base_url())
-    except Exception as e:
-        print(f"[EMAIL] 인증 메일 발송 실패: {e}")
+    send_verify_email_async(email, token, base_url=public_base_url())
     return {"success": True, "mail_sent": True}
 
 

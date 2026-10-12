@@ -1,5 +1,7 @@
 import os
 import smtplib
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import httpx
 import logging
 from email.mime.text import MIMEText
@@ -223,13 +225,13 @@ def send_newsletters_batch(
     base_url = base_url.rstrip("/")
 
     if _api_provider():
-        for i, item in enumerate(items):
+        def _one(i: int, item: dict) -> None:
             try:
                 to_email = item["email"]
                 articles = item["articles"]
                 category_name = item.get("category_name", "")
                 if not articles or not to_email:
-                    continue
+                    return
                 cards = "".join(_card_html(a, base_url) for a in articles)
                 cat_label = category_name or (articles[0].get("category_name") or "뉴스")
                 subject = f"[News Delivery] {cat_label} 최신 뉴스 {len(articles)}건"
@@ -238,7 +240,11 @@ def send_newsletters_batch(
                 results[i] = True
             except Exception as e:
                 print(f"[EMAIL] 뉴스레터 발송 실패 {item.get('email')}: {e}")
-                results[i] = False
+
+        # HTTPS API는 요청마다 독립이라 동시에 보내도 된다 (한 통씩 기다리지 않음)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for i, item in enumerate(items):
+                pool.submit(_one, i, item)
         return results
 
     try:
@@ -321,3 +327,13 @@ def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0
     except Exception as e:
         print(f"[EMAIL] 발송 실패: {e}")
         raise
+
+
+def send_verify_email_async(to_email: str, token: str, base_url: str) -> None:
+    """인증 메일을 백그라운드로 보낸다. 사용자가 발송 완료까지 기다리지 않게 하기 위함."""
+    def _job():
+        try:
+            send_verify_email(to_email, token, base_url=base_url)
+        except Exception as e:
+            print(f"[EMAIL] 인증 메일 발송 실패: {e}")
+    threading.Thread(target=_job, daemon=True).start()

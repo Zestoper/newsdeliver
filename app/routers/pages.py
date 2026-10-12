@@ -21,7 +21,7 @@ from app.services.store import (
     is_duplicate_subscription,
     is_duplicate_user,
 )
-from app.services.email import send_verify_email
+from app.services.email import send_verify_email_async
 
 router = APIRouter()
 
@@ -349,10 +349,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       current_email=current_email, is_subscribed=is_subscribed,
                       is_verified=is_verified, verify_link=None)
 
-    try:
-        send_verify_email(email, token, base_url=public_base_url())
-    except Exception as e:
-        print(f"[EMAIL] pages 발송 실패: {e}")
+    send_verify_email_async(email, token, base_url=public_base_url())
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
@@ -389,10 +386,7 @@ async def subscribe_payment_success(
     except ValueError:
         return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
-    try:
-        send_verify_email(email, token, base_url=public_base_url())
-    except Exception as e:
-        print(f"[EMAIL] pages 발송 실패: {e}")
+    send_verify_email_async(email, token, base_url=public_base_url())
 
     return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
