@@ -101,9 +101,9 @@
   <div class="pagination">
     {% set cat_qs = '&category=' ~ selected_category if selected_category else '' %}
     {% if page > 1 %}
-      <a href="/news?page={{ page - 1 }}{{ cat_qs }}" class="page-btn">← 이전</a>
+      <a href="/news?page={{ page - 1 }}{{ cat_qs }}" class="page-btn"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> 이전</a>
     {% else %}
-      <span class="page-btn disabled">← 이전</span>
+      <span class="page-btn disabled"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> 이전</span>
     {% endif %}
 
     {% for p in range(1, total_pages + 1) %}
@@ -117,9 +117,9 @@
     {% endfor %}
 
     {% if page < total_pages %}
-      <a href="/news?page={{ page + 1 }}{{ cat_qs }}" class="page-btn">다음 →</a>
+      <a href="/news?page={{ page + 1 }}{{ cat_qs }}" class="page-btn">다음 <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
     {% else %}
-      <span class="page-btn disabled">다음 →</span>
+      <span class="page-btn disabled">다음 <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
     {% endif %}
   </div>
   {% endif %}

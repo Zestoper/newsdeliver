@@ -83,11 +83,11 @@
         {% if is_subscribed %}
         <!-- 구독 중 상태 -->
         <p style="font-size: 14px; color: #2f9e44; margin-bottom: 12px">
-            ✅ 현재 구독 중: <strong>{{ current_email }}</strong>
+           <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg> 현재 구독 중: <strong>{{ current_email }}</strong>
             {% if is_verified %}
             <span style="background: #d3f9d8; color: #2f9e44; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; display: inline-block;">인증완료</span>
             {% else %}
-            <span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 12px">⚠️ 인증 필요 — 발송된 이메일을 확인해주세요</span>
+            <span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 12px"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> 인증 필요 — 발송된 이메일을 확인해주세요</span>
             {% endif %}
         </p>
         <!-- 이메일 변경 폼 (항상 노출) -->
@@ -140,7 +140,7 @@
     {% else %}
     <!-- 비로그인 상태 -->
     <div class="email-section-box" style="text-align:center; padding: 48px 32px;">
-        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+        <div style="font-size: 48px; margin-bottom: 16px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
         <h2 style="font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px;">로그인이 필요한 서비스입니다</h2>
         <p style="font-size: 14px; color: #777; margin-bottom: 28px; line-height: 1.7;">
             뉴스레터 구독과 카테고리 설정을 이용하려면<br>먼저 로그인해주세요.
@@ -171,7 +171,7 @@
     <div class="sub-benefits-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
 
       <div class="sub-benefit-card" style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:16px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">🤖</div>
+        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>
         <div>
           <h3 style="font-size:14px;font-weight:800;color:#1a1a1a;margin:0 0 6px;">AI가 요약한 핵심 뉴스</h3>
           <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">긴 기사를 읽을 필요 없이 AI가 3~4줄로 압축한 요약으로 핵심을 빠르게 파악하세요.</p>
@@ -179,7 +179,7 @@
       </div>
 
       <div class="sub-benefit-card" style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:16px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">🎯</div>
+        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
         <div>
           <h3 style="font-size:14px;font-weight:800;color:#1a1a1a;margin:0 0 6px;">내 관심사만 골라서</h3>
           <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">정치·경제·IT·문화 등 9개 카테고리 중 원하는 것만 선택해 맞춤 뉴스레터를 받아보세요.</p>
@@ -187,7 +187,7 @@
       </div>
 
       <div class="sub-benefit-card" style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:16px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">⚡</div>
+        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z"/></svg></div>
         <div>
           <h3 style="font-size:14px;font-weight:800;color:#1a1a1a;margin:0 0 6px;">항상 최신 뉴스</h3>
           <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">2시간마다 뉴스를 자동 수집해 가장 최신 기사를 이메일로 전달합니다.</p>
@@ -195,7 +195,7 @@
       </div>
 
       <div class="sub-benefit-card" style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:16px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">📬</div>
+        <div style="flex-shrink:0;width:42px;height:42px;background:#fff0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z"/><path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"/></svg></div>
         <div>
           <h3 style="font-size:14px;font-weight:800;color:#1a1a1a;margin:0 0 6px;">inbox에서 바로 확인</h3>
           <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">앱 설치 없이 이메일 하나로 오늘의 뉴스를 바로 확인할 수 있습니다.</p>
@@ -213,14 +213,14 @@
 
     <div style="display:flex;gap:16px;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#fff8e1,#fffde7);border-radius:12px;padding:24px;border-left:4px solid #f59f00;">
-        <div style="font-size:28px;margin-bottom:10px;">🌅</div>
+        <div style="font-size:28px;margin-bottom:10px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></div>
         <div style="font-size:22px;font-weight:900;color:#e67700;letter-spacing:-0.5px;margin-bottom:6px;">오전 7:30</div>
         <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">아침 뉴스레터</div>
         <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">하루를 시작하기 전, 어젯밤부터 오늘 아침까지의 주요 뉴스를 정리해 드려요.</p>
       </div>
 
       <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#e8f4fd,#dbeafe);border-radius:12px;padding:24px;border-left:4px solid #339af0;">
-        <div style="font-size:28px;margin-bottom:10px;">🌆</div>
+        <div style="font-size:28px;margin-bottom:10px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></div>
         <div style="font-size:22px;font-weight:900;color:#1971c2;letter-spacing:-0.5px;margin-bottom:6px;">오후 6:30</div>
         <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">저녁 뉴스레터</div>
         <p style="font-size:13px;color:#666;line-height:1.7;margin:0;">퇴근 후 오늘 하루 있었던 주요 뉴스를 한눈에 확인하세요.</p>
@@ -228,7 +228,7 @@
     </div>
 
     <div style="margin-top:20px;background:#f8f9fa;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
-      <span style="font-size:18px;">ℹ️</span>
+      <span style="font-size:18px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0;">
         카테고리별로 최신 뉴스 <strong style="color:#1a1a1a;">5건</strong>을 선별해 발송합니다.
         새 기사가 없는 경우에도 최근 기사로 채워 빠짐없이 보내드립니다.
@@ -281,7 +281,7 @@
             btn.classList.toggle('subscribed', data.subscribed);
             const result = document.getElementById('sub-result');
             const label = isGlobal ? '해외' : '국내';
-            result.textContent = data.subscribed ? `✅ ${label} 구독했어요!` : `${label} 구독 해지했어요.`;
+            result.textContent = data.subscribed ? `${label} 구독했어요!` : `${label} 구독 해지했어요.`;
             result.style.color = data.subscribed ? '#2f9e44' : '#868e96';
         }
     }

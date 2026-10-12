@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
   <style>
+    /* 이모지 대신 쓰는 인라인 SVG 아이콘 */
+    svg.ic { display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; }
 
@@ -35,7 +37,7 @@
 <body>
 
   {% block back_btn %}
-  <button class="site-back-btn" onclick="history.back()">← 뒤로가기</button>
+  <button class="site-back-btn" onclick="history.back()"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> 뒤로가기</button>
   {% endblock %}
 
   <div class="app-container">

@@ -12,6 +12,8 @@
             rel="stylesheet"
         />
         <style>
+    /* 이모지 대신 쓰는 인라인 SVG 아이콘 */
+    svg.ic { display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
             :root {
                 --red: #d42b2b;
                 --red-h: #b82424;
@@ -660,7 +662,7 @@
                     </a>
                 </div>
                 <span class="header-title"></span>관리자 페이지</span>
-                <button class="header-back" onclick="history.back()">← 뒤로가기</button>
+                <button class="header-back" onclick="history.back()"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> 뒤로가기</button>
             </div>
         </div>
 
@@ -1001,7 +1003,7 @@
                                     flex-shrink: 0;
                                 "
                                 title="사진/동영상 첨부"
-                                >📎</label
+                                ><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg></label
                             >
                             <input
                                 id="adminFileInput"
@@ -1819,7 +1821,7 @@
         <td style="font-size:12px;">${r.reporter_id}</td>
         <td>${r.reason || '-'}</td>
         <td style="font-size:12px;">${r.created_at}</td>
-        <td><button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="restoreReport(${r.id})">↑ 신고 목록으로</button></td>
+        <td><button class="btn btn-green" style="font-size:12px;padding:5px 10px;" onclick="restoreReport(${r.id})"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg> 신고 목록으로</button></td>
       </tr>`;
             }
 
@@ -2045,7 +2047,7 @@
         <div class="top-news-row">
           <span style="font-size:13px;font-weight:800;color:var(--red);flex-shrink:0;margin-right:6px;">${i + 1}</span>
           <a href="/news/${n.id}" target="_blank" class="top-news-title">${n.title}</a>
-          <span class="top-news-views">👁 ${(n.view_count || 0).toLocaleString()}</span>
+          <span class="top-news-views"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg> ${(n.view_count || 0).toLocaleString()}</span>
         </div>`,
                         )
                         .join('');
