@@ -1,12 +1,16 @@
-"""로그인 쿠키 서명/검증과 권한 체크.
+"""로그인 쿠키·토큰 서명/검증과 권한 체크.
 
 쿠키 값은 "<user_id>.<HMAC 서명>" 형태라서, 서버의 SECRET_KEY 없이는
 다른 사용자 아이디로 바꿔치기할 수 없다.
+
+React 프론트엔드는 다른 도메인이라 쿠키 대신 Bearer 토큰을 쓴다.
+토큰 값은 "<만료시각>.<user_id>.<HMAC 서명>" 형태로 같은 키로 서명한다.
 """
 import base64
 import hashlib
 import hmac
 import secrets
+import time
 
 from fastapi import HTTPException, Request
 from sqlalchemy import text
@@ -63,7 +67,43 @@ def get_user_by_cookie(cookies) -> dict | None:
     return dict(row._mapping) if row else None
 
 
+_TOKEN_TTL = 60 * 60 * 24 * 30  # 30일
+
+
+def issue_token(user_id: str) -> str:
+    exp = str(int(time.time()) + _TOKEN_TTL)
+    return f"{exp}.{user_id}.{_sign(f'{exp}.{user_id}')}"
+
+
+def verify_token(token: str | None) -> str | None:
+    if not token or token.count(".") < 2:
+        return None
+    exp, rest = token.split(".", 1)
+    user_id, sig = rest.rsplit(".", 1)
+    if not exp.isdigit() or int(exp) < time.time():
+        return None
+    return user_id if hmac.compare_digest(sig, _sign(f"{exp}.{user_id}")) else None
+
+
+def get_user_by_id(user_id: str | None) -> dict | None:
+    if not user_id:
+        return None
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM news_users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+    return dict(row._mapping) if row else None
+
+
+def get_user_by_token(token: str | None) -> dict | None:
+    return get_user_by_id(verify_token(token))
+
+
 def get_current_user(request: Request) -> dict | None:
+    # 1) Authorization: Bearer <토큰> (React 프론트엔드)  2) 로그인 쿠키 (기존 서버 렌더링 페이지)
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        return get_user_by_token(auth[7:].strip())
     return get_user_by_cookie(request.cookies)
 
 

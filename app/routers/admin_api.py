@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.database import engine
 from app.auth import require_admin, require_admin_or_press
-from app.config import settings
+from app.config import public_base_url, settings
 from app.services.email import send_newsletters_batch
 from app.services.ai_summary import get_or_create_summary, summarize_articles
 from app.services.naver_news import (
@@ -118,8 +118,9 @@ def _load_subscriber_articles() -> list[dict]:
     return result
 
 
-def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
-    """뉴스레터 일괄 발송 — 스케줄러와 API 엔드포인트 공용"""
+def run_newsletter_job(base_url: str | None = None) -> dict:
+    """뉴스레터 일괄 발송 — 스케줄러·외부 크론·API 엔드포인트 공용"""
+    base_url = base_url or public_base_url()
     _newsletter_status["running"] = True
     _newsletter_status["message"] = "구독자 정보 불러오는 중..."
     _newsletter_status["success"] = None
@@ -182,7 +183,7 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
 def send_newsletter_api(request: Request):
     if _newsletter_status["running"]:
         return {"success": False, "message": "이미 발송 중입니다. 잠시 후 다시 시도해주세요."}
-    base_url = settings.SERVER_BASE_URL.rstrip("/")
+    base_url = public_base_url()
     threading.Thread(target=run_newsletter_job, args=(base_url,), daemon=True).start()
     return {"success": True, "message": "뉴스레터 발송을 시작했습니다. AI 요약 생성 후 순차 발송됩니다."}
 

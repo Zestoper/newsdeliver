@@ -12,8 +12,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 from app.database import engine
-from app.config import settings
-from app.auth import AUTH_COOKIE_NAME, get_current_user, set_login_cookie
+from app.config import public_base_url, settings
+from app.auth import AUTH_COOKIE_NAME, get_current_user, set_login_cookie, verify_token
 from app.services.store import (
     add_subscription,
     add_user,
@@ -112,6 +112,20 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
                   show_press_notice=press_notice == "1",
                   show_signup_done=signup_done == "1",
                   now=_date.today().strftime("%Y년 %m월 %d일"))
+
+
+@router.get("/auth/sso")
+async def sso(token: str = "", next: str = "/admin"):
+    """React 프론트엔드에서 로그인한 상태로 관리자·언론사 페이지(서버 렌더링)에 들어갈 때 쓰는 다리.
+    토큰을 확인해 로그인 쿠키를 심고 해당 페이지로 보낸다."""
+    user_id = verify_token(token)
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=303)
+    if not (next.startswith("/admin") or next.startswith("/press/")):
+        next = "/admin"
+    response = RedirectResponse(url=next, status_code=303)
+    set_login_cookie(response, user_id)
+    return response
 
 
 @router.get("/admin")
@@ -255,7 +269,7 @@ async def subscribe_page(request: Request, verified: str = "", mail_sent: str = 
                 is_subscribed = bool(sub.is_active)
                 is_verified = sub.is_verified == 1
                 if not is_verified and sub.verify_token:
-                    base = settings.SERVER_BASE_URL.rstrip('/')
+                    base = public_base_url()
                     verify_link = f"{base}/verify-email?token={sub.verify_token}"
     if not user:
         domestic_subscribed_ids = []
@@ -336,7 +350,7 @@ async def subscribe(request: Request, email: str = Form(...)) -> HTMLResponse:
                       is_verified=is_verified, verify_link=None)
 
     try:
-        send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
+        send_verify_email(email, token, base_url=public_base_url())
     except Exception as e:
         print(f"[EMAIL] pages 발송 실패: {e}")
 
@@ -376,7 +390,7 @@ async def subscribe_payment_success(
         return RedirectResponse(url="/subscribe?mail_sent=1", status_code=303)
 
     try:
-        send_verify_email(email, token, base_url=settings.SERVER_BASE_URL)
+        send_verify_email(email, token, base_url=public_base_url())
     except Exception as e:
         print(f"[EMAIL] pages 발송 실패: {e}")
 

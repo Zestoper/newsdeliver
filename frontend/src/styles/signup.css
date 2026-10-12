@@ -1,0 +1,118 @@
+.pg-signup {
+  --red:    #D42B2B;
+  --red-h:  #B82424;
+  --text:   #1A1A1A;
+  --muted:  #6B7280;
+  --light:  #9CA3AF;
+  --border: #E5E4E0;
+  --bg:     #FAFAF8;
+}
+.pg-signup *, .pg-signup { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+.pg-signup { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
+.pg-signup .signup-page { display: flex; min-height: 100vh; }
+.pg-signup .signup-brand {
+  flex: 1;
+  background: linear-gradient(160deg, #D42B2B 0%, #8A0000 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 72px 64px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.pg-signup .signup-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; right: -80px;
+  width: 340px; height: 340px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.pg-signup .signup-brand::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 240px; height: 240px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+.pg-signup .brand-logo {
+  font-size: 20px;
+  font-weight: 900;
+  color: white;
+  text-decoration: none;
+  margin-bottom: 60px;
+  display: inline-block;
+  opacity: 0.95;
+  letter-spacing: -0.5px;
+}
+.pg-signup .brand-tagline { font-size: 36px; font-weight: 900; line-height: 1.3; margin-bottom: 22px; letter-spacing: -1px; }
+.pg-signup .brand-desc { font-size: 15px; line-height: 1.9; opacity: 0.75; }
+.pg-signup .signup-box {
+  width: 520px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 44px;
+  overflow-y: auto;
+}
+.pg-signup .signup-header { margin-bottom: 14px; }
+.pg-signup .signup-header h1 { font-size: 26px; font-weight: 900; color: var(--text); margin-bottom: 5px; letter-spacing: -0.5px; }
+.pg-signup .signup-header p { font-size: 14px; color: var(--muted); }
+.pg-signup .message { padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 20px; }
+.pg-signup .message.success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+.pg-signup .message.error { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+.pg-signup .signup-form { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.pg-signup .form-row { display: flex; gap: 10px; }
+.pg-signup .form-row .input-group { flex: 1; }
+.pg-signup .input-group { display: flex; flex-direction: column; gap: 3px; }
+.pg-signup .input-group label { font-size: 13px; font-weight: 700; color: #374151; }
+.pg-signup .input-group input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  transition: all 0.2s;
+}
+.pg-signup .input-group input:focus { outline: none; border-color: var(--red); background: white; box-shadow: 0 0 0 3px rgba(212,43,43,0.08); }
+.pg-signup .btn-signup {
+  padding: 12px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+.pg-signup .btn-signup:hover { background: var(--red-h); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(212,43,43,0.3); }
+.pg-signup .signup-footer { display: flex; gap: 8px; justify-content: center; align-items: center; font-size: 13px; color: var(--muted); }
+.pg-signup .signup-footer a { color: var(--red); font-weight: 700; transition: opacity 0.2s; }
+.pg-signup .signup-footer a:hover { opacity: 0.75; }
+@media (max-width: 768px) {
+.pg-signup .signup-page { flex-direction: column; }
+.pg-signup .signup-brand { padding: 48px 28px; }
+.pg-signup .brand-tagline { font-size: 26px; }
+.pg-signup .signup-box { width: 100%; padding: 40px 28px; }
+.pg-signup .form-row { flex-direction: column; }
+
+}
+@media (max-width: 480px) {
+.pg-signup .signup-brand { padding: 24px 20px; }
+.pg-signup .brand-tagline { font-size: 20px; }
+.pg-signup .brand-desc { font-size: 13px; }
+.pg-signup .signup-box { padding: 28px 20px; }
+.pg-signup .input-group input { font-size: 16px; }
+
+}
+
+

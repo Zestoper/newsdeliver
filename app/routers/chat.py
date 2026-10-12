@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.database import engine
-from app.auth import get_current_user, get_user_by_cookie
+from app.auth import get_current_user, get_user_by_cookie, get_user_by_token
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads", "chat")
 ALLOWED_IMAGE = {"image/jpeg", "image/png", "image/gif", "image/webp"}
@@ -231,8 +231,9 @@ async def upload_file(room_id: int, request: Request, file: UploadFile = File(..
 
 @router.websocket("/ws/{room_id}")
 async def chat_ws(websocket: WebSocket, room_id: int):
-    # 쿠키로 사용자 확인 + 방 접근 권한 확인
-    user = get_user_by_cookie(websocket.cookies)
+    # 토큰(?token=, React 프론트엔드) 또는 쿠키로 사용자 확인 + 방 접근 권한 확인
+    token = websocket.query_params.get("token")
+    user = get_user_by_token(token) if token else get_user_by_cookie(websocket.cookies)
     if not user:
         await websocket.close(code=1008)
         return
