@@ -33,7 +33,7 @@
 
 ### 2. AI 뉴스 요약
 
-- **Groq API** (`llama-3.1-8b-instant`) 로 뉴스 자동 요약 (`ai_summary` 컬럼)
+- **Groq API** (`openai/gpt-oss-20b`) 로 뉴스 자동 요약 (`ai_summary` 컬럼)
 - 뉴스레터 발송 시 요약 없는 기사만 선별해 생성 — DB 캐시 활용으로 중복 호출 없음
 - 스레드 안전 직렬화 + 재시도(최대 5회)로 안정적 생성 보장
 
