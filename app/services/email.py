@@ -15,19 +15,59 @@ SMTP_USER = settings.SMTP_USER
 SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 
+def _sender_email() -> str:
+    """보내는 사람 주소. MAIL_FROM이 있으면 그 값을 쓰고 없으면 SMTP_USER를 쓴다."""
+    return os.getenv("MAIL_FROM") or SMTP_USER
+
+
+def _api_provider() -> str | None:
+    """HTTPS API 발송 서비스 선택. Render 무료 플랜은 SMTP 포트를 막아서 API 발송이 필요하다."""
+    if os.getenv("BREVO_API_KEY"):
+        return "brevo"
+    if os.getenv("SENDGRID_API_KEY"):
+        return "sendgrid"
+    return None
+
+
+def _send_brevo(to_email: str, subject: str, html: str) -> None:
+    resp = httpx.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={"api-key": os.getenv("BREVO_API_KEY", ""), "accept": "application/json"},
+        json={
+            "sender": {"email": _sender_email(), "name": "News Delivery"},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html,
+        },
+        timeout=15,
+    )
+    if resp.status_code >= 400:
+        print(f"[EMAIL] Brevo 발송 실패 {resp.status_code}: {resp.text[:300]}")
+    resp.raise_for_status()
+
+
 def _send_sendgrid(to_email: str, subject: str, html: str) -> None:
     resp = httpx.post(
         "https://api.sendgrid.com/v3/mail/send",
         headers={"Authorization": f"Bearer {os.getenv('SENDGRID_API_KEY')}"},
         json={
             "personalizations": [{"to": [{"email": to_email}]}],
-            "from": {"email": SMTP_USER, "name": "News Delivery"},
+            "from": {"email": _sender_email(), "name": "News Delivery"},
             "subject": subject,
             "content": [{"type": "text/html", "value": html}],
         },
         timeout=15,
     )
+    if resp.status_code >= 400:
+        print(f"[EMAIL] SendGrid 발송 실패 {resp.status_code}: {resp.text[:300]}")
     resp.raise_for_status()
+
+
+def _send_api(to_email: str, subject: str, html: str) -> None:
+    if _api_provider() == "brevo":
+        _send_brevo(to_email, subject, html)
+    else:
+        _send_sendgrid(to_email, subject, html)
 
 
 def _card_html(article: dict, base_url: str) -> str:
@@ -155,8 +195,8 @@ def send_newsletter(
     html_body = _build_html(cards, len(articles), base_url)
 
     try:
-        if os.getenv("SENDGRID_API_KEY"):
-            _send_sendgrid(to_email, subject, html_body)
+        if _api_provider():
+            _send_api(to_email, subject, html_body)
             return True
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
@@ -182,7 +222,7 @@ def send_newsletters_batch(
     results = [False] * len(items)
     base_url = base_url.rstrip("/")
 
-    if os.getenv("SENDGRID_API_KEY"):
+    if _api_provider():
         for i, item in enumerate(items):
             try:
                 to_email = item["email"]
@@ -194,9 +234,10 @@ def send_newsletters_batch(
                 cat_label = category_name or (articles[0].get("category_name") or "뉴스")
                 subject = f"[News Delivery] {cat_label} 최신 뉴스 {len(articles)}건"
                 html_body = _build_html(cards, len(articles), base_url)
-                _send_sendgrid(to_email, subject, html_body)
+                _send_api(to_email, subject, html_body)
                 results[i] = True
-            except Exception:
+            except Exception as e:
+                print(f"[EMAIL] 뉴스레터 발송 실패 {item.get('email')}: {e}")
                 results[i] = False
         return results
 
@@ -262,9 +303,9 @@ def send_verify_email(to_email: str, token: str, base_url: str = "http://127.0.0
 </html>"""
 
     print(f"[EMAIL] 발송 시도: to={to_email}")
-    if os.getenv("SENDGRID_API_KEY"):
-        _send_sendgrid(to_email, subject, html_body)
-        print(f"[EMAIL] SendGrid 발송 성공: {to_email}")
+    if _api_provider():
+        _send_api(to_email, subject, html_body)
+        print(f"[EMAIL] {_api_provider()} 발송 성공: {to_email}")
         return
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
