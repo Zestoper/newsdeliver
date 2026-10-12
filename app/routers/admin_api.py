@@ -1,6 +1,8 @@
 import uuid
 import time
 import threading
+import html as _html
+import re
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -252,56 +254,77 @@ def recrawl_content_api():
 
 
 @router.post("/fix-content-via-api")
+def _norm_title(t: str) -> str:
+    """네이버 검색 결과 제목과 DB 제목을 비교하기 좋게 정리 (태그·HTML 엔티티·공백 차이 제거)"""
+    t = _html.unescape(re.sub(r"<[^>]+>", "", t or ""))
+    return re.sub(r"\s+", "", t).strip()
+
+
+# 이번 서버 실행 중에 이미 시도했다가 못 찾은 기사 — 다시 눌렀을 때 같은 100건만 반복하지 않게 건너뛴다
+_api_tried_ids: set[int] = set()
+
+
 def fix_content_via_api():
     """네이버 API로 기사 제목 검색 → naver_link 복원 → 본문 재수집"""
+    if not CLIENT_ID or not CLIENT_SECRET:
+        return {"success": False, "message": "네이버 API 키(NAVER_CLIENT_ID · NAVER_CLIENT_SECRET)가 설정되지 않았습니다."}
+
     naver_headers = {
         "X-Naver-Client-Id": CLIENT_ID,
         "X-Naver-Client-Secret": CLIENT_SECRET,
     }
 
-    # 1) 처리 목록 로딩 후 DB 연결 닫기
+    # 1) 처리 목록 로딩 — 네이버에서 수집한 국내 기사만 대상
+    #    (해외뉴스·언론사가 직접 쓴 기사는 네이버 검색에 없으므로 제외)
     with engine.connect() as conn:
         rows = conn.execute(text("""
             SELECT id, title, content FROM news
             WHERE (content IS NULL OR LENGTH(content) < 500)
-            AND (naver_link IS NULL OR naver_link = '')
+              AND (naver_link IS NULL OR naver_link = '')
+              AND COALESCE(is_global, 0) = 0
+              AND author_id IS NULL
             ORDER BY id DESC
-            LIMIT 100
+            LIMIT 1000
         """)).fetchall()
-    todo = list(rows)
+    todo = [r for r in rows if r.id not in _api_tried_ids][:100]
+    if not todo:
+        return {"success": True, "message": "복원할 기사가 없습니다. (네이버에서 수집한 국내 기사 중 본문이 짧은 기사 기준)"}
+
+    stats = {"api_error": 0, "not_found": 0, "extract_fail": 0}
 
     # 2) HTTP 작업 (DB 연결 없이) — 네이버 API 호출 제한을 고려해 4개씩 병렬
     def _restore(row):
         query = urllib.parse.quote(row.title[:50])
-        api_url = f"https://openapi.naver.com/v1/search/news.json?query={query}&display=3&sort=date"
+        api_url = f"https://openapi.naver.com/v1/search/news.json?query={query}&display=10&sort=sim"
         try:
             with _httpx.Client(timeout=5) as client:
                 res = client.get(api_url, headers=naver_headers)
             time.sleep(0.1)
             if res.status_code != 200:
+                stats["api_error"] += 1
                 return None
 
+            target = _norm_title(row.title)
             naver_link = None
             for item in res.json().get("items", []):
-                item_title = (item.get("title", "")
-                              .replace("<b>", "").replace("</b>", "")
-                              .replace("&quot;", '"').replace("&amp;", "&"))
-                if item_title.strip() == row.title.strip():
-                    naver_link = item.get("link", "")
+                if _norm_title(item.get("title", "")) == target and item.get("link"):
+                    naver_link = item["link"]
                     break
             if not naver_link:
+                stats["not_found"] += 1
                 return None
 
             content = extract_full_content(naver_link)
             if content and len(content) > len(row.content or ""):
                 return {"c": content, "nl": naver_link, "id": row.id}
+            stats["extract_fail"] += 1
         except Exception:
-            pass
+            stats["api_error"] += 1
         return None
 
     with ThreadPoolExecutor(max_workers=4) as ex:
         updates = [u for u in ex.map(_restore, todo) if u]
-    failed = len(todo) - len(updates)
+    _api_tried_ids.update(r.id for r in todo)
 
     # 3) 일괄 업데이트
     if updates:
@@ -310,7 +333,10 @@ def fix_content_via_api():
             conn.commit()
 
     updated = len(updates)
-    return {"success": True, "message": f"API 재수집: {updated}건 성공, {failed}건 실패 (100건씩 처리, 반복 실행 가능)"}
+    detail = f"검색 결과 없음 {stats['not_found']} · 본문 추출 실패 {stats['extract_fail']} · API 오류 {stats['api_error']}"
+    if stats["api_error"] and not updated and stats["api_error"] >= len(todo) // 2:
+        detail += " — 네이버 API 키나 하루 호출 한도를 확인해주세요"
+    return {"success": True, "message": f"API 재수집: {updated}건 성공 / {len(todo)}건 시도 ({detail}). 다시 누르면 다음 기사로 넘어갑니다."}
 
 
 @router.post("/clean-content")
