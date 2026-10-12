@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 import httpx
@@ -6,7 +7,8 @@ from app.database import engine
 from app.config import settings
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-8b-instant"
+# llama-3.1-8b-instant는 2026-08-16에 종료됨 → Groq 권장 대체 모델. 환경변수로 바꿀 수 있다.
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 _groq_lock = threading.Lock()
 _last_call_time = 0.0
@@ -49,7 +51,10 @@ def _call_groq(title: str, content: str, is_global: bool = False, fast_fail: boo
                     json={
                         "model": GROQ_MODEL,
                         "messages": [{"role": "user", "content": prompt}],
-                        "max_tokens": 400 if is_global else 200,
+                        # gpt-oss는 추론 토큰도 출력 한도에 포함되므로 여유 있게 잡고 추론은 짧게
+                        "max_completion_tokens": 1200 if is_global else 800,
+                        "reasoning_effort": "low",
+                        "include_reasoning": False,
                     },
                     timeout=15,
                 )
@@ -60,8 +65,15 @@ def _call_groq(title: str, content: str, is_global: bool = False, fast_fail: boo
                     print(f"[AI요약] 429 (attempt {attempt+1}/5), {wait}s 대기")
                     time.sleep(wait)
                     continue
+                if res.status_code in (400, 401, 403, 404):
+                    # 모델 없음·키 오류 같은 설정 문제는 재시도해도 같으므로 바로 포기
+                    print(f"[AI요약] 설정 오류 {res.status_code} (model={GROQ_MODEL}): {res.text[:200]}")
+                    return ""
                 res.raise_for_status()
-                result = res.json()["choices"][0]["message"]["content"].strip()
+                result = (res.json()["choices"][0]["message"].get("content") or "").strip()
+                if not result:
+                    print(f"[AI요약] 빈 응답, 재시도 (attempt {attempt+1}/5): {title[:40]}")
+                    continue
 
                 # 해외뉴스: EN:::, KO::: 둘 다 있어야 유효
                 if is_global and ("EN:::" not in result or "KO:::" not in result):
