@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.database import engine
-from app.routers.pages import get_current_user
+from app.auth import get_current_user, get_user_by_cookie
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads", "chat")
 ALLOWED_IMAGE = {"image/jpeg", "image/png", "image/gif", "image/webp"}
@@ -40,6 +40,16 @@ class _ConnectionManager:
 
 
 manager = _ConnectionManager()
+
+
+def _can_access_room(conn, room_id: int, user: dict) -> bool:
+    """관리자는 모든 방, 일반 사용자는 본인 방만 접근 가능"""
+    if user.get("role") == "admin":
+        return True
+    return conn.execute(
+        text("SELECT 1 FROM chat_rooms WHERE id = :rid AND user_id = :uid"),
+        {"rid": room_id, "uid": user["id"]},
+    ).fetchone() is not None
 
 
 @router.get("/room")
@@ -120,13 +130,8 @@ def get_messages(room_id: int, request: Request):
         return JSONResponse({"error": "login_required"}, status_code=401)
     is_admin = user.get("role") == "admin"
     with engine.connect() as conn:
-        if not is_admin:
-            row = conn.execute(
-                text("SELECT id FROM chat_rooms WHERE id = :rid AND user_id = :uid"),
-                {"rid": room_id, "uid": user["id"]},
-            ).fetchone()
-            if not row:
-                return JSONResponse({"error": "forbidden"}, status_code=403)
+        if not _can_access_room(conn, room_id, user):
+            return JSONResponse({"error": "forbidden"}, status_code=403)
         rows = conn.execute(
             text("SELECT id, sender, message, message_type, is_read, created_at FROM chat_messages WHERE room_id = :rid ORDER BY created_at ASC"),
             {"rid": room_id},
@@ -161,6 +166,8 @@ async def mark_read(room_id: int, request: Request):
     is_admin = user.get("role") == "admin"
     mark_sender = "user" if is_admin else "admin"
     with engine.connect() as conn:
+        if not _can_access_room(conn, room_id, user):
+            return JSONResponse({"error": "forbidden"}, status_code=403)
         conn.execute(
             text("UPDATE chat_messages SET is_read=1 WHERE room_id=:rid AND sender=:s AND is_read=0"),
             {"rid": room_id, "s": mark_sender},
@@ -200,6 +207,9 @@ async def upload_file(room_id: int, request: Request, file: UploadFile = File(..
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "login_required"}, status_code=401)
+    with engine.connect() as conn:
+        if not _can_access_room(conn, room_id, user):
+            return JSONResponse({"error": "forbidden"}, status_code=403)
     content_type = file.content_type or ""
     if content_type in ALLOWED_IMAGE:
         msg_type = "image"
@@ -221,13 +231,27 @@ async def upload_file(room_id: int, request: Request, file: UploadFile = File(..
 
 @router.websocket("/ws/{room_id}")
 async def chat_ws(websocket: WebSocket, room_id: int):
+    # 쿠키로 사용자 확인 + 방 접근 권한 확인
+    user = get_user_by_cookie(websocket.cookies)
+    if not user:
+        await websocket.close(code=1008)
+        return
+    with engine.connect() as conn:
+        allowed = _can_access_room(conn, room_id, user)
+    if not allowed:
+        await websocket.close(code=1008)
+        return
+
+    # 보낸 사람은 클라이언트 값이 아니라 로그인한 계정으로 결정
+    sender = "admin" if user.get("role") == "admin" else "user"
     await manager.connect(websocket, room_id)
     try:
         while True:
             data = await websocket.receive_json()
-            sender = data.get("sender", "user")
             message = (data.get("message") or "").strip()
             msg_type = data.get("msg_type", "text")
+            if msg_type not in ("text", "image", "video"):
+                msg_type = "text"
             if not message:
                 continue
             now = datetime.now()

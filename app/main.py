@@ -16,7 +16,7 @@ from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.routers.news import router as news_router
 from app.routers.press import router as press_router
-from app.routers.admin_api import router as admin_api_router
+from app.routers.admin_api import router as admin_api_router, upload_router as admin_upload_router
 from app.routers.oauth import router as oauth_router
 from app.routers.chat import router as chat_router
 
@@ -384,6 +384,7 @@ app.include_router(users_router)
 app.include_router(news_router)
 app.include_router(press_router)
 app.include_router(admin_api_router)
+app.include_router(admin_upload_router)
 app.include_router(chat_router)
 
 if __name__ == "__main__":

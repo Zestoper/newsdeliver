@@ -31,7 +31,7 @@
         <span class="user-name">{{ current_user.name }}님</span>
         <a href="/mypage" class="header-btn outline">마이페이지</a>
         {% if current_user.role == 'admin' %}
-          <a href="/static/admin.html" class="header-btn">관리자</a>
+          <a href="/admin" class="header-btn">관리자</a>
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}

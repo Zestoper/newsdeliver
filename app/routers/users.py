@@ -4,8 +4,9 @@ from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
 from app.database import get_db
+from app.auth import require_admin
 
-router = APIRouter(prefix="/api/users", tags=["users"])
+router = APIRouter(prefix="/api/users", tags=["users"], dependencies=[Depends(require_admin)])
 
 
 class UserUpdate(BaseModel):

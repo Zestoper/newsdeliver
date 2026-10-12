@@ -22,7 +22,7 @@
         <span class="user-name">{{ current_user.name }}님</span>
         <a href="/mypage" class="header-btn outline">마이페이지</a>
         {% if current_user.role == 'admin' %}
-          <a href="/static/admin.html" class="header-btn" style="position:relative;">관리자<span id="adminChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a>
+          <a href="/admin" class="header-btn" style="position:relative;">관리자<span id="adminChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:16px;text-align:center;line-height:16px;padding:0 3px;"></span></a>
         {% elif current_user.role == 'press' %}
           <a href="/press/news" class="header-btn">언론사</a>
         {% endif %}

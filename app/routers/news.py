@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
 from app.database import engine
+from app.auth import require_admin
 
-router = APIRouter(prefix="/api/news", tags=["news"])
+router = APIRouter(prefix="/api/news", tags=["news"], dependencies=[Depends(require_admin)])
 
 
 class NewsCreate(BaseModel):
