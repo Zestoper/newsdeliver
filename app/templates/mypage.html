@@ -98,7 +98,7 @@
         <p style="font-size:13px; font-weight:600; color:#333; margin-bottom:8px;">이메일 구독</p>
         {% if subscription and subscription.is_active %}
           <p style="font-size:14px; color:#2f9e44;">
-            ✅ {{ subscription.email }}
+           <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg> {{ subscription.email }}
             {% if subscription.is_verified %}
               <span style="background:#d3f9d8; color:#2f9e44; padding:2px 8px; border-radius:10px; font-size:11px; white-space:nowrap; display:inline-block;">인증완료</span>
             {% else %}

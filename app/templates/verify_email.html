@@ -20,7 +20,7 @@
 <main class="main-content" style="display:flex; justify-content:center; align-items:center; min-height:60vh;">
   <div style="background:white; border-radius:10px; padding:48px; box-shadow:0 2px 12px rgba(0,0,0,0.08); text-align:center; max-width:480px; width:100%;">
     {% if valid %}
-      <div style="font-size:48px; margin-bottom:20px;">📧</div>
+      <div style="font-size:48px; margin-bottom:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></div>
       <h2 style="font-size:22px; font-weight:800; color:#1a1a1a; margin-bottom:12px;">이메일 인증</h2>
       <p style="font-size:14px; color:#888; margin-bottom:32px;">아래 버튼을 클릭하면 인증이 완료됩니다.</p>
       <form action="/verify-email/confirm" method="post">
@@ -28,11 +28,11 @@
         <button type="submit"
                 style="padding:14px 32px; background:#c00; color:white; border:none; border-radius:6px;
                        font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;">
-          ✅ 인증 완료하기
+         <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg> 인증 완료하기
         </button>
       </form>
     {% else %}
-      <div style="font-size:48px; margin-bottom:20px;">❌</div>
+      <div style="font-size:48px; margin-bottom:20px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></div>
       <h2 style="font-size:22px; font-weight:800; color:#1a1a1a; margin-bottom:12px;">유효하지 않은 링크</h2>
       <p style="font-size:14px; color:#888; margin-bottom:32px;">인증 링크가 만료되었거나 올바르지 않습니다.<br>구독 페이지에서 다시 시도해주세요.</p>
       <a href="/subscribe"

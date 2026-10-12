@@ -165,7 +165,16 @@ body { font-family: 'Noto Sans KR', 'Segoe UI', sans-serif; background: var(--bg
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(212,43,43,0.45);
 }
-.btn-read-more::after { content: '▼'; font-size: 10px; opacity: 0.8; }
+.btn-read-more::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.8;
+}
 
 .detail-empty { text-align: center; color: var(--light); margin-top: 100px; font-size: 16px; }
 

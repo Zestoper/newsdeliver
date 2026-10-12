@@ -119,7 +119,7 @@
     <section class="news-grid-section">
         <div class="section-header">
             <h2>최신 뉴스</h2>
-            <a href="/news" class="more-link">전체보기 →</a>
+            <a href="/news" class="more-link">전체보기 <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
         </div>
         <div class="news-grid">
             {% for news in news_items[1:7] %}
@@ -147,7 +147,7 @@
     <section class="news-grid-section" style="margin-top:32px;">
       <div class="section-header" style="margin-bottom:14px;">
         <h2>연령대별 추천</h2>
-        <a id="age-more-link" href="/age-news/teen" class="more-link">전체보기 →</a>
+        <a id="age-more-link" href="/age-news/teen" class="more-link">전체보기 <svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
         <button class="age-tab active" onclick="loadAgeNews('teen', this)">
@@ -344,7 +344,7 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
     if (state === 'FALL' || n < 0) return 'down';
     return 'even';
   }
-  function arrow(cls) { return cls === 'up' ? '▲' : cls === 'down' ? '▼' : ''; }
+  function arrow(cls) { return cls === 'up' ? '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>' : cls === 'down' ? '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></svg>' : ''; }
 
   function row(name, value, change, rate, cls) {
     return `<div class="market-item">
@@ -399,13 +399,13 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
   ];
 
   function wIcon(code) {
-    if (code === 0) return '☀️';
-    if (code <= 3)  return '⛅';
-    if (code <= 48) return '🌫️';
-    if (code <= 67) return '🌧️';
-    if (code <= 77) return '❄️';
-    if (code <= 82) return '🌦️';
-    return '⛈️';
+    if (code === 0) return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+    if (code <= 3)  return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>';
+    if (code <= 48) return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>';
+    if (code <= 67) return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>';
+    if (code <= 77) return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 20-1.25-2.5L6 18"/><path d="M10 4 8.75 6.5 6 6"/><path d="m14 20 1.25-2.5L18 18"/><path d="m14 4 1.25 2.5L18 6"/><path d="m17 21-3-6h-4"/><path d="m17 3-3 6 1.5 3"/><path d="M2 12h6.5L10 9"/><path d="m20 10-1.5 2 1.5 2"/><path d="M22 12h-6.5L14 15"/><path d="m4 10 1.5 2L4 14"/><path d="m7 21 3-6-1.5-3"/><path d="m7 3 3 6h4"/></svg>';
+    if (code <= 82) return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 19v1"/><path d="M8 14v1"/><path d="M16 19v1"/><path d="M16 14v1"/><path d="M12 21v1"/><path d="M12 16v1"/></svg>';
+    return '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>';
   }
 
   async function loadWeather() {
@@ -418,7 +418,7 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
         const d = await r.json();
         return { name: c.name, temp: Math.round(d.current.temperature_2m), icon: wIcon(d.current.weather_code) };
       } catch {
-        return { name: c.name, temp: '--', icon: '🌡' };
+        return { name: c.name, temp: '--', icon: '<svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>' };
       }
     }));
 
@@ -515,7 +515,7 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
 {% if show_signup_done %}
 <div id="signupDoneModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);animation:popIn 0.25s ease;">
-    <div style="font-size:52px;margin-bottom:16px;">✅</div>
+    <div style="font-size:52px;margin-bottom:16px;"><svg class="ic" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg></div>
     <h2 style="font-size:20px;font-weight:900;color:#1a1a1a;margin-bottom:10px;">회원가입이 완료됐습니다!</h2>
     <p style="font-size:14px;color:#555;line-height:1.7;margin-bottom:28px;">로그인 후 서비스를 이용하실 수 있습니다.</p>
     <div style="display:flex;gap:10px;justify-content:center;">
@@ -535,7 +535,7 @@ const TICKER_ITEMS = JSON.parse(document.getElementById('tickerData').textConten
 {% if show_press_notice %}
 <div id="pressNoticeModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:400px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);animation:popIn 0.25s ease;">
-    <div style="font-size:52px;margin-bottom:16px;">🎉</div>
+    <div style="font-size:52px;margin-bottom:16px;"></div>
     <h2 style="font-size:20px;font-weight:900;color:#1a1a1a;margin-bottom:10px;">언론사 승인이 완료됐습니다!</h2>
     <p style="font-size:14px;color:#555;line-height:1.7;margin-bottom:28px;">
       관리자가 회원님의 언론사 계정을 승인했습니다.<br>
