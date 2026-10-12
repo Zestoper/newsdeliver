@@ -172,6 +172,9 @@ SMTP_HOST=smtp.naver.com
 SMTP_PORT=587
 SMTP_USER=your_email@naver.com
 SMTP_PASSWORD=your_smtp_password
+# 배포(Render 무료)는 SMTP 포트가 막혀 있어 HTTPS API로 보냄 — 있으면 SMTP보다 우선
+BREVO_API_KEY=your_brevo_api_key
+# MAIL_FROM=보내는 주소(없으면 SMTP_USER 사용, Brevo에서 인증된 주소여야 함)
 
 # 소셜 로그인 — 카카오
 KAKAO_CLIENT_ID=your_kakao_client_id
