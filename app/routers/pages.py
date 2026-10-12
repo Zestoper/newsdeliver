@@ -7,12 +7,13 @@ import httpx
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 from app.database import engine
 from app.config import settings
+from app.auth import AUTH_COOKIE_NAME, get_current_user, set_login_cookie
 from app.services.store import (
     add_subscription,
     add_user,
@@ -26,21 +27,6 @@ router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-
-AUTH_COOKIE_NAME = "newsletter_user"
-
-
-def get_current_user(request: Request) -> dict | None:
-    user_id = request.cookies.get(AUTH_COOKIE_NAME)
-    if not user_id:
-        return None
-    with engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT * FROM news_users WHERE id = :id"),
-            {"id": user_id}
-        )
-        row = result.fetchone()
-        return dict(row._mapping) if row else None
 
 
 def render(
@@ -128,6 +114,15 @@ async def home(request: Request, press_notice: str = "", signup_done: str = "") 
                   now=_date.today().strftime("%Y년 %m월 %d일"))
 
 
+@router.get("/admin")
+async def admin_page(request: Request):
+    # 관리자 페이지는 static 이 아닌 이 경로로만 제공 — 관리자만 열 수 있음
+    user = get_current_user(request)
+    if not user or user.get("role") != "admin":
+        return RedirectResponse(url="/login", status_code=303)
+    return FileResponse(BASE_DIR / "templates" / "admin.html")
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, message: str | None = None, social_error: str | None = None) -> HTMLResponse:
     social_msg = None
@@ -165,12 +160,7 @@ async def login(
             show_notice = True
         redirect_url = "/?press_notice=1" if show_notice else "/"
         response = RedirectResponse(url=redirect_url, status_code=303)
-        response.set_cookie(
-            key=AUTH_COOKIE_NAME,
-            value=user_id,
-            httponly=True,
-            samesite="lax",
-        )
+        set_login_cookie(response, user_id)
         return response
     return render(
         request, "login.html",

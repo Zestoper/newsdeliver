@@ -2,13 +2,15 @@ import uuid
 import time
 import threading
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import httpx as _httpx
-from fastapi import APIRouter, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request, UploadFile, File
 from sqlalchemy import text
 
 from app.database import engine
+from app.auth import require_admin, require_admin_or_press
 from app.config import settings
 from app.services.email import send_newsletters_batch
 from app.services.ai_summary import get_or_create_summary, summarize_articles
@@ -20,72 +22,99 @@ from app.services.naver_news import (
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "static" / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+# 이미지 업로드는 기자 글쓰기 페이지에서도 사용
+upload_router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin_or_press)])
 
 # 뉴스레터 발송 상태 추적
 _newsletter_status = {"running": False, "message": "", "success": None}
 
 
 def _load_subscriber_articles() -> list[dict]:
-    """구독자별 카테고리별로 최신 기사 5개씩 — 카테고리마다 별도 이메일 발송용."""
+    """구독자별 카테고리별로 최신 기사 5개씩 — 카테고리마다 별도 이메일 발송용.
+
+    (구독자 × 카테고리)마다 쿼리하던 방식 대신, 윈도우 함수로 쿼리 3번에 처리.
+    """
     with engine.connect() as conn:
-        subs = conn.execute(
-            text("SELECT user_id, email FROM subscriptions WHERE is_active = TRUE AND is_verified = 1")
-        ).fetchall()
+        # 1) 발송 대상 (구독자, 카테고리) 목록
+        targets = conn.execute(text("""
+            SELECT s.email, cs.category_id, COALESCE(cs.is_global, 0) AS is_global,
+                   c.name AS category_name
+            FROM subscriptions s
+            JOIN category_subscriptions cs ON cs.user_id = s.user_id
+            JOIN categories c ON cs.category_id = c.id
+            WHERE s.is_active = TRUE AND s.is_verified = 1
+            ORDER BY s.email, c.name
+        """)).fetchall()
+        if not targets:
+            return []
 
-        result = []
-        for sub in subs:
-            cat_rows = conn.execute(
-                text("""
-                    SELECT cs.category_id, COALESCE(cs.is_global, 0) as is_global, c.name as category_name
-                    FROM category_subscriptions cs
-                    JOIN categories c ON cs.category_id = c.id
-                    WHERE cs.user_id = :uid
-                    ORDER BY c.name
-                """),
-                {"uid": sub.user_id},
-            ).fetchall()
-            if not cat_rows:
-                continue
+        # 2) 대상별로 아직 안 보낸 최신 기사 5개
+        unsent = conn.execute(text("""
+            WITH t AS (
+                SELECT DISTINCT s.email, cs.category_id, COALESCE(cs.is_global, 0) AS t_global
+                FROM subscriptions s
+                JOIN category_subscriptions cs ON cs.user_id = s.user_id
+                WHERE s.is_active = TRUE AND s.is_verified = 1
+            ), ranked AS (
+                SELECT t.email AS t_email, t.t_global, n.*, c.name AS category_name,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY t.email, t.category_id, t.t_global
+                           ORDER BY n.created_at DESC, n.id DESC
+                       ) AS rn
+                FROM t
+                JOIN news n ON n.category_id = t.category_id
+                           AND COALESCE(n.is_global, 0) = t.t_global
+                           AND n.status = 'published'
+                LEFT JOIN categories c ON n.category_id = c.id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM newsletter_sent ns
+                    WHERE ns.email = t.email AND ns.news_id = n.id
+                )
+            )
+            SELECT * FROM ranked WHERE rn <= 5 ORDER BY created_at DESC, id DESC
+        """)).fetchall()
 
-            for cat in cat_rows:
-                is_global_val = int(cat.is_global or 0)
-                news_rows = conn.execute(
-                    text("""
-                        SELECT n.*, c.name as category_name
-                        FROM news n
-                        LEFT JOIN categories c ON n.category_id = c.id
-                        WHERE n.status = 'published' AND n.category_id = :cat_id
-                          AND COALESCE(n.is_global, 0) = :is_global
-                          AND n.id NOT IN (
-                              SELECT news_id FROM newsletter_sent WHERE email = :email
-                          )
-                        ORDER BY n.created_at DESC LIMIT 5
-                    """),
-                    {"cat_id": cat.category_id, "email": sub.email, "is_global": is_global_val},
-                ).fetchall()
-                # 새 기사 없으면 최근 5개 재발송
-                if not news_rows:
-                    news_rows = conn.execute(
-                        text("""
-                            SELECT n.*, c.name as category_name
-                            FROM news n
-                            LEFT JOIN categories c ON n.category_id = c.id
-                            WHERE n.status = 'published' AND n.category_id = :cat_id
-                              AND COALESCE(n.is_global, 0) = :is_global
-                            ORDER BY n.created_at DESC LIMIT 5
-                        """),
-                        {"cat_id": cat.category_id, "is_global": is_global_val},
-                    ).fetchall()
-                if not news_rows:
-                    continue
+        # 3) 새 기사가 없을 때 재발송할 카테고리별 최근 5개
+        latest = conn.execute(text("""
+            SELECT * FROM (
+                SELECT n.*, c.name AS category_name,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY n.category_id, COALESCE(n.is_global, 0)
+                           ORDER BY n.created_at DESC, n.id DESC
+                       ) AS rn
+                FROM news n
+                LEFT JOIN categories c ON n.category_id = c.id
+                WHERE n.status = 'published'
+            ) x WHERE rn <= 5 ORDER BY created_at DESC, id DESC
+        """)).fetchall()
 
-                label = "해외" if is_global_val else "국내"
-                result.append({
-                    "email": sub.email,
-                    "category_name": f"{label}{cat.category_name}",
-                    "articles": [dict(r._mapping) for r in news_rows],
-                })
+    def _article(row) -> dict:
+        d = dict(row._mapping)
+        for k in ("t_email", "t_global", "rn"):
+            d.pop(k, None)
+        return d
+
+    unsent_map: dict[tuple, list[dict]] = {}
+    for r in unsent:
+        unsent_map.setdefault((r.t_email, r.category_id, r.t_global), []).append(_article(r))
+    latest_map: dict[tuple, list[dict]] = {}
+    for r in latest:
+        latest_map.setdefault((r.category_id, int(r.is_global or 0)), []).append(_article(r))
+
+    result = []
+    for t in targets:
+        is_global_val = int(t.is_global or 0)
+        articles = (unsent_map.get((t.email, t.category_id, is_global_val))
+                    or latest_map.get((t.category_id, is_global_val)))
+        if not articles:
+            continue
+        label = "해외" if is_global_val else "국내"
+        result.append({
+            "email": t.email,
+            "category_name": f"{label}{t.category_name}",
+            "articles": articles,
+        })
     return result
 
 
@@ -103,11 +132,13 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
             return {"success": False, "message": "구독자가 없습니다."}
 
         # 2) 발송할 기사만 AI 요약 생성 후 이메일 발송
-        _newsletter_status["message"] = f"AI 요약 생성 중... (총 {len(subscriber_data)}건)"
+        unique = {a["id"]: a for sub in subscriber_data for a in sub["articles"]}
+        _newsletter_status["message"] = f"AI 요약 생성 중... (기사 {len(unique)}건)"
+        summarized = {a["id"]: a for a in summarize_articles(list(unique.values()))}
         items = [
             {
                 "email": sub["email"],
-                "articles": summarize_articles(sub["articles"]),
+                "articles": [summarized[a["id"]] for a in sub["articles"]],
                 "category_name": sub.get("category_name", ""),
             }
             for sub in subscriber_data
@@ -131,14 +162,10 @@ def run_newsletter_job(base_url: str = settings.SERVER_BASE_URL) -> dict:
         # newsletter_sent 배치 INSERT
         if sent_log:
             with engine.connect() as conn:
-                for row in sent_log:
-                    try:
-                        conn.execute(
-                            text("INSERT INTO newsletter_sent (email, news_id) VALUES (:email, :news_id) ON CONFLICT DO NOTHING"),
-                            row,
-                        )
-                    except Exception:
-                        pass
+                conn.execute(
+                    text("INSERT INTO newsletter_sent (email, news_id) VALUES (:email, :news_id) ON CONFLICT DO NOTHING"),
+                    sent_log,
+                )
                 conn.commit()
 
         msg = f"총 {total_sent}건 발송 완료!"
@@ -187,43 +214,40 @@ def fetch_global_news_api():
 def recrawl_content_api():
     # 1) DB 연결은 짧게 — 처리할 목록만 로딩 후 즉시 닫기
     with engine.connect() as conn:
+        # 요청 시간 제한에 걸리지 않도록 한 번에 100건씩
         rows = conn.execute(
             text("""
                 SELECT id, link, naver_link, content FROM news
-                WHERE (naver_link IS NOT NULL AND naver_link != '')
-                   OR (link IS NOT NULL AND link != '')
+                WHERE (content IS NULL OR LENGTH(content) < 1000)
+                  AND (COALESCE(TRIM(naver_link), '') != '' OR COALESCE(TRIM(link), '') != '')
                 ORDER BY id DESC
+                LIMIT 100
             """)
         ).fetchall()
     todo = [
         (r.id, (r.naver_link or "").strip() or (r.link or "").strip(), r.content)
         for r in rows
-        if not (r.content and len(r.content) >= 1000)
-        and ((r.naver_link or "").strip() or (r.link or "").strip())
     ]
-    skipped = len(rows) - len(todo)
 
-    # 2) HTTP 스크래핑 (DB 연결 없이)
-    updates = []
-    failed = 0
-    for article_id, crawl_url, old_content in todo:
-        new_content = extract_full_content(crawl_url)
-        if new_content and len(new_content) > len(old_content or ""):
-            updates.append((article_id, new_content))
-        else:
-            failed += 1
+    # 2) HTTP 스크래핑 (DB 연결 없이) — 병렬
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        contents = list(ex.map(lambda t: extract_full_content(t[1]), todo))
 
-    # 3) 업데이트는 건별로 커밋 — 락 최소화
-    with engine.connect() as conn:
-        for article_id, new_content in updates:
-            conn.execute(
-                text("UPDATE news SET content = :content WHERE id = :id"),
-                {"content": new_content, "id": article_id}
-            )
+    updates = [
+        {"content": new_content, "id": article_id}
+        for (article_id, _, old_content), new_content in zip(todo, contents)
+        if new_content and len(new_content) > len(old_content or "")
+    ]
+    failed = len(todo) - len(updates)
+
+    # 3) 일괄 업데이트
+    if updates:
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE news SET content = :content WHERE id = :id"), updates)
             conn.commit()
 
     updated = len(updates)
-    return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패 (충분한 본문: {skipped}건)"}
+    return {"success": True, "message": f"본문 업데이트: {updated}건 성공, {failed}건 실패 (100건씩 처리, 반복 실행 가능)"}
 
 
 @router.post("/fix-content-via-api")
@@ -245,19 +269,16 @@ def fix_content_via_api():
         """)).fetchall()
     todo = list(rows)
 
-    # 2) HTTP 작업 (DB 연결 없이)
-    updates = []
-    failed = 0
-    for row in todo:
+    # 2) HTTP 작업 (DB 연결 없이) — 네이버 API 호출 제한을 고려해 4개씩 병렬
+    def _restore(row):
         query = urllib.parse.quote(row.title[:50])
         api_url = f"https://openapi.naver.com/v1/search/news.json?query={query}&display=3&sort=date"
         try:
             with _httpx.Client(timeout=5) as client:
                 res = client.get(api_url, headers=naver_headers)
+            time.sleep(0.1)
             if res.status_code != 200:
-                failed += 1
-                time.sleep(0.1)
-                continue
+                return None
 
             naver_link = None
             for item in res.json().get("items", []):
@@ -267,27 +288,24 @@ def fix_content_via_api():
                 if item_title.strip() == row.title.strip():
                     naver_link = item.get("link", "")
                     break
+            if not naver_link:
+                return None
 
-            if naver_link:
-                content = extract_full_content(naver_link)
-                if content and len(content) > len(row.content or ""):
-                    updates.append((row.id, content, naver_link))
-                else:
-                    failed += 1
-            else:
-                failed += 1
-
-            time.sleep(0.1)
+            content = extract_full_content(naver_link)
+            if content and len(content) > len(row.content or ""):
+                return {"c": content, "nl": naver_link, "id": row.id}
         except Exception:
-            failed += 1
+            pass
+        return None
 
-    # 3) 건별 커밋
-    with engine.connect() as conn:
-        for article_id, content, naver_link in updates:
-            conn.execute(
-                text("UPDATE news SET content=:c, naver_link=:nl WHERE id=:id"),
-                {"c": content, "nl": naver_link, "id": article_id}
-            )
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        updates = [u for u in ex.map(_restore, todo) if u]
+    failed = len(todo) - len(updates)
+
+    # 3) 일괄 업데이트
+    if updates:
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE news SET content=:c, naver_link=:nl WHERE id=:id"), updates)
             conn.commit()
 
     updated = len(updates)
@@ -296,23 +314,20 @@ def fix_content_via_api():
 
 @router.post("/clean-content")
 def clean_content_api():
-    cleaned = 0
     with engine.connect() as conn:
         rows = conn.execute(text("SELECT id, content FROM news WHERE content IS NOT NULL")).fetchall()
+        updates = []
         for row in rows:
-            original = row.content or ""
-            fixed = clean_article_text(original)
-            if fixed != original:
-                conn.execute(
-                    text("UPDATE news SET content = :content WHERE id = :id"),
-                    {"content": fixed, "id": row.id}
-                )
-                cleaned += 1
-        conn.commit()
-    return {"success": True, "message": f"{cleaned}건의 기사에서 JS 코드를 제거했습니다."}
+            fixed = clean_article_text(row.content)
+            if fixed != row.content:
+                updates.append({"content": fixed, "id": row.id})
+        if updates:
+            conn.execute(text("UPDATE news SET content = :content WHERE id = :id"), updates)
+            conn.commit()
+    return {"success": True, "message": f"{len(updates)}건의 기사에서 JS 코드를 제거했습니다."}
 
 
-@router.post("/upload-image")
+@upload_router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
     ext = Path(file.filename).suffix.lower()
     if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:

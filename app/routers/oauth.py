@@ -6,11 +6,9 @@ from sqlalchemy import text
 
 from app.database import engine
 from app.config import settings
+from app.auth import set_login_cookie
 
 router = APIRouter(prefix="/oauth")
-
-AUTH_COOKIE_NAME = "newsletter_user"
-
 
 def _upsert_oauth_user(provider: str, oauth_id: str, name: str, email: str | None) -> str:
     """소셜 계정을 DB에서 찾거나 신규 생성 후 user id 반환.
@@ -75,7 +73,7 @@ def _upsert_oauth_user(provider: str, oauth_id: str, name: str, email: str | Non
 
 def _redirect_logged_in(user_id: str) -> RedirectResponse:
     resp = RedirectResponse(url="/", status_code=303)
-    resp.set_cookie(key=AUTH_COOKIE_NAME, value=user_id, httponly=True, samesite="lax")
+    set_login_cookie(resp, user_id)
     return resp
 
 

@@ -2,7 +2,7 @@ import re
 import httpx
 import feedparser
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 from app.database import engine
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)"}
@@ -292,60 +292,48 @@ def _fetch_rss(url: str, limit: int) -> list[dict]:
         return []
 
 
-def _save(article: dict, category_id: int, category_name: str, seen: set,
-          cat_map: dict | None = None) -> bool:
+def _prepare(article: dict, category_id: int, category_name: str, seen: set,
+             cat_map: dict | None = None) -> dict | None:
+    """분류·정제 후 INSERT 할 행을 반환 (DB 접근 없음). 저장 대상이 아니면 None."""
     title = (article.get("title") or "").strip()
-    if not title or title == "[Removed]" or title in seen:
-        return False
+    # 컬럼 길이 초과 행이 있으면 일괄 INSERT 전체가 실패하므로 미리 제외
+    if not title or title == "[Removed]" or title in seen or len(title) > 255:
+        return None
 
     description = (article.get("description") or "").strip()
 
     final_cat = _classify(title, description, category_name)
     if final_cat is None:
-        return False
+        return None
 
     if final_cat != category_name:
         if cat_map is None:
-            return False
+            return None
         new_id = cat_map.get(final_cat)
         if not new_id:
-            return False
+            return None
         category_id, category_name = new_id, final_cat
 
     seen.add(title)
 
     link        = (article.get("url") or "").strip()
-    source_name = (article.get("source") or {}).get("name") or ""
+    source_name = ((article.get("source") or {}).get("name") or "")[:255]
     image_url   = article.get("urlToImage") or ""
+    if len(link) > 500:
+        return None
+    if len(image_url) > 500:
+        image_url = ""
     content_api = (article.get("content") or "").strip()
-
-    with engine.connect() as conn:
-        if conn.execute(text("SELECT id FROM news WHERE title = :t"), {"t": title}).fetchone():
-            return False
 
     full_content = content_api if len(content_api) > len(description) else description
     if not full_content:
         full_content = title
 
-    with engine.connect() as conn:
-        conn.execute(
-            text("""
-                INSERT INTO news
-                    (title, content, source, image_url, link, naver_link,
-                     status, category_id, is_global)
-                VALUES
-                    (:title, :content, :source, :image_url, :link, '',
-                     'published', :category_id, 1)
-                ON CONFLICT DO NOTHING
-            """),
-            {
-                "title": title, "content": full_content,
-                "source": source_name, "image_url": image_url,
-                "link": link, "category_id": category_id,
-            }
-        )
-        conn.commit()
-    return True
+    return {
+        "title": title, "content": full_content,
+        "source": source_name, "image_url": image_url,
+        "link": link, "category_id": category_id,
+    }
 
 
 def fetch_and_save_global_news() -> int:
@@ -376,15 +364,43 @@ def fetch_and_save_global_news() -> int:
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
 
-    saved = 0
+    rows: list[dict] = []
     seen: set[str] = set()
     for articles, cat_name in fetched:
         cat_id = cat_map.get(cat_name)
         if not cat_id:
             continue
         for article in articles:
-            if _save(article, cat_id, cat_name, seen, cat_map):
-                saved += 1
+            row = _prepare(article, cat_id, cat_name, seen, cat_map)
+            if row:
+                rows.append(row)
+
+    # DB 중복 체크 + 저장 — 기사별 왕복 대신 쿼리 두 번으로
+    saved = 0
+    if rows:
+        with engine.connect() as conn:
+            existing = {
+                r.title for r in conn.execute(
+                    text("SELECT title FROM news WHERE title IN :titles").bindparams(bindparam("titles", expanding=True)),
+                    {"titles": [r["title"] for r in rows]},
+                )
+            }
+            rows = [r for r in rows if r["title"] not in existing]
+            if rows:
+                conn.execute(
+                    text("""
+                        INSERT INTO news
+                            (title, content, source, image_url, link, naver_link,
+                             status, category_id, is_global)
+                        VALUES
+                            (:title, :content, :source, :image_url, :link, '',
+                             'published', :category_id, 1)
+                        ON CONFLICT DO NOTHING
+                    """),
+                    rows,
+                )
+                conn.commit()
+            saved = len(rows)
 
     print(f"[해외뉴스] 수집 완료: {saved}건")
     return saved

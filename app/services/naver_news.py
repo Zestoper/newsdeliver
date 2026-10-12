@@ -1,7 +1,8 @@
 import html as _html
 import httpx
 import re
-from sqlalchemy import text
+from concurrent.futures import ThreadPoolExecutor
+from sqlalchemy import text, bindparam
 from app.database import engine
 from app.config import settings
 
@@ -181,88 +182,95 @@ def _parse_raw(raw: str) -> str:
     return clean_article_text(text)
 
 
-def extract_full_content(url):
-    try:
-        with httpx.Client(timeout=10, follow_redirects=True, headers=_SCRAPE_HEADERS) as client:
-            res = client.get(url)
-            if res.status_code != 200:
-                return None
+def _fetch_html(url, timeout=10):
+    with httpx.Client(timeout=timeout, follow_redirects=True, headers=_SCRAPE_HEADERS) as client:
+        res = client.get(url)
+        return res.text if res.status_code == 200 else None
 
-            html = res.text
+def _content_from_html(html):
+    # 1) id 속성으로 검색
+    for sel in _ID_SELECTORS:
+        for attr in [f'id="{sel}"', f"id='{sel}'"]:
+            idx = html.find(attr)
+            if idx == -1:
+                continue
+            tag_end = html.find('>', idx)
+            if tag_end == -1:
+                continue
+            text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
+            if len(text) > 100:
+                return text
 
-            # 1) id 속성으로 검색
-            for sel in _ID_SELECTORS:
-                for attr in [f'id="{sel}"', f"id='{sel}'"]:
-                    idx = html.find(attr)
-                    if idx == -1:
-                        continue
-                    tag_end = html.find('>', idx)
-                    if tag_end == -1:
-                        continue
-                    text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
-                    if len(text) > 100:
-                        return text
+    # 2) class 속성으로 검색
+    for sel in _CLASS_SELECTORS:
+        for attr in [f'class="{sel}"', f"class='{sel}'",
+                     f'class="{sel} ', f"class='{sel} "]:
+            idx = html.find(attr)
+            if idx == -1:
+                continue
+            tag_end = html.find('>', idx)
+            if tag_end == -1:
+                continue
+            text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
+            if len(text) > 100:
+                return text
 
-            # 2) class 속성으로 검색
-            for sel in _CLASS_SELECTORS:
-                for attr in [f'class="{sel}"', f"class='{sel}'",
-                             f'class="{sel} ', f"class='{sel} "]:
-                    idx = html.find(attr)
-                    if idx == -1:
-                        continue
-                    tag_end = html.find('>', idx)
-                    if tag_end == -1:
-                        continue
-                    text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
-                    if len(text) > 100:
-                        return text
-
-            # 3) <article> 태그 fallback
-            for tag in ['<article', '<main']:
-                idx = html.find(tag)
-                if idx != -1:
-                    tag_end = html.find('>', idx)
-                    if tag_end != -1:
-                        text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
-                        if len(text) > 100:
-                            return text
-
-            # 4) 최후 수단: 본문 <p> 태그를 모두 수집해서 이어붙이기
-            paragraphs = re.findall(r'<p[^>]*>([\s\S]*?)</p>', html, re.IGNORECASE)
-            collected = []
-            for p in paragraphs:
-                p_clean = re.sub(r'<[^>]+>', '', p)
-                p_clean = re.sub(r'[ \t]+', ' ', p_clean).strip()
-                if len(p_clean) > 30:
-                    collected.append(p_clean)
-            if collected:
-                text = clean_article_text('\n'.join(collected))
+    # 3) <article> 태그 fallback
+    for tag in ['<article', '<main']:
+        idx = html.find(tag)
+        if idx != -1:
+            tag_end = html.find('>', idx)
+            if tag_end != -1:
+                text = _parse_raw(html[tag_end + 1: tag_end + 200_000])
                 if len(text) > 100:
                     return text
 
+    # 4) 최후 수단: 본문 <p> 태그를 모두 수집해서 이어붙이기
+    paragraphs = re.findall(r'<p[^>]*>([\s\S]*?)</p>', html, re.IGNORECASE)
+    collected = []
+    for p in paragraphs:
+        p_clean = re.sub(r'<[^>]+>', '', p)
+        p_clean = re.sub(r'[ \t]+', ' ', p_clean).strip()
+        if len(p_clean) > 30:
+            collected.append(p_clean)
+    if collected:
+        text = clean_article_text('\n'.join(collected))
+        if len(text) > 100:
+            return text
+    return None
+
+def extract_full_content(url):
+    try:
+        html = _fetch_html(url)
+        return _content_from_html(html) if html else None
     except Exception as e:
         print(f"본문 추출 중 오류 발생: {e}")
     return None
 
-def extract_image_from_url(url):
-    """
-    bs4 없이 정규표현식(re)만 사용하여 og:image를 추출합니다.
-    """
+def _image_from_html(html):
+    match = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', html)
+    if not match:
+        match = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', html)
+    return match.group(1) if match else None
+
+def scrape_article(url):
+    """페이지를 한 번만 받아서 (본문, og:image) 를 함께 추출"""
     try:
-        with httpx.Client(timeout=5, follow_redirects=True) as client:
-            res = client.get(url)
-            if res.status_code != 200:
-                return None
-            
-            match = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', res.text)
-            if not match:
-                match = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', res.text)
-            
-            if match:
-                return match.group(1)
+        html = _fetch_html(url)
+        if not html:
+            return None, None
+        return _content_from_html(html), _image_from_html(html)
+    except Exception as e:
+        print(f"본문 추출 중 오류 발생: {e}")
+    return None, None
+
+def extract_image_from_url(url):
+    """bs4 없이 정규표현식(re)만 사용하여 og:image를 추출합니다."""
+    try:
+        html = _fetch_html(url, timeout=5)
+        return _image_from_html(html) if html else None
     except Exception:
         return None
-    return None
 
 def extract_press_name(url: str) -> str:
     """URL에서 언론사명 추출"""
@@ -283,6 +291,10 @@ def extract_press_name(url: str) -> str:
         return match.group(1).split('.')[0]
     return url
 
+def _clean_title(t: str) -> str:
+    return t.replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+
+
 def fetch_and_save_news():
     headers = {
         "X-Naver-Client-Id": CLIENT_ID,
@@ -293,79 +305,95 @@ def fetch_and_save_news():
         categories = conn.execute(text("SELECT * FROM categories")).fetchall()
         category_map = {row.name: row.id for row in categories}
 
-    total_saved = 0
-    seen_titles: set[str] = set()  # 이번 실행에서 처리한 제목 추적 (중복 방지)
-
-    for category_name, keyword in CATEGORY_KEYWORDS.items():
-        category_id = category_map.get(category_name)
-        if not category_id:
-            continue
-
+    # 1) 카테고리별 네이버 API 호출 — 병렬
+    def _search(keyword):
         url = f"https://openapi.naver.com/v1/search/news.json?query={keyword}&display=20&sort=date"
+        try:
+            res = httpx.get(url, headers=headers, timeout=10)
+            return res.json().get("items", []) if res.status_code == 200 else []
+        except Exception:
+            return []
 
-        with httpx.Client() as client:
-            res = client.get(url, headers=headers)
-            if res.status_code != 200:
-                continue
-            data = res.json()
+    targets = [(name, kw) for name, kw in CATEGORY_KEYWORDS.items() if category_map.get(name)]
+    with ThreadPoolExecutor(max_workers=len(targets) or 1) as ex:
+        results = list(ex.map(lambda t: _search(t[1]), targets))
 
-        for item in data.get("items", []):
-            # 1. 기본 정보 정제
-            title = item["title"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-            source = extract_press_name(item.get("originallink", ""))
+    # 2) 이번 실행 내 중복 제목 제거
+    items = []
+    seen_titles: set[str] = set()
+    for (category_name, _), api_items in zip(targets, results):
+        for item in api_items:
+            title = _clean_title(item["title"])
             link = item.get("originallink", "") or item.get("link", "")
             naver_link = item.get("link", "")
-
-            # 2. 이번 실행 내 중복 제목 건너뜀
-            if title in seen_titles:
+            # 컬럼 길이 초과 행이 있으면 일괄 INSERT 전체가 실패하므로 미리 제외
+            if title in seen_titles or len(title) > 255 or len(link) > 500 or len(naver_link) > 500:
                 continue
             seen_titles.add(title)
+            items.append({
+                "title": title,
+                "description": _clean_title(item["description"]),
+                "source": extract_press_name(item.get("originallink", ""))[:255],
+                "link": link,
+                "naver_link": naver_link,
+                "category_id": category_map[category_name],
+            })
+    if not items:
+        return 0
 
-            # 3. DB 중복 체크 — 기존 기사의 본문이 짧으면 업데이트
-            with engine.connect() as conn:
-                existing = conn.execute(
-                    text("SELECT id, content FROM news WHERE title = :title"),
-                    {"title": title}
-                ).fetchone()
-                if existing:
-                    existing_content = existing.content or ""
-                    if len(existing_content) < 1000 and naver_link:
-                        full_content = extract_full_content(naver_link)
-                        if full_content and len(full_content) > len(existing_content):
-                            conn.execute(
-                                text("UPDATE news SET content = :content, link = :link, naver_link = :naver_link WHERE id = :id"),
-                                {"content": full_content, "link": link, "naver_link": naver_link, "id": existing.id}
-                            )
-                            conn.commit()
-                    continue
+    # 3) DB 중복 체크 — 쿼리 한 번으로
+    with engine.connect() as conn:
+        existing = {
+            r.title: r for r in conn.execute(
+                text("SELECT id, title, LENGTH(COALESCE(content, '')) AS clen FROM news WHERE title IN :titles").bindparams(bindparam("titles", expanding=True)),
+                {"titles": [it["title"] for it in items]},
+            )
+        }
 
-            # 4. 본문 전체 추출
-            full_content = extract_full_content(naver_link)
-            if not full_content:
-                full_content = item["description"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+    new_items = [it for it in items if it["title"] not in existing]
+    refresh_items = [
+        it for it in items
+        if it["title"] in existing and existing[it["title"]].clen < 1000 and it["naver_link"]
+    ]
 
-            # 5. 이미지 URL 추출
-            actual_image_url = extract_image_from_url(naver_link)
+    # 4) 본문 + 이미지 스크래핑 — 페이지 1회 다운로드, 병렬
+    to_scrape = new_items + refresh_items
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        scraped = list(ex.map(lambda it: scrape_article(it["naver_link"]) if it["naver_link"] else (None, None), to_scrape))
 
-            # 6. 데이터베이스 저장 (행 단위 커밋으로 동일 실행 내 중복 방지)
-            with engine.connect() as conn:
-                conn.execute(
-                    text("""
-                        INSERT INTO news (title, content, source, image_url, link, naver_link, status, category_id)
-                        VALUES (:title, :content, :source, :image_url, :link, :naver_link, 'published', :category_id)
-                        ON CONFLICT DO NOTHING
-                    """),
-                    {
-                        "title": title,
-                        "content": full_content,
-                        "source": source,
-                        "image_url": actual_image_url,
-                        "link": link,
-                        "naver_link": naver_link,
-                        "category_id": category_id,
-                    }
-                )
-                conn.commit()
-            total_saved += 1
+    inserts, updates = [], []
+    for it, (content, image_url) in zip(to_scrape, scraped):
+        if it["title"] in existing:
+            if content and len(content) > existing[it["title"]].clen:
+                updates.append({"content": content, "link": it["link"],
+                                "naver_link": it["naver_link"], "id": existing[it["title"]].id})
+        else:
+            inserts.append({
+                "title": it["title"],
+                "content": content or it["description"],
+                "source": it["source"],
+                "image_url": image_url if image_url and len(image_url) <= 500 else None,
+                "link": it["link"],
+                "naver_link": it["naver_link"],
+                "category_id": it["category_id"],
+            })
 
-    return total_saved
+    # 5) 일괄 저장 — 한 번의 트랜잭션
+    with engine.connect() as conn:
+        if inserts:
+            conn.execute(
+                text("""
+                    INSERT INTO news (title, content, source, image_url, link, naver_link, status, category_id)
+                    VALUES (:title, :content, :source, :image_url, :link, :naver_link, 'published', :category_id)
+                    ON CONFLICT DO NOTHING
+                """),
+                inserts,
+            )
+        if updates:
+            conn.execute(
+                text("UPDATE news SET content = :content, link = :link, naver_link = :naver_link WHERE id = :id"),
+                updates,
+            )
+        conn.commit()
+
+    return len(inserts)

@@ -36,6 +36,9 @@ class Settings(BaseSettings):
 
     SERVER_BASE_URL: str = "http://127.0.0.1:8000"
 
+    # 로그인 쿠키 서명 키 (운영 환경에서는 반드시 설정)
+    SECRET_KEY: str = ""
+
     GROQ_API_KEY: str = ""
     NEWSAPI_KEY: str = ""
 

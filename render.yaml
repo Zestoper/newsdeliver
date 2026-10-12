@@ -8,6 +8,8 @@ services:
     envVars:
       - key: DB_URL
         sync: false
+      - key: SECRET_KEY
+        generateValue: true
       - key: NAVER_CLIENT_ID
         sync: false
       - key: NAVER_CLIENT_SECRET

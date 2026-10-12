@@ -122,7 +122,7 @@ newsdeliver/
 │   │   ├── email.py         # 이메일 발송
 │   │   └── store.py         # DB 공통 서비스
 │   ├── templates/           # Jinja2 HTML 템플릿
-│   └── static/              # CSS, JS, 업로드 파일, admin.html
+│   └── static/              # CSS, JS, 업로드 파일
 └── requirements.txt
 ```
 
