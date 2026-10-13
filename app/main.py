@@ -71,255 +71,262 @@ def _reclassify_politics() -> int:
     return reclassified
 
 
-try:
-    with engine.connect() as conn:
-        print("✅ DB 연결 성공!")
-        from sqlalchemy import text
-        migrations = [
-            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS link VARCHAR(500)", "news.link"),
-            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "news.is_global"),
-            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS naver_link VARCHAR(500)", "news.naver_link"),
-            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0", "news.view_count"),
-            ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_verified SMALLINT DEFAULT 0", "subscriptions.is_verified"),
-            ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS verify_token VARCHAR(100)", "subscriptions.verify_token"),
-            ("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS unique_email", "subscriptions.unique_email 제약 제거"),
-            ("ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL", "news_comments.parent_id"),
-            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
-            ("ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_summary TEXT NULL", "news.ai_summary"),
-            ("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
-            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_approved SMALLINT DEFAULT 0", "news_users.press_approved"),
-            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_notified SMALLINT DEFAULT 0", "news_users.press_notified"),
-            ("ALTER TABLE category_subscriptions ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "category_subscriptions.is_global"),
-            ("ALTER TABLE category_subscriptions DROP CONSTRAINT IF EXISTS unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
-            ("ALTER TABLE category_subscriptions ADD CONSTRAINT unique_cat_sub_global UNIQUE (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
-            ("ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT '일반문의'", "chat_rooms.category"),
-            ("ALTER TABLE chat_rooms DROP CONSTRAINT IF EXISTS unique_user", "chat_rooms.drop_unique_user"),
-            ("ALTER TABLE chat_rooms ADD CONSTRAINT unique_user_category UNIQUE (user_id, category)", "chat_rooms.unique_user_category"),
-        ]
-        # reports 테이블 생성
-        try:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS reports (
-                    id SERIAL PRIMARY KEY,
-                    news_id INT NOT NULL,
-                    reporter_id VARCHAR(50) NOT NULL,
-                    reporter_name VARCHAR(100) NOT NULL,
-                    reason VARCHAR(500) DEFAULT '',
-                    status VARCHAR(20) DEFAULT 'pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.commit()
-            print("✅ reports 테이블")
-        except Exception:
-            conn.rollback()
+def _run_migrations() -> None:
+    """DB 테이블·컬럼 보정과 기본 데이터 준비 (여러 번 실행해도 안전).
 
-        # bookmarks 테이블 생성
-        try:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS bookmarks (
-                    id SERIAL PRIMARY KEY,
-                    user_id VARCHAR(50) NOT NULL,
-                    news_id INT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT unique_bookmark UNIQUE (user_id, news_id)
-                )
-            """))
-            conn.commit()
-            print("✅ bookmarks 테이블")
-        except Exception:
-            conn.rollback()
-
-        # comment_likes 테이블 생성 (없을 때만)
-        try:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS comment_likes (
-                    id SERIAL PRIMARY KEY,
-                    comment_id INT NOT NULL,
-                    user_id VARCHAR(50) NOT NULL,
-                    CONSTRAINT unique_comment_like UNIQUE (comment_id, user_id)
-                )
-            """))
-            conn.commit()
-            print("✅ comment_likes 테이블")
-        except Exception:
-            conn.rollback()
-        # news.title 중복 방지 UNIQUE 인덱스
-        try:
-            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS unique_title ON news (title)"))
-            conn.commit()
-            print("✅ news.title unique index")
-        except Exception:
-            conn.rollback()
-
-        # 소셜 로그인용 컬럼 추가 및 pw NULL 허용
-        oauth_migrations = [
-            ("ALTER TABLE news_users ALTER COLUMN pw DROP NOT NULL", "news_users.pw nullable"),
-            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL", "news_users.oauth_provider"),
-            ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(100) NULL", "news_users.oauth_id"),
-            ("ALTER TABLE news_users ADD CONSTRAINT oauth_unique UNIQUE (oauth_provider, oauth_id)", "news_users.oauth_unique"),
-        ]
-        for sql, col in oauth_migrations:
+    예전에는 모듈을 불러올 때 바로 실행해서 서버가 뜨기까지 50초 넘게 걸렸다.
+    Render 무료 서버가 잠에서 깰 때 30초 안에 응답하지 못하면 503이 나므로
+    지금은 서버를 먼저 띄우고 백그라운드에서 실행한다 (lifespan 참고).
+    """
+    try:
+        with engine.connect() as conn:
+            print("✅ DB 연결 성공!")
+            from sqlalchemy import text
+            migrations = [
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS link VARCHAR(500)", "news.link"),
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "news.is_global"),
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS naver_link VARCHAR(500)", "news.naver_link"),
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0", "news.view_count"),
+                ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_verified SMALLINT DEFAULT 0", "subscriptions.is_verified"),
+                ("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS verify_token VARCHAR(100)", "subscriptions.verify_token"),
+                ("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS unique_email", "subscriptions.unique_email 제약 제거"),
+                ("ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL", "news_comments.parent_id"),
+                ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_summary TEXT NULL", "news.ai_summary"),
+                ("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
+                ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_approved SMALLINT DEFAULT 0", "news_users.press_approved"),
+                ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_notified SMALLINT DEFAULT 0", "news_users.press_notified"),
+                ("ALTER TABLE category_subscriptions ADD COLUMN IF NOT EXISTS is_global SMALLINT DEFAULT 0", "category_subscriptions.is_global"),
+                ("ALTER TABLE category_subscriptions DROP CONSTRAINT IF EXISTS unique_cat_sub", "category_subscriptions.unique_cat_sub 제거"),
+                ("ALTER TABLE category_subscriptions ADD CONSTRAINT unique_cat_sub_global UNIQUE (user_id, category_id, is_global)", "category_subscriptions.unique_cat_sub_global"),
+                ("ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT '일반문의'", "chat_rooms.category"),
+                ("ALTER TABLE chat_rooms DROP CONSTRAINT IF EXISTS unique_user", "chat_rooms.drop_unique_user"),
+                ("ALTER TABLE chat_rooms ADD CONSTRAINT unique_user_category UNIQUE (user_id, category)", "chat_rooms.unique_user_category"),
+            ]
+            # reports 테이블 생성
             try:
-                conn.execute(text(sql))
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS reports (
+                        id SERIAL PRIMARY KEY,
+                        news_id INT NOT NULL,
+                        reporter_id VARCHAR(50) NOT NULL,
+                        reporter_name VARCHAR(100) NOT NULL,
+                        reason VARCHAR(500) DEFAULT '',
+                        status VARCHAR(20) DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
                 conn.commit()
-                print(f"✅ {col}")
+                print("✅ reports 테이블")
             except Exception:
                 conn.rollback()
 
-        for sql, col in migrations:
+            # bookmarks 테이블 생성
             try:
-                conn.execute(text(sql))
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS bookmarks (
+                        id SERIAL PRIMARY KEY,
+                        user_id VARCHAR(50) NOT NULL,
+                        news_id INT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT unique_bookmark UNIQUE (user_id, news_id)
+                    )
+                """))
                 conn.commit()
-                print(f"✅ {col}")
+                print("✅ bookmarks 테이블")
             except Exception:
                 conn.rollback()
 
-        # chat 테이블 생성
-        try:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS chat_rooms (
-                    id SERIAL PRIMARY KEY,
-                    user_id VARCHAR(50) NOT NULL,
-                    user_name VARCHAR(100),
-                    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT unique_user UNIQUE (user_id)
-                )
-            """))
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS chat_messages (
-                    id SERIAL PRIMARY KEY,
-                    room_id INT NOT NULL,
-                    sender VARCHAR(10) NOT NULL,
-                    message TEXT NOT NULL,
-                    is_read SMALLINT DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.commit()
-            print("✅ chat 테이블")
-        except Exception:
-            conn.rollback()
-
-        # newsletter_sent 테이블 생성
-        try:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS newsletter_sent (
-                    id SERIAL PRIMARY KEY,
-                    email VARCHAR(255) NOT NULL,
-                    news_id INT NOT NULL,
-                    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT unique_sent UNIQUE (email, news_id)
-                )
-            """))
-            conn.commit()
-            print("✅ newsletter_sent 테이블")
-        except Exception:
-            conn.rollback()
-
-        # 새 카테고리 추가
-        new_cats = ["연예", "국제", "사회"]
-        for cat in new_cats:
+            # comment_likes 테이블 생성 (없을 때만)
             try:
-                conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS comment_likes (
+                        id SERIAL PRIMARY KEY,
+                        comment_id INT NOT NULL,
+                        user_id VARCHAR(50) NOT NULL,
+                        CONSTRAINT unique_comment_like UNIQUE (comment_id, user_id)
+                    )
+                """))
                 conn.commit()
-                print(f"✅ 카테고리 추가: {cat}")
+                print("✅ comment_likes 테이블")
             except Exception:
-                pass
-
-        # 해외뉴스 카테고리 추가
-        global_cats = ["해외IT", "해외경제", "해외국제", "해외문화",
-                       "해외사회", "해외스포츠", "해외연예", "해외예술", "해외정치"]
-        for cat in global_cats:
+                conn.rollback()
+            # news.title 중복 방지 UNIQUE 인덱스
             try:
-                conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
+                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS unique_title ON news (title)"))
                 conn.commit()
-                print(f"✅ 카테고리 추가: {cat}")
+                print("✅ news.title unique index")
             except Exception:
-                pass
+                conn.rollback()
 
-        # 기존 해외 기사: 해외XXX 카테고리 → 국내 카테고리로 이동 + is_global = 1 표시
-        remap = {
-            '해외IT': 'IT', '해외경제': '경제', '해외국제': '국제',
-            '해외문화': '문화', '해외사회': '사회', '해외스포츠': '스포츠',
-            '해외연예': '연예', '해외예술': '예술', '해외정치': '정치',
-            '해외뉴스': '국제', '해외건강': '사회', '해외과학': '사회',
-        }
-        try:
-            cat_rows = conn.execute(text("SELECT id, name FROM categories")).fetchall()
-            cat_map = {r.name: r.id for r in cat_rows}
-            total_remapped = 0
-            for old_name, new_name in remap.items():
-                old_id = cat_map.get(old_name)
-                new_id = cat_map.get(new_name)
-                if not old_id or not new_id:
-                    continue
+            # 소셜 로그인용 컬럼 추가 및 pw NULL 허용
+            oauth_migrations = [
+                ("ALTER TABLE news_users ALTER COLUMN pw DROP NOT NULL", "news_users.pw nullable"),
+                ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL", "news_users.oauth_provider"),
+                ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(100) NULL", "news_users.oauth_id"),
+                ("ALTER TABLE news_users ADD CONSTRAINT oauth_unique UNIQUE (oauth_provider, oauth_id)", "news_users.oauth_unique"),
+            ]
+            for sql, col in oauth_migrations:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print(f"✅ {col}")
+                except Exception:
+                    conn.rollback()
+
+            for sql, col in migrations:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print(f"✅ {col}")
+                except Exception:
+                    conn.rollback()
+
+            # chat 테이블 생성
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS chat_rooms (
+                        id SERIAL PRIMARY KEY,
+                        user_id VARCHAR(50) NOT NULL,
+                        user_name VARCHAR(100),
+                        last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT unique_user UNIQUE (user_id)
+                    )
+                """))
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id SERIAL PRIMARY KEY,
+                        room_id INT NOT NULL,
+                        sender VARCHAR(10) NOT NULL,
+                        message TEXT NOT NULL,
+                        is_read SMALLINT DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.commit()
+                print("✅ chat 테이블")
+            except Exception:
+                conn.rollback()
+
+            # newsletter_sent 테이블 생성
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS newsletter_sent (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR(255) NOT NULL,
+                        news_id INT NOT NULL,
+                        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT unique_sent UNIQUE (email, news_id)
+                    )
+                """))
+                conn.commit()
+                print("✅ newsletter_sent 테이블")
+            except Exception:
+                conn.rollback()
+
+            # 새 카테고리 추가
+            new_cats = ["연예", "국제", "사회"]
+            for cat in new_cats:
+                try:
+                    conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
+                    conn.commit()
+                    print(f"✅ 카테고리 추가: {cat}")
+                except Exception:
+                    pass
+
+            # 해외뉴스 카테고리 추가
+            global_cats = ["해외IT", "해외경제", "해외국제", "해외문화",
+                           "해외사회", "해외스포츠", "해외연예", "해외예술", "해외정치"]
+            for cat in global_cats:
+                try:
+                    conn.execute(text("INSERT INTO categories (name) VALUES (:name) ON CONFLICT DO NOTHING"), {"name": cat})
+                    conn.commit()
+                    print(f"✅ 카테고리 추가: {cat}")
+                except Exception:
+                    pass
+
+            # 기존 해외 기사: 해외XXX 카테고리 → 국내 카테고리로 이동 + is_global = 1 표시
+            remap = {
+                '해외IT': 'IT', '해외경제': '경제', '해외국제': '국제',
+                '해외문화': '문화', '해외사회': '사회', '해외스포츠': '스포츠',
+                '해외연예': '연예', '해외예술': '예술', '해외정치': '정치',
+                '해외뉴스': '국제', '해외건강': '사회', '해외과학': '사회',
+            }
+            try:
+                cat_rows = conn.execute(text("SELECT id, name FROM categories")).fetchall()
+                cat_map = {r.name: r.id for r in cat_rows}
+                total_remapped = 0
+                for old_name, new_name in remap.items():
+                    old_id = cat_map.get(old_name)
+                    new_id = cat_map.get(new_name)
+                    if not old_id or not new_id:
+                        continue
+                    r = conn.execute(text(
+                        "UPDATE news SET category_id = :new_id, is_global = 1 WHERE category_id = :old_id"
+                    ), {"new_id": new_id, "old_id": old_id})
+                    conn.commit()
+                    total_remapped += r.rowcount
+                if total_remapped:
+                    print(f"✅ 해외뉴스 카테고리 재분류: {total_remapped}건")
+            except Exception as e:
+                conn.rollback()
+                print(f"[해외뉴스 재분류] {e}")
+
+            # naver_link 가 있는 기사 → 무조건 국내 (is_global = 0)
+            try:
                 r = conn.execute(text(
-                    "UPDATE news SET category_id = :new_id, is_global = 1 WHERE category_id = :old_id"
-                ), {"new_id": new_id, "old_id": old_id})
-                conn.commit()
-                total_remapped += r.rowcount
-            if total_remapped:
-                print(f"✅ 해외뉴스 카테고리 재분류: {total_remapped}건")
-        except Exception as e:
-            conn.rollback()
-            print(f"[해외뉴스 재분류] {e}")
-
-        # naver_link 가 있는 기사 → 무조건 국내 (is_global = 0)
-        try:
-            r = conn.execute(text(
-                "UPDATE news SET is_global = 0 WHERE naver_link IS NOT NULL AND naver_link != ''"
-            ))
-            conn.commit()
-            if r.rowcount:
-                print(f"✅ 국내뉴스 is_global 보정: {r.rowcount}건")
-        except Exception as e:
-            conn.rollback()
-            print(f"[is_global 국내 보정] {e}")
-
-        # 문화·예술 카테고리 중 naver_link 있는 기사는 국내로 보정
-        try:
-            r = conn.execute(text("""
-                UPDATE news SET is_global = 0
-                FROM categories c
-                WHERE news.category_id = c.id
-                  AND c.name IN ('문화', '예술')
-                  AND news.naver_link IS NOT NULL AND news.naver_link != ''
-            """))
-            conn.commit()
-            if r.rowcount:
-                print(f"✅ 문화·예술 국내 보정: {r.rowcount}건")
-        except Exception as e:
-            conn.rollback()
-            print(f"[문화·예술 보정] {e}")
-
-        # 해외뉴스 재분류 정리 — 카테고리 개선 후 1회만 실행
-        try:
-            already = conn.execute(text(
-                "SELECT COUNT(*) FROM newsletter_sent WHERE email = '__global_purge_v9__' AND news_id = 0"
-            )).scalar()
-            if not already:
-                conn.execute(text(
-                    "INSERT INTO newsletter_sent (email, news_id) VALUES ('__global_purge_v9__', 0)"
+                    "UPDATE news SET is_global = 0 WHERE naver_link IS NOT NULL AND naver_link != ''"
                 ))
-                r = conn.execute(text("DELETE FROM news WHERE is_global = 1"))
                 conn.commit()
-                print(f"✅ 해외뉴스 전체 삭제: {r.rowcount}건 → 점수 기반 재분류 후 재수집 예정")
-        except Exception as e:
-            conn.rollback()
-            print(f"[해외뉴스 정리] {e}")
+                if r.rowcount:
+                    print(f"✅ 국내뉴스 is_global 보정: {r.rowcount}건")
+            except Exception as e:
+                conn.rollback()
+                print(f"[is_global 국내 보정] {e}")
 
-        # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류
-        try:
-            count = _reclassify_politics()
-            if count:
-                print(f"✅ 정치 기사 재분류: {count}건")
-        except Exception as e:
-            conn.rollback()
-            print(f"[정치 기사 재분류] {e}")
+            # 문화·예술 카테고리 중 naver_link 있는 기사는 국내로 보정
+            try:
+                r = conn.execute(text("""
+                    UPDATE news SET is_global = 0
+                    FROM categories c
+                    WHERE news.category_id = c.id
+                      AND c.name IN ('문화', '예술')
+                      AND news.naver_link IS NOT NULL AND news.naver_link != ''
+                """))
+                conn.commit()
+                if r.rowcount:
+                    print(f"✅ 문화·예술 국내 보정: {r.rowcount}건")
+            except Exception as e:
+                conn.rollback()
+                print(f"[문화·예술 보정] {e}")
 
-except Exception as e:
-    print(f"❌ DB 연결 실패: {e}")
+            # 해외뉴스 재분류 정리 — 카테고리 개선 후 1회만 실행
+            try:
+                already = conn.execute(text(
+                    "SELECT COUNT(*) FROM newsletter_sent WHERE email = '__global_purge_v9__' AND news_id = 0"
+                )).scalar()
+                if not already:
+                    conn.execute(text(
+                        "INSERT INTO newsletter_sent (email, news_id) VALUES ('__global_purge_v9__', 0)"
+                    ))
+                    r = conn.execute(text("DELETE FROM news WHERE is_global = 1"))
+                    conn.commit()
+                    print(f"✅ 해외뉴스 전체 삭제: {r.rowcount}건 → 점수 기반 재분류 후 재수집 예정")
+            except Exception as e:
+                conn.rollback()
+                print(f"[해외뉴스 정리] {e}")
+
+            # 잘못 분류된 정치 기사를 올바른 카테고리로 재분류
+            try:
+                count = _reclassify_politics()
+                if count:
+                    print(f"✅ 정치 기사 재분류: {count}건")
+            except Exception as e:
+                conn.rollback()
+                print(f"[정치 기사 재분류] {e}")
+
+    except Exception as e:
+        print(f"❌ DB 연결 실패: {e}")
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -367,11 +374,20 @@ async def lifespan(app: FastAPI):
     if settings.CRON_SECRET:
         # 깨어날 때마다 밀린 작업(30분 구간 수집 · 놓친 뉴스레터)만 백그라운드로 처리한다.
         # 크론 요청이 콜드 스타트 30초 제한에 걸려 끊겨도 서버가 깨어났다면 작업은 실행된다.
-        from app.routers.jobs import start_due_jobs
-        start_due_jobs("startup")
+        import threading
+        from app.routers.jobs import run_due_jobs
+
+        def _boot_jobs():
+            _run_migrations()
+            run_due_jobs("startup")
+
+        # 마이그레이션과 밀린 작업은 서버가 뜬 뒤 백그라운드에서 — 첫 응답을 막지 않는다
+        threading.Thread(target=_boot_jobs, daemon=True).start()
         print("✅ 외부 크론 모드 — 깨어날 때 밀린 예약 작업만 처리합니다")
         yield
         return
+
+    _run_migrations()
 
     import threading
     threading.Thread(target=_fetch_news_job, daemon=True).start()
