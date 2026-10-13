@@ -362,11 +362,14 @@ def _fetch_news_job():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # CRON_SECRET 이 있으면 외부 크론 모드 — 예약 작업은 /internal/jobs/* 호출로만 실행한다.
-    # (Render 무료 플랜은 서버가 잠들어 내부 스케줄러가 돌지 않고,
-    #  깨어날 때마다 수집을 돌리면 첫 응답까지 느려지기 때문)
+    # CRON_SECRET 이 있으면 외부 크론 모드 — 내부 스케줄러 대신 크론 호출과 깨어날 때 처리로 실행한다.
+    # (Render 무료 플랜은 서버가 잠들어 내부 스케줄러가 제때 돌지 않기 때문)
     if settings.CRON_SECRET:
-        print("✅ 외부 크론 모드 — 내부 스케줄러와 시작 시 수집을 건너뜁니다")
+        # 깨어날 때마다 밀린 작업(30분 구간 수집 · 놓친 뉴스레터)만 백그라운드로 처리한다.
+        # 크론 요청이 콜드 스타트 30초 제한에 걸려 끊겨도 서버가 깨어났다면 작업은 실행된다.
+        from app.routers.jobs import start_due_jobs
+        start_due_jobs("startup")
+        print("✅ 외부 크론 모드 — 깨어날 때 밀린 예약 작업만 처리합니다")
         yield
         return
 
