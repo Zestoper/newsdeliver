@@ -1,3 +1,11 @@
+import sys
+
+# Render 로그에 print가 바로 찍히도록 줄 단위로 내보낸다 (기본은 버퍼에 모였다가 늦게 찍힘)
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 from pathlib import Path
 from contextlib import asynccontextmanager
 
