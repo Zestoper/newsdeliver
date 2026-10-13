@@ -11,7 +11,7 @@ cron-job.org 무료 요청은 30초면 끊기기 때문에 잠든 서버를 부�
 (서버가 여러 번 깨어나거나 크론과 방문자가 동시에 깨워도 중복 실행되지 않음)
 
 호출 예시
-  POST https://<서버>/internal/jobs/fetch-news   헤더 X-Cron-Secret: <CRON_SECRET>
+  GET https://<서버>/internal/jobs/fetch-news   헤더 X-Cron-Secret: <CRON_SECRET>  (POST도 가능)
 """
 import hmac
 import threading
@@ -108,7 +108,8 @@ def start_due_jobs(reason: str) -> bool:
     return True
 
 
-@router.post("/fetch-news", status_code=202)
+# GET도 받는다 — Render 무료 서버는 잠든 상태에서 POST로는 깨지 않고 바로 503을 주는 경우가 있어서
+@router.api_route("/fetch-news", methods=["GET", "POST"], status_code=202)
 def run_fetch_news(
     x_cron_secret: str | None = Header(default=None),
     secret: str | None = Query(default=None),
@@ -119,7 +120,7 @@ def run_fetch_news(
     return {"started": started, "message": "예약 작업을 확인합니다." if started else "이미 실행 중입니다."}
 
 
-@router.post("/newsletter", status_code=202)
+@router.api_route("/newsletter", methods=["GET", "POST"], status_code=202)
 def run_newsletter(
     x_cron_secret: str | None = Header(default=None),
     secret: str | None = Query(default=None),
