@@ -6,8 +6,11 @@ name: newsdeliver-wake
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # 30분마다 (UTC 기준이지만 30분 간격이라 상관없음)
-  workflow_dispatch:          # Actions 탭에서 직접 실행해 볼 수 있음
+    # 정각·30분은 GitHub 예약 실행이 몰려 밀리거나 빠지는 일이 많아서 7분·37분으로 둔다
+    - cron: "7,37 * * * *"
+  # cron-job.org가 GitHub API로 이 워크플로를 실행시키는 주 경로 (예약 실행은 보조)
+  # POST https://api.github.com/repos/Zestoper/newsdeliver/actions/workflows/newsdeliver.yml/dispatches
+  workflow_dispatch:
 
 jobs:
   wake:
