@@ -1,0 +1,35 @@
+# NewsDeliver 예약 작업 깨우기
+# Render 무료 서버는 15분 동안 요청이 없으면 잠든다.
+# cron-job.org 요청으로는 서버가 깨지 않아서(바로 503) GitHub Actions에서 깨운다.
+# 서버는 깨어나기만 하면 밀린 뉴스 수집과 07:30 / 18:30 뉴스레터를 알아서 처리한다.
+name: newsdeliver-wake
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 30분마다 (UTC 기준이지만 30분 간격이라 상관없음)
+  workflow_dispatch:          # Actions 탭에서 직접 실행해 볼 수 있음
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: 서버 깨우고 예약 작업 실행
+        env:
+          URL: https://newsdeliver.onrender.com
+          SECRET: ${{ secrets.NEWSDELIVER_CRON_SECRET }}
+        run: |
+          # 1) 서버가 깨어날 때까지 /health 를 최대 4분 동안 다시 시도
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$URL/health" || echo 000)
+            echo "health 시도 $i: $code"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 10
+          done
+          if [ "$code" != "200" ]; then
+            echo "::error::서버가 깨어나지 않았습니다 (마지막 응답 $code)"
+            exit 1
+          fi
+          # 2) 예약 작업 요청 (서버가 이미 처리했으면 알아서 건너뜀)
+          curl -sS --fail-with-body --max-time 60 -H "X-Cron-Secret: $SECRET" "$URL/internal/jobs/fetch-news"
+          echo
