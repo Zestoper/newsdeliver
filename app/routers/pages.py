@@ -22,6 +22,7 @@ from app.services.store import (
     is_duplicate_user,
 )
 from app.services.email import send_verify_email_async
+from app.services.passwords import hash_password
 
 router = APIRouter()
 
@@ -566,16 +567,12 @@ async def change_password(
         return RedirectResponse(url="/mypage?pw_error=confirm", status_code=303)
     if len(new_pw) < 8:
         return RedirectResponse(url="/mypage?pw_error=short", status_code=303)
+    if not get_user(user_id=user["id"], password=current_pw):
+        return RedirectResponse(url="/mypage?pw_error=wrong", status_code=303)
     with engine.connect() as conn:
-        row = conn.execute(
-            text("SELECT id FROM news_users WHERE id=:id AND pw=:pw"),
-            {"id": user["id"], "pw": current_pw}
-        ).fetchone()
-        if not row:
-            return RedirectResponse(url="/mypage?pw_error=wrong", status_code=303)
         conn.execute(
             text("UPDATE news_users SET pw=:pw WHERE id=:id"),
-            {"pw": new_pw, "id": user["id"]}
+            {"pw": hash_password(new_pw), "id": user["id"]}
         )
         conn.commit()
     return RedirectResponse(url="/mypage?pw_success=1", status_code=303)

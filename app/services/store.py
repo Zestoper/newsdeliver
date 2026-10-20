@@ -1,6 +1,7 @@
 from sqlalchemy import text
 from app.database import engine
 import secrets
+from app.services.passwords import hash_password, is_hashed, verify_password
 
 def get_news_items() -> list[dict]:
     with engine.connect() as conn:
@@ -37,7 +38,7 @@ def add_user(user: dict) -> None:
                 "id": user["user_id"],
                 "name": user["name"],
                 "birth": user["birth"],
-                "pw": user["password"],
+                "pw": hash_password(user["password"]),
                 "email": user["email"],
                 "tel": user["phone"],
             }
@@ -46,13 +47,22 @@ def add_user(user: dict) -> None:
 
 
 def get_user(*, user_id: str, password: str) -> dict | None:
+    """아이디·비밀번호가 맞으면 회원 정보를 돌려준다. 예전 평문 비밀번호는 로그인 성공 시 해시로 바꾼다."""
     with engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT * FROM news_users WHERE id = :id AND pw = :pw"),
-            {"id": user_id, "pw": password}
-        )
-        row = result.fetchone()
-        return dict(row._mapping) if row else None
+        row = conn.execute(
+            text("SELECT * FROM news_users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        if not row or not verify_password(password, row.pw):
+            return None
+        if not is_hashed(row.pw):
+            conn.execute(
+                text("UPDATE news_users SET pw = :pw WHERE id = :id"),
+                {"pw": hash_password(password), "id": user_id},
+            )
+            conn.commit()
+        user = dict(row._mapping)
+        user.pop("pw", None)  # 비밀번호 값은 밖으로 내보내지 않음
+        return user
 
 
 def is_duplicate_subscription(email: str, user_id: str = None) -> bool:
