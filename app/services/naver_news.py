@@ -21,6 +21,25 @@ CATEGORY_KEYWORDS = {
     "사회": "사회 뉴스",
 }
 
+# '국제 뉴스'로 검색하면 국제선 · 국제화지구 · 국제대회처럼 단어만 들어간 국내 기사도 섞여 온다.
+# 제목이나 요약에 해외 나라 · 지역 · 인물이 실제로 나오는 기사만 국제로 받는다.
+INTL_TERMS = [
+    "해외", "외신", "국제사회", "외교", "정상회담", "유엔", "UN", "나토", "NATO", "EU", "유럽",
+    "미국", "美", "중국", "中", "일본", "日", "러시아", "우크라", "이스라엘", "이란", "북한", "김정은", "평양", "대만",
+    "홍콩", "베트남", "인도", "영국", "프랑스", "독일", "캐나다", "호주", "중동", "아프리카", "동남아",
+    "백악관", "트럼프", "시진핑", "푸틴", "젤렌스키", "네타냐후", "가자", "하마스", "브라질", "멕시코",
+    "필리핀", "태국", "인도네시아", "사우디", "튀르키예", "파키스탄", "시리아", "레바논", "예멘",
+    "베네수엘라", "아르헨티나", "몽골", "싱가포르", "말레이시아", "캄보디아", "미얀마", "이집트",
+    "폴란드", "스페인", "이탈리아", "스웨덴", "네덜란드", "스위스", "워싱턴", "베이징", "도쿄",
+    "모스크바", "런던", "파리", "베를린", "키이우", "G7", "G20", "APEC", "WTO", "IMF",
+]
+
+
+def is_international(title: str, description: str = "") -> bool:
+    text_ = f"{title} {description}"
+    return any(t in text_ for t in INTL_TERMS)
+
+
 _GARBAGE_MARKERS = [
     'window.__ht', 'pstatic.net',
     '"write_placeholder"', '"sort_favorite"', 'duplicate_caution',
@@ -253,16 +272,41 @@ def _image_from_html(html):
         match = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', html)
     return match.group(1) if match else None
 
+_META_RE = r'<meta[^>]+(?:property|name)=["\']{key}["\'][^>]+content=["\']([^"\']+)["\']'
+
+
+def _press_from_html(html):
+    """기사 페이지에서 언론사 이름을 찾는다 (네이버 뉴스 로고 alt → og:article:author → og:site_name)."""
+    m = re.search(r'media_end_head_top_logo[^>]*?alt=["\']([^"\']+)["\']', html)
+    if not m:
+        m = re.search(r'alt=["\']([^"\']+)["\'][^>]*media_end_head_top_logo', html)
+    if not m:
+        m = re.search(_META_RE.format(key="og:article:author"), html)
+    if not m:
+        m = re.search(_META_RE.format(key="og:site_name"), html)
+    if not m:
+        return None
+    name = _html.unescape(m.group(1)).split("|")[0].strip()
+    if not name or "네이버" in name or len(name) > 30:
+        return None
+    return name
+
+
+def _looks_like_domain_code(source: str) -> bool:
+    """'dkoreanews' 처럼 도메인에서 잘라낸 영문 코드인지 (사람이 읽는 언론사명이 아님)"""
+    return bool(re.fullmatch(r"[a-z0-9-]+", source or ""))
+
+
 def scrape_article(url):
-    """페이지를 한 번만 받아서 (본문, og:image) 를 함께 추출"""
+    """페이지를 한 번만 받아서 (본문, og:image, 언론사명) 을 함께 추출"""
     try:
         html = _fetch_html(url)
         if not html:
-            return None, None
-        return _content_from_html(html), _image_from_html(html)
+            return None, None, None
+        return _content_from_html(html), _image_from_html(html), _press_from_html(html)
     except Exception as e:
         print(f"본문 추출 중 오류 발생: {e}")
-    return None, None
+    return None, None, None
 
 def extract_image_from_url(url):
     """bs4 없이 정규표현식(re)만 사용하여 og:image를 추출합니다."""
@@ -329,6 +373,8 @@ def fetch_and_save_news():
             # 컬럼 길이 초과 행이 있으면 일괄 INSERT 전체가 실패하므로 미리 제외
             if title in seen_titles or len(title) > 255 or len(link) > 500 or len(naver_link) > 500:
                 continue
+            if category_name == "국제" and not is_international(title, _clean_title(item.get("description", ""))):
+                continue  # 국제 검색에 걸린 국내 기사 — 다른 카테고리에서 다시 걸리면 그쪽으로 저장된다
             seen_titles.add(title)
             items.append({
                 "title": title,
@@ -359,10 +405,12 @@ def fetch_and_save_news():
     # 4) 본문 + 이미지 스크래핑 — 페이지 1회 다운로드, 병렬
     to_scrape = new_items + refresh_items
     with ThreadPoolExecutor(max_workers=10) as ex:
-        scraped = list(ex.map(lambda it: scrape_article(it["naver_link"]) if it["naver_link"] else (None, None), to_scrape))
+        scraped = list(ex.map(lambda it: scrape_article(it["naver_link"]) if it["naver_link"] else (None, None, None), to_scrape))
 
     inserts, updates = [], []
-    for it, (content, image_url) in zip(to_scrape, scraped):
+    for it, (content, image_url, press) in zip(to_scrape, scraped):
+        if press and _looks_like_domain_code(it["source"]):
+            it["source"] = press[:255]
         if it["title"] in existing:
             if content and len(content) > existing[it["title"]].clen:
                 updates.append({"content": content, "link": it["link"],

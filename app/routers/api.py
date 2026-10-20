@@ -201,9 +201,9 @@ def home():
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
             LEFT JOIN news_comments nc ON n.id = nc.news_id
-            WHERE n.status = 'published'
+            WHERE n.status = 'published' AND n.created_at >= NOW() - INTERVAL '14 days'
             GROUP BY n.id, n.title, n.created_at, c.name
-            ORDER BY comment_count DESC
+            ORDER BY comment_count DESC, n.created_at DESC
             LIMIT 5
         """)
         top_liked = _rows(conn, """
@@ -212,28 +212,34 @@ def home():
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
             LEFT JOIN news_likes nl ON n.id = nl.news_id
-            WHERE n.status = 'published'
+            WHERE n.status = 'published' AND n.created_at >= NOW() - INTERVAL '14 days'
             GROUP BY n.id, n.title, n.created_at, c.name
-            ORDER BY like_count DESC
+            ORDER BY like_count DESC, n.created_at DESC
             LIMIT 5
         """)
         top_viewed = _rows(conn, """
             SELECT n.id, n.title, n.view_count, n.created_at, c.name AS category_name
             FROM news n
             LEFT JOIN categories c ON n.category_id = c.id
-            WHERE n.status = 'published'
-            ORDER BY COALESCE(n.view_count, 0) DESC
+            WHERE n.status = 'published' AND n.created_at >= NOW() - INTERVAL '14 days'
+            ORDER BY COALESCE(n.view_count, 0) DESC, n.created_at DESC
             LIMIT 10
         """)
         big5_news = []
         for src in ['조선일보', '중앙일보', '동아일보', '한겨레', '연합뉴스', '경향신문']:
-            row = conn.execute(text("""
-                SELECT n.id, n.title, n.image_url, n.source, n.created_at, c.name AS category_name
-                FROM news n
-                LEFT JOIN categories c ON n.category_id = c.id
-                WHERE n.status = 'published' AND n.source = :src
-                ORDER BY COALESCE(n.view_count, 0) DESC LIMIT 1
-            """), {"src": src}).fetchone()
+            # 오래된 인기 기사가 계속 걸려 있지 않도록 최근 기사 중에서 고른다 (3일 → 없으면 14일)
+            row = None
+            for days in (3, 14):
+                row = conn.execute(text("""
+                    SELECT n.id, n.title, n.image_url, n.source, n.created_at, c.name AS category_name
+                    FROM news n
+                    LEFT JOIN categories c ON n.category_id = c.id
+                    WHERE n.status = 'published' AND n.source = :src
+                      AND n.created_at >= NOW() - make_interval(days => :days)
+                    ORDER BY COALESCE(n.view_count, 0) DESC, n.created_at DESC LIMIT 1
+                """), {"src": src, "days": days}).fetchone()
+                if row:
+                    break
             if row:
                 big5_news.append(dict(row._mapping))
     return {

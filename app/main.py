@@ -79,6 +79,36 @@ def _reclassify_politics() -> int:
     return reclassified
 
 
+def _fix_domestic_in_intl() -> int:
+    """국제 카테고리에 잘못 들어간 국내 기사를 사회로 옮긴다 (여러 번 실행해도 안전).
+    해외 RSS 기사(is_global=1)와 영문 기사는 건드리지 않는다."""
+    import re as _re
+    from sqlalchemy import text as _text
+    from app.services.naver_news import is_international
+    hangul = _re.compile(r"[가-힣]")
+    with engine.connect() as conn:
+        ids = {r.name: r.id for r in conn.execute(_text("SELECT id, name FROM categories")).fetchall()}
+        intl_id, social_id = ids.get("국제"), ids.get("사회")
+        if not intl_id or not social_id:
+            return 0
+        rows = conn.execute(_text("""
+            SELECT id, title, LEFT(COALESCE(content, ''), 200) AS head
+            FROM news
+            WHERE category_id = :cid AND COALESCE(is_global, 0) = 0
+        """), {"cid": intl_id}).fetchall()
+        move = [
+            r.id for r in rows
+            if hangul.search(r.title or "") and not is_international(r.title or "", r.head or "")
+        ]
+        for i in range(0, len(move), 500):
+            conn.execute(
+                _text("UPDATE news SET category_id = :sid WHERE id = ANY(:ids)"),
+                {"sid": social_id, "ids": move[i:i + 500]},
+            )
+        conn.commit()
+    return len(move)
+
+
 def _run_migrations() -> None:
     """DB 테이블·컬럼 보정과 기본 데이터 준비 (여러 번 실행해도 안전).
 
@@ -332,6 +362,14 @@ def _run_migrations() -> None:
             except Exception as e:
                 conn.rollback()
                 print(f"[정치 기사 재분류] {e}")
+
+            # 국제 카테고리에 섞여 들어간 국내 기사를 사회로 이동
+            try:
+                moved = _fix_domestic_in_intl()
+                if moved:
+                    print(f"✅ 국제 → 사회 재분류: {moved}건")
+            except Exception as e:
+                print(f"[국제 기사 재분류] {e}")
 
     except Exception as e:
         print(f"❌ DB 연결 실패: {e}")
