@@ -7,12 +7,14 @@ const About = lazy(() => import('./pages/About'))
 const AgeNews = lazy(() => import('./pages/AgeNews'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const Contact = lazy(() => import('./pages/Contact'))
+const FindAccount = lazy(() => import('./pages/FindAccount'))
 const Login = lazy(() => import('./pages/Login'))
 const MyPage = lazy(() => import('./pages/MyPage'))
 const NewsDetail = lazy(() => import('./pages/NewsDetail'))
 const NewsList = lazy(() => import('./pages/NewsList'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Search = lazy(() => import('./pages/Search'))
 const Signup = lazy(() => import('./pages/Signup'))
 const Subscribe = lazy(() => import('./pages/Subscribe'))
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/find-account" element={<FindAccount />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/press/signup" element={<Signup press />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/mypage" element={<MyPage />} />

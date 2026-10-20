@@ -79,6 +79,12 @@ export default function Login() {
             <button type="submit" className="btn-login" disabled={busy}>{busy ? '로그인 중...' : '로그인'}</button>
           </form>
 
+          <div className="find-links">
+            <Link to="/find-account?tab=id">아이디 찾기</Link>
+            <span aria-hidden="true">|</span>
+            <Link to="/find-account?tab=pw">비밀번호 찾기</Link>
+          </div>
+
           {hasSocial && (
             <>
               <div className="login-divider"><span>소셜 로그인</span></div>
