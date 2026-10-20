@@ -5,6 +5,7 @@ from sqlalchemy import text
 from app.database import engine
 from app.services.store import is_duplicate_user
 from app.routers.pages import AUTH_COOKIE_NAME, get_current_user, render
+from app.services.passwords import hash_password
 
 router = APIRouter(prefix="/press")
 
@@ -53,7 +54,7 @@ async def press_signup(
                 VALUES (:id, :name, :birth, :pw, :email, :tel, 'press')
             """),
             {"id": user_id, "name": name, "birth": birth,
-             "pw": password, "email": email, "tel": phone}
+             "pw": hash_password(password), "email": email, "tel": phone}
         )
         conn.commit()
 

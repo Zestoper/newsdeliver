@@ -24,6 +24,7 @@ from app.routers.pages import (
     _do_verify,
 )
 from app.services.email import send_verify_email_async
+from app.services.passwords import hash_password
 from app.services.store import (
     add_subscription,
     add_user,
@@ -121,7 +122,7 @@ def signup(body: SignupBody):
                     VALUES (:id, :name, :birth, :pw, :email, :tel, 'press')
                 """),
                 {"id": body.user_id, "name": body.name, "birth": body.birth,
-                 "pw": body.password, "email": body.email, "tel": body.phone},
+                 "pw": hash_password(body.password), "email": body.email, "tel": body.phone},
             )
             conn.commit()
     else:
@@ -578,7 +579,7 @@ def change_password(body: PasswordBody, request: Request):
     if not get_user(user_id=user["id"], password=body.current_pw):
         raise HTTPException(status_code=400, detail="현재 비밀번호가 올바르지 않습니다.")
     with engine.connect() as conn:
-        conn.execute(text("UPDATE news_users SET pw=:pw WHERE id=:id"), {"pw": body.new_pw, "id": user["id"]})
+        conn.execute(text("UPDATE news_users SET pw=:pw WHERE id=:id"), {"pw": hash_password(body.new_pw), "id": user["id"]})
         conn.commit()
     return {"success": True}
 
