@@ -177,3 +177,22 @@
 }
 
 
+
+/* 아이디 찾기 · 비밀번호 찾기 */
+.pg-login .find-links { display: flex; justify-content: center; gap: 10px; margin: -4px 0 14px; font-size: 13px; color: var(--light); }
+.pg-login .find-links a { color: var(--muted); text-decoration: none; }
+.pg-login .find-links a:hover { color: var(--red); text-decoration: underline; }
+.pg-login .find-tabs { display: flex; gap: 6px; margin-bottom: 16px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.pg-login .find-tabs button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px; border: none; border-radius: 7px; background: transparent;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all 0.2s;
+}
+.pg-login .find-tabs button.active { background: white; color: var(--red); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.pg-login .find-note { font-size: 12px; color: var(--light); line-height: 1.6; text-align: center; margin-top: 4px; }
+.pg-login .find-warn { font-size: 12px; color: #DC2626; }
+.pg-login .find-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 18px 4px 22px; color: var(--red); }
+.pg-login .find-sent p { color: var(--text); font-size: 14px; line-height: 1.7; }
+.pg-login .find-sent .find-sub { color: var(--muted); font-size: 13px; }
+.pg-login .find-btn { display: block; width: 100%; text-align: center; text-decoration: none; margin-top: 6px; }
+.pg-login .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }

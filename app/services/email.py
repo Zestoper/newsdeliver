@@ -337,3 +337,62 @@ def send_verify_email_async(to_email: str, token: str, base_url: str) -> None:
         except Exception as e:
             print(f"[EMAIL] 인증 메일 발송 실패: {e}")
     threading.Thread(target=_job, daemon=True).start()
+
+
+# ── 계정 안내 메일 (아이디 찾기 · 비밀번호 재설정) ─────────────────────────
+def _account_html(title: str, body_html: str, button_text: str | None = None, button_url: str | None = None) -> str:
+    button = ""
+    if button_text and button_url:
+        button = f"""<a href="{button_url}"
+       style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#cc0000,#ff4444);
+              color:white;text-decoration:none;border-radius:24px;font-weight:700;font-size:15px;
+              box-shadow:0 4px 12px rgba(204,0,0,0.3);">{button_text}</a>"""
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
+<div style="max-width:480px;margin:0 auto;padding:32px 16px;">
+  <div style="background:linear-gradient(135deg,#cc0000,#ff4444);border-radius:12px 12px 0 0;padding:24px 28px;">
+    <h1 style="color:white;font-size:20px;font-weight:900;margin:0;">News Delivery</h1>
+  </div>
+  <div style="background:white;padding:32px 28px;border-radius:0 0 12px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+    <h2 style="font-size:19px;color:#1a1a1a;margin:0 0 12px;">{title}</h2>
+    <div style="font-size:15px;color:#555;line-height:1.8;margin:0 0 24px;">{body_html}</div>
+    {button}
+    <p style="font-size:12px;color:#adb5bd;margin:20px 0 0;">
+      이 메일을 요청하지 않으셨다면 무시하셔도 됩니다. 계정은 그대로 안전합니다.
+    </p>
+  </div>
+  <p style="text-align:center;font-size:12px;color:#adb5bd;margin-top:16px;">© 2026 News Delivery</p>
+</div>
+</body>
+</html>"""
+
+
+def send_html_email(to_email: str, subject: str, html_body: str) -> None:
+    """HTML 메일 한 통 발송 (Brevo/SendGrid API 우선, 없으면 SMTP)."""
+    if _api_provider():
+        _send_api(to_email, subject, html_body)
+        return
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = SMTP_USER
+    msg["To"] = to_email
+    msg.attach(MIMEText(html_body, "html"))
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, to_email, msg.as_string())
+
+
+def send_account_email_async(to_email: str, subject: str, title: str, body_html: str,
+                             button_text: str | None = None, button_url: str | None = None) -> None:
+    html_body = _account_html(title, body_html, button_text, button_url)
+
+    def _job():
+        try:
+            send_html_email(to_email, subject, html_body)
+            print(f"[EMAIL] 계정 안내 메일 발송: {to_email}")
+        except Exception as e:
+            print(f"[EMAIL] 계정 안내 메일 실패 {to_email}: {e}")
+    threading.Thread(target=_job, daemon=True).start()

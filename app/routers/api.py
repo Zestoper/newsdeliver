@@ -23,6 +23,7 @@ from app.routers.pages import (
     _NEWS_PAGE_SIZE,
     _do_verify,
 )
+from app.services.account_recovery import check_reset_token, request_find_id, request_password_reset, reset_password
 from app.services.email import send_verify_email_async
 from app.services.passwords import hash_password
 from app.services.store import (
@@ -96,6 +97,53 @@ def login(body: LoginBody):
             conn.commit()
         press_notice = True
     return {"token": issue_token(user["id"]), "user": _public_user(user), "press_notice": press_notice}
+
+
+class FindIdBody(BaseModel):
+    email: str
+
+
+class ResetRequestBody(BaseModel):
+    user_id: str
+    email: str
+
+
+class ResetConfirmBody(BaseModel):
+    token: str
+    new_password: str
+    new_password_confirm: str
+
+
+# 아이디 찾기 · 비밀번호 재설정 — 가입 여부를 알 수 없도록 결과와 상관없이 같은 응답을 준다
+_SENT_MESSAGE = "입력한 정보와 일치하는 계정이 있으면 가입 이메일로 안내 메일을 보냈어요. 메일함과 스팸함을 확인해 주세요."
+
+
+@router.post("/auth/find-id")
+def find_id(body: FindIdBody):
+    request_find_id(body.email, public_base_url())
+    return {"success": True, "message": _SENT_MESSAGE}
+
+
+@router.post("/auth/password-reset/request")
+def password_reset_request(body: ResetRequestBody):
+    request_password_reset(body.user_id, body.email, public_base_url())
+    return {"success": True, "message": _SENT_MESSAGE}
+
+
+@router.get("/auth/password-reset/check")
+def password_reset_check(token: str = ""):
+    return {"valid": check_reset_token(token)}
+
+
+@router.post("/auth/password-reset/confirm")
+def password_reset_confirm(body: ResetConfirmBody):
+    if body.new_password != body.new_password_confirm:
+        raise HTTPException(status_code=400, detail="새 비밀번호가 서로 다릅니다.")
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="비밀번호는 8자 이상으로 입력해주세요.")
+    if not reset_password(body.token, body.new_password):
+        raise HTTPException(status_code=400, detail="링크가 만료됐거나 이미 사용됐어요. 비밀번호 찾기를 다시 요청해 주세요.")
+    return {"success": True}
 
 
 @router.get("/auth/me")

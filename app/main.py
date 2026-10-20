@@ -422,7 +422,7 @@ from fastapi.responses import RedirectResponse as _Redirect
 
 _FRONTEND_PAGES = _re.compile(
     r"^/(|news|news/\d+|global-news|search|about|contact|login|signup|subscribe|mypage|"
-    r"verify-email|age-news/[a-z]+|press/signup)$"
+    r"verify-email|age-news/[a-z]+|press/signup|find-account|reset-password)$"
 )
 
 
