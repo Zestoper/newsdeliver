@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import text, bindparam
 from app.database import engine
 from app.config import settings
+from app.services.published_at import PUBLISHED_AT_SQL, from_rfc822
 
 CLIENT_ID = settings.NAVER_CLIENT_ID
 CLIENT_SECRET = settings.NAVER_CLIENT_SECRET
@@ -383,6 +384,7 @@ def fetch_and_save_news():
                 "link": link,
                 "naver_link": naver_link,
                 "category_id": category_map[category_name],
+                "published_at": from_rfc822(item.get("pubDate")),
             })
     if not items:
         return 0
@@ -424,6 +426,7 @@ def fetch_and_save_news():
                 "link": it["link"],
                 "naver_link": it["naver_link"],
                 "category_id": it["category_id"],
+                "published_at": it["published_at"],
             })
 
     # 5) 일괄 저장 — 한 번의 트랜잭션
@@ -431,8 +434,9 @@ def fetch_and_save_news():
         if inserts:
             conn.execute(
                 text("""
-                    INSERT INTO news (title, content, source, image_url, link, naver_link, status, category_id)
-                    VALUES (:title, :content, :source, :image_url, :link, :naver_link, 'published', :category_id)
+                    INSERT INTO news (title, content, source, image_url, link, naver_link, status, category_id, created_at)
+                    VALUES (:title, :content, :source, :image_url, :link, :naver_link, 'published', :category_id,
+                            """ + PUBLISHED_AT_SQL + """)
                     ON CONFLICT DO NOTHING
                 """),
                 inserts,

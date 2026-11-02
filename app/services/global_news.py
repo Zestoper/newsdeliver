@@ -4,6 +4,7 @@ import feedparser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from sqlalchemy import text, bindparam
 from app.database import engine
+from app.services.published_at import PUBLISHED_AT_SQL, from_struct_time
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)"}
 
@@ -272,6 +273,7 @@ def _entry_to_article(entry: dict, feed_title: str) -> dict:
         "urlToImage": image_url,
         "content": content_text,
         "source": {"name": feed_title},
+        "published_at": from_struct_time(entry.get("published_parsed") or entry.get("updated_parsed")),
     }
 
 
@@ -333,6 +335,7 @@ def _prepare(article: dict, category_id: int, category_name: str, seen: set,
         "title": title, "content": full_content,
         "source": source_name, "image_url": image_url,
         "link": link, "category_id": category_id,
+        "published_at": article.get("published_at"),
     }
 
 
@@ -391,10 +394,10 @@ def fetch_and_save_global_news() -> int:
                     text("""
                         INSERT INTO news
                             (title, content, source, image_url, link, naver_link,
-                             status, category_id, is_global)
+                             status, category_id, is_global, created_at)
                         VALUES
                             (:title, :content, :source, :image_url, :link, '',
-                             'published', :category_id, 1)
+                             'published', :category_id, 1, """ + PUBLISHED_AT_SQL + """)
                         ON CONFLICT DO NOTHING
                     """),
                     rows,
