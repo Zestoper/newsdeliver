@@ -1006,14 +1006,20 @@ async def toggle_category_subscribe(request: Request, category_id: int):
     try:
         body = await request.json()
         is_global = int(body.get("is_global", 0))
+        # 원하는 상태(true/false)를 보내면 그 상태로 맞춘다 — 화면이 먼저 바뀌는 React 구독 화면용
+        # 안 보내면 예전처럼 토글
+        desired = body.get("subscribed")
     except Exception:
         is_global = 0
+        desired = None
     with engine.connect() as conn:
         existing = conn.execute(
             text("SELECT id FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id AND COALESCE(is_global, 0) = :is_global"),
             {"user_id": user["id"], "category_id": category_id, "is_global": is_global}
         ).fetchone()
-        if existing:
+        if desired is not None and bool(desired) == bool(existing):
+            subscribed = bool(existing)
+        elif existing:
             conn.execute(
                 text("DELETE FROM category_subscriptions WHERE user_id = :user_id AND category_id = :category_id AND COALESCE(is_global, 0) = :is_global"),
                 {"user_id": user["id"], "category_id": category_id, "is_global": is_global}

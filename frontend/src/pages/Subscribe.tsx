@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CircleCheck, Clock, FileText, Info, LayoutGrid, Lock, MailOpen, Sunrise, Sunset, TriangleAlert } from 'lucide-react'
 import Layout from '../components/Layout'
@@ -65,16 +65,32 @@ export default function Subscribe() {
     return null
   })
 
-  const toggleCategory = async (cat: Category, isGlobal: boolean) => {
-    const d = await api<{ success: boolean; subscribed: boolean }>(`/categories/${cat.id}/subscribe`, {
-      method: 'POST', body: { is_global: isGlobal ? 1 : 0 },
-    })
-    if (!d.success || !data) return
+  // 누르는 즉시 화면부터 바꾸고 저장은 뒤에서 한다 (Render 서버가 자고 있으면 응답까지 수십 초 걸려서)
+  // 같은 카테고리를 빠르게 여러 번 눌러도 요청이 순서대로 가도록 카테고리별로 줄을 세운다
+  const saveQueue = useRef<Record<string, Promise<void>>>({})
+  const toggleCategory = (cat: Category, isGlobal: boolean) => {
+    if (!data) return
     const key = isGlobal ? 'global_subscribed_ids' : 'domestic_subscribed_ids'
-    const ids = d.subscribed ? [...data[key], cat.id] : data[key].filter((x) => x !== cat.id)
-    setData({ ...data, [key]: ids })
+    const want = !data[key].includes(cat.id)
+    setData((prev) => prev && {
+      ...prev,
+      [key]: want ? [...prev[key].filter((x) => x !== cat.id), cat.id] : prev[key].filter((x) => x !== cat.id),
+    })
     const label = isGlobal ? '해외' : '국내'
-    setResult({ text: d.subscribed ? `${label} 구독했어요!` : `${label} 구독 해지했어요.`, ok: d.subscribed })
+    setResult({ text: want ? `${label} ${cat.name} 구독했어요!` : `${label} ${cat.name} 구독을 해지했어요.`, ok: want })
+
+    const qk = `${key}:${cat.id}`
+    saveQueue.current[qk] = (saveQueue.current[qk] ?? Promise.resolve()).then(async () => {
+      try {
+        const d = await api<{ success: boolean; message?: string }>(`/categories/${cat.id}/subscribe`, {
+          method: 'POST', body: { is_global: isGlobal ? 1 : 0, subscribed: want },
+        })
+        if (!d.success) throw new Error(d.message ?? '')
+      } catch {
+        setResult({ text: `${cat.name} 구독을 저장하지 못했어요. 다시 눌러주세요.`, ok: false })
+        reload()  // 서버에 저장된 상태로 되돌린다
+      }
+    })
   }
 
   const subscribeDirect = async (addr: string) => {
