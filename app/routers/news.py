@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date, datetime, time, timedelta
 from app.database import engine
 from app.auth import require_admin
 
@@ -26,13 +27,40 @@ class NewsUpdate(BaseModel):
     category_id: Optional[int] = None
 
 
+# created_at 은 DB 세션 시간대(운영은 UTC) 기준 TIMESTAMP 라서 한국 시간으로 바꿔서 쓴다.
+# (timestamp AT TIME ZONE 세션시간대 → timestamptz → AT TIME ZONE 'Asia/Seoul' → 한국 시각)
+_KST_CREATED = "((created_at AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'Asia/Seoul')"
+ADMIN_NEWS_LIMIT = 5000
+
+
 @router.get("")
-def get_news():
+def get_news(
+    is_global: Optional[int] = None,
+    date_from: Optional[date] = None,   # 한국 날짜 (포함)
+    date_to: Optional[date] = None,     # 한국 날짜 (포함)
+):
+    """관리자 뉴스 목록.
+
+    전체 기사가 5만 건이 넘어서 최신 5000건만 내려주면 열흘쯤 지난 날짜는 아예 안 보였다.
+    날짜를 고르면 DB에서 그 기간을 직접 조회한다.
+    """
+    where, params = ["1=1"], {"limit": ADMIN_NEWS_LIMIT}
+    if is_global is not None:
+        where.append("COALESCE(is_global, 0) = :g")
+        params["g"] = 1 if is_global else 0
+    if date_from:
+        where.append(f"{_KST_CREATED} >= :d_from")
+        params["d_from"] = datetime.combine(date_from, time.min)
+    if date_to:
+        where.append(f"{_KST_CREATED} < :d_to")
+        params["d_to"] = datetime.combine(date_to + timedelta(days=1), time.min)
     with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT id, title, source, status, category_id, image_url, is_global, created_at
-            FROM news ORDER BY created_at DESC LIMIT 5000
-        """))
+        result = conn.execute(text(f"""
+            SELECT id, title, source, status, category_id, image_url, is_global,
+                   {_KST_CREATED} AS created_at
+            FROM news WHERE {' AND '.join(where)}
+            ORDER BY created_at DESC LIMIT :limit
+        """), params)
         return [dict(row._mapping) for row in result]
 
 

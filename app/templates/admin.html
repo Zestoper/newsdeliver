@@ -889,9 +889,9 @@
                                 <option value="">전체 언론사</option>
                             </select>
                             <div class="date-range">
-                                <input type="date" id="news-date-from" onchange="filterNews()" aria-label="시작 날짜" />
+                                <input type="date" id="news-date-from" onchange="loadNewsPanel('news')" aria-label="시작 날짜" />
                                 <span>~</span>
-                                <input type="date" id="news-date-to" onchange="filterNews()" aria-label="끝 날짜" />
+                                <input type="date" id="news-date-to" onchange="loadNewsPanel('news')" aria-label="끝 날짜" />
                                 <button type="button" class="range-btn" onclick="setNewsRange('news', 0)">오늘</button>
                                 <button type="button" class="range-btn" onclick="setNewsRange('news', 7)">7일</button>
                                 <button type="button" class="range-btn" onclick="setNewsRange('news', 30)">30일</button>
@@ -930,9 +930,9 @@
                                 <option value="">전체 언론사</option>
                             </select>
                             <div class="date-range">
-                                <input type="date" id="global-news-date-from" onchange="filterGlobalNews()" aria-label="시작 날짜" />
+                                <input type="date" id="global-news-date-from" onchange="loadNewsPanel('global-news')" aria-label="시작 날짜" />
                                 <span>~</span>
-                                <input type="date" id="global-news-date-to" onchange="filterGlobalNews()" aria-label="끝 날짜" />
+                                <input type="date" id="global-news-date-to" onchange="loadNewsPanel('global-news')" aria-label="끝 날짜" />
                                 <button type="button" class="range-btn" onclick="setNewsRange('global-news', 0)">오늘</button>
                                 <button type="button" class="range-btn" onclick="setNewsRange('global-news', 7)">7일</button>
                                 <button type="button" class="range-btn" onclick="setNewsRange('global-news', 30)">30일</button>
@@ -1411,7 +1411,7 @@
                     if (ok) shown++;
                 });
                 const count = document.getElementById(`${prefix}-count`);
-                if (count) count.textContent = `${shown.toLocaleString()} / ${rows.length.toLocaleString()}건`;
+                if (count) count.textContent = `${shown.toLocaleString()} / ${rows.length.toLocaleString()}건` + (_newsLimited[prefix] ? ' (최신 5000건까지 · 날짜로 좁혀보세요)' : '');
             }
 
             function _ymd(d) {
@@ -1432,7 +1432,7 @@
                     fromEl.value = _ymd(start);
                     toEl.value = _ymd(today);
                 }
-                prefix === 'news' ? filterNews() : filterGlobalNews();
+                loadNewsPanel(prefix);
             }
 
             function filterNews() {
@@ -1516,23 +1516,36 @@
                 });
             }
 
-            async function loadNews() {
-                const res = await fetch(NEWS_API);
-                const list = await res.json();
+            // 국내 · 해외를 따로 불러온다. 날짜를 고르면 서버가 그 기간을 직접 조회한다
+            // (전체 5만 건 중 최신 5000건만 받던 때는 열흘 전 날짜를 고르면 0건이 나왔다)
+            const _NEWS_PANELS = {
+                news: { table: 'newsTable', isGlobal: 0 },
+                'global-news': { table: 'globalNewsTable', isGlobal: 1 },
+            };
+
+            async function loadNewsPanel(prefix) {
+                const cfg = _NEWS_PANELS[prefix];
+                const from = document.getElementById(`${prefix}-date-from`).value;
+                const to = document.getElementById(`${prefix}-date-to`).value;
+                const qs = new URLSearchParams({ is_global: cfg.isGlobal });
+                if (from) qs.set('date_from', from);
+                if (to) qs.set('date_to', to);
+                const count = document.getElementById(`${prefix}-count`);
+                if (count) count.textContent = '불러오는 중...';
+                const list = await (await fetch(`${NEWS_API}?${qs}`)).json();
                 list.forEach((n) => {
                     _newsMap[n.id] = n;
                 });
+                document.querySelector(`#${cfg.table} tbody`).innerHTML = list.map(_buildNewsRow).join('');
+                _populateSourceFilter(document.getElementById(`${prefix}-source-filter`), list);
+                _newsLimited[prefix] = list.length >= 5000;
+                prefix === 'news' ? filterNews() : filterGlobalNews();
+            }
 
-                const domestic = list.filter((n) => !n.is_global);
-                const global = list.filter((n) => n.is_global);
+            const _newsLimited = {};
 
-                document.querySelector('#newsTable tbody').innerHTML = domestic.map(_buildNewsRow).join('');
-                document.querySelector('#globalNewsTable tbody').innerHTML = global.map(_buildNewsRow).join('');
-
-                _populateSourceFilter(document.getElementById('news-source-filter'), domestic);
-                _populateSourceFilter(document.getElementById('global-news-source-filter'), global);
-                filterNews();
-                filterGlobalNews();
+            async function loadNews() {
+                await Promise.all([loadNewsPanel('news'), loadNewsPanel('global-news')]);
             }
 
             async function toggleStatus(id, current) {
