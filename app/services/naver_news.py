@@ -1,6 +1,7 @@
 import html as _html
 import httpx
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import text, bindparam
 from app.database import engine
@@ -409,8 +410,11 @@ def fetch_and_save_news():
 
     # 4) 본문 + 이미지 스크래핑 — 페이지 1회 다운로드, 병렬
     to_scrape = new_items + refresh_items
-    with ThreadPoolExecutor(max_workers=10) as ex:
+    # 원문 페이지 요청은 기다리는 시간이 대부분이라 동시 요청 수를 10 → 20으로 늘린다
+    started = time.monotonic()
+    with ThreadPoolExecutor(max_workers=20) as ex:
         scraped = list(ex.map(lambda it: scrape_article(it["naver_link"]) if it["naver_link"] else (None, None, None), to_scrape))
+    print(f"[국내뉴스] 원문 {len(to_scrape)}개 수집 (새 기사 {len(new_items)} / 본문 보강 {len(refresh_items)}) {time.monotonic() - started:.1f}초")
 
     inserts, updates = [], []
     for it, (content, image_url, press) in zip(to_scrape, scraped):

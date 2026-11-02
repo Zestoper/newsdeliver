@@ -1,4 +1,5 @@
 import re
+import time
 import httpx
 import feedparser
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -279,7 +280,7 @@ def _entry_to_article(entry: dict, feed_title: str) -> dict:
 
 def _fetch_rss(url: str, limit: int) -> list[dict]:
     try:
-        r = httpx.get(url, headers=_HEADERS, timeout=6, follow_redirects=True)
+        r = httpx.get(url, headers=_HEADERS, timeout=httpx.Timeout(6.0, connect=3.0), follow_redirects=True)
         if r.status_code != 200:
             print(f"[해외뉴스] RSS 요청 실패 ({r.status_code}): {url[:70]}")
             return []
@@ -346,15 +347,17 @@ def fetch_and_save_global_news() -> int:
             for r in conn.execute(text("SELECT id, name FROM categories")).fetchall()
         }
 
-    # RSS 피드 병렬 수집 (최대 12개 동시, 전체 타임아웃 45초)
+    # RSS 피드 병렬 수집 — 피드 53개를 한꺼번에 요청하고 전체 20초 안에 온 것만 쓴다
+    # (예전: 12개씩 + 전체 45초 → 느린 피드 몇 개에 묶여 실측 약 40초)
     fetched: list[tuple[list[dict], str]] = []
-    executor = ThreadPoolExecutor(max_workers=12)
+    started = time.monotonic()
+    executor = ThreadPoolExecutor(max_workers=min(len(RSS_SOURCES), 32))
     future_map = {
         executor.submit(_fetch_rss, src["url"], src["limit"]): src["db_category"]
         for src in RSS_SOURCES
     }
     try:
-        for future in as_completed(future_map, timeout=45):
+        for future in as_completed(future_map, timeout=20):
             cat_name = future_map[future]
             try:
                 articles = future.result()
@@ -363,9 +366,10 @@ def fetch_and_save_global_news() -> int:
             if articles:
                 fetched.append((articles, cat_name))
     except Exception:
-        pass
+        print(f"[해외뉴스] 20초 안에 응답 없는 피드 {sum(not f.done() for f in future_map)}개는 이번 수집에서 건너뜀")
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
+    print(f"[해외뉴스] RSS {len(fetched)}/{len(RSS_SOURCES)}개 수신 ({time.monotonic() - started:.1f}초)")
 
     rows: list[dict] = []
     seen: set[str] = set()
