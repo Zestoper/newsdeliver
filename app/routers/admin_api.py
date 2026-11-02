@@ -120,12 +120,15 @@ def _load_subscriber_articles() -> list[dict]:
     return result
 
 
-def prewarm_newsletter_summaries(limit: int = 8) -> int:
+def prewarm_newsletter_summaries(limit: int = 60) -> int:
     """다음 뉴스레터에 들어갈 기사 중 요약이 없는 것을 미리 요약해 둔다.
 
     Groq 무료 한도 때문에 요약은 6초에 1건씩만 만들 수 있어서
     발송 시점에 한꺼번에 만들면 기사 수 × 6초만큼 발송이 늦어진다.
-    뉴스 수집 크론(30분마다)이 끝날 때 조금씩 미리 만들어 두면 발송은 캐시만 쓰고 바로 끝난다.
+    뉴스 수집 크론(30분마다)이 끝날 때 미리 만들어 두면 발송은 저장된 요약만 쓰고 바로 끝난다.
+
+    예전에는 한 번에 8건까지만 만들어서 구독 카테고리가 많으면 발송 때 밀린 요약을 몰아서 만들었다.
+    한 번에 최대 60건(약 6분) — 다음 수집(30분 뒤) 전에 끝나는 양이다.
     """
     subscriber_data = _load_subscriber_articles()
     pending = {
@@ -216,23 +219,48 @@ def send_newsletter_api(request: Request):
 def newsletter_status():
     return _newsletter_status
 
+# ── 수동 뉴스 수집 ──
+# 수집은 원문 페이지 수백 개를 받느라 수십 초 걸린다. 예전에는 끝날 때까지 응답을 안 줘서 관리자 화면이 멈춰 있었다.
+# 이제 바로 "시작했어요"를 돌려주고 뒤에서 수집하며 화면은 /fetch-status 를 확인한다.
+_fetch_status = {"running": False, "message": "", "success": None}
+_fetch_lock = threading.Lock()
+
+
+def _start_fetch(label: str, job) -> dict:
+    if not _fetch_lock.acquire(blocking=False):
+        return {"success": False, "message": "이미 수집 중입니다. 잠시 후 다시 시도해주세요."}
+
+    def _run():
+        started = time.monotonic()
+        try:
+            _fetch_status.update(running=True, success=None, message=f"{label} 가져오는 중...")
+            count = job()
+            sec = round(time.monotonic() - started)
+            _fetch_status.update(running=False, success=True, message=f"{label} {count}개를 가져왔습니다! ({sec}초)")
+        except Exception as e:
+            _fetch_status.update(running=False, success=False, message=f"{label} 수집 실패: {e}")
+        finally:
+            _fetch_lock.release()
+
+    _fetch_status.update(running=True, success=None, message=f"{label} 가져오는 중...")
+    threading.Thread(target=_run, daemon=True).start()
+    return {"success": True, "started": True, "message": f"{label} 수집을 시작했어요."}
+
+
 @router.post("/fetch-news")
 def fetch_news_api():
-    try:
-        count = fetch_and_save_news()
-        return {"success": True, "message": f"{count}개 뉴스를 가져왔습니다!"}
-    except Exception as e:
-        return {"success": False, "message": str(e)}
+    return _start_fetch("뉴스", fetch_and_save_news)
 
 
 @router.post("/fetch-global-news")
 def fetch_global_news_api():
-    try:
-        from app.services.global_news import fetch_and_save_global_news
-        count = fetch_and_save_global_news()
-        return {"success": True, "message": f"해외뉴스 {count}개를 가져왔습니다!"}
-    except Exception as e:
-        return {"success": False, "message": str(e)}
+    from app.services.global_news import fetch_and_save_global_news
+    return _start_fetch("해외뉴스", fetch_and_save_global_news)
+
+
+@router.get("/fetch-status")
+def fetch_status():
+    return _fetch_status
 
 
 @router.post("/recrawl-content")

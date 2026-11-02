@@ -393,15 +393,18 @@ def fetch_and_save_news():
     with engine.connect() as conn:
         existing = {
             r.title: r for r in conn.execute(
-                text("SELECT id, title, LENGTH(COALESCE(content, '')) AS clen FROM news WHERE title IN :titles").bindparams(bindparam("titles", expanding=True)),
+                text("SELECT id, title, LENGTH(COALESCE(content, '')) AS clen, COALESCE(content_refreshed, 0) AS refreshed FROM news WHERE title IN :titles").bindparams(bindparam("titles", expanding=True)),
                 {"titles": [it["title"] for it in items]},
             )
         }
 
     new_items = [it for it in items if it["title"] not in existing]
+    # 본문이 짧은 기존 기사는 '한 번만' 다시 긁는다.
+    # 원래 짧은 기사(속보·단신)는 몇 번을 긁어도 짧아서 예전에는 30분마다 같은 페이지를 계속 다시 받았다.
     refresh_items = [
         it for it in items
-        if it["title"] in existing and existing[it["title"]].clen < 1000 and it["naver_link"]
+        if it["title"] in existing and existing[it["title"]].clen < 1000
+        and not existing[it["title"]].refreshed and it["naver_link"]
     ]
 
     # 4) 본문 + 이미지 스크래핑 — 페이지 1회 다운로드, 병렬
@@ -445,6 +448,12 @@ def fetch_and_save_news():
             conn.execute(
                 text("UPDATE news SET content = :content, link = :link, naver_link = :naver_link WHERE id = :id"),
                 updates,
+            )
+        if refresh_items:
+            # 더 긴 본문을 얻었든 못 얻었든 다시 시도했다고 표시 → 다음 수집부터 건너뜀
+            conn.execute(
+                text("UPDATE news SET content_refreshed = 1 WHERE id IN :ids").bindparams(bindparam("ids", expanding=True)),
+                {"ids": [existing[it["title"]].id for it in refresh_items]},
             )
         conn.commit()
 

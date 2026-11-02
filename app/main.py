@@ -131,6 +131,8 @@ def _run_migrations() -> None:
                 ("ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL", "news_comments.parent_id"),
                 ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", "news_users.created_at"),
                 ("ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_summary TEXT NULL", "news.ai_summary"),
+                # 본문이 짧은 기사를 수집할 때마다 다시 긁지 않도록 '한 번 다시 시도했음'을 기록
+                ("ALTER TABLE news ADD COLUMN IF NOT EXISTS content_refreshed SMALLINT DEFAULT 0", "news.content_refreshed"),
                 ("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(10) DEFAULT 'text'", "chat_messages.message_type"),
                 ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_approved SMALLINT DEFAULT 0", "news_users.press_approved"),
                 ("ALTER TABLE news_users ADD COLUMN IF NOT EXISTS press_notified SMALLINT DEFAULT 0", "news_users.press_notified"),

@@ -1617,24 +1617,38 @@
             }
 
             // ── 뉴스 API 도구 ──
-            async function fetchNews() {
+            // 수집은 서버 뒤에서 돈다 — 시작 응답을 받은 뒤 2초마다 상태만 확인하고 끝나면 표를 새로 불러온다
+            async function _startFetch(path) {
                 const el = document.getElementById('fetch-result');
-                el.textContent = '뉴스 가져오는 중...';
                 el.style.color = '#888';
-                const res = await fetch(`${ADMIN_API}/fetch-news`, { method: 'POST' });
+                const res = await fetch(`${ADMIN_API}/${path}`, { method: 'POST' });
                 const data = await res.json();
                 el.textContent = data.message;
-                el.style.color = data.success ? '#16a34a' : '#ef4444';
+                if (!data.started) {
+                    el.style.color = data.success ? '#16a34a' : '#ef4444';
+                    return;
+                }
+                const poll = setInterval(async () => {
+                    try {
+                        const st = await (await fetch(`${ADMIN_API}/fetch-status`)).json();
+                        if (st.message) el.textContent = st.message;
+                        if (!st.running) {
+                            clearInterval(poll);
+                            el.style.color = st.success ? '#16a34a' : '#ef4444';
+                            if (st.success) loadNews();
+                        }
+                    } catch {
+                        /* 다음 확인 때 다시 시도 */
+                    }
+                }, 2000);
             }
 
-            async function fetchGlobalNews() {
-                const el = document.getElementById('fetch-result');
-                el.textContent = '해외뉴스 가져오는 중... (30~60초 소요)';
-                el.style.color = '#888';
-                const res = await fetch(`${ADMIN_API}/fetch-global-news`, { method: 'POST' });
-                const data = await res.json();
-                el.textContent = data.message;
-                el.style.color = data.success ? '#16a34a' : '#ef4444';
+            function fetchNews() {
+                _startFetch('fetch-news');
+            }
+
+            function fetchGlobalNews() {
+                _startFetch('fetch-global-news');
             }
 
             async function cleanContent() {
