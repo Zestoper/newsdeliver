@@ -11,8 +11,8 @@
 | 서비스명     | NewsDeliver                                                                     |
 | 프론트엔드   | React · TypeScript · Vite (Vercel)                                              |
 | 백엔드       | Python · FastAPI · SQLAlchemy · APScheduler (Render)                            |
-| 데이터베이스 | MySQL                                                                           |
-| 외부 API     | 네이버 뉴스 API · Groq API (AI 요약) · OAuth (소셜 로그인) · NewsAPI (해외뉴스) |
+| 데이터베이스 | PostgreSQL                                                                      |
+| 외부 API     | 네이버 뉴스 API · Groq API (AI 요약) · OAuth (소셜 로그인) · 해외 언론사 RSS    |
 | 실시간       | WebSocket 채팅                                                                  |
 | 배포         | 프론트엔드 Vercel · 백엔드 Render · 예약 작업 cron-job.org                      |
 
@@ -24,6 +24,8 @@
 
 - 네이버 뉴스 API로 9개 카테고리 최신 뉴스 자동 크롤링
     - 정치 / 경제 / IT / 문화 / 스포츠 / 예술 / 연예 / 국제 / 사회
+- 해외 뉴스는 BBC · NYT · Guardian · NPR · TechCrunch 등 언론사 RSS 약 40개를 `feedparser`로 수집
+- 기사 날짜는 **원본 발행 시각** 기준 (네이버 `pubDate` · RSS `published`) — 수집이 밀려도 날짜가 몰리지 않음
 - **2시간마다** APScheduler로 자동 갱신 (서버 시작 시 즉시 1회 실행)
 - BeautifulSoup 없이 **정규표현식만으로** 뉴스 본문 전체 추출
 - `og:image` 메타태그 파싱으로 대표 이미지 자동 수집
@@ -81,7 +83,7 @@
     - 30세 미만 → 10~20대 / 30~49세 → 30~40대 / 50세 이상 → 50~70대
 - 홈 화면에서 **"~님 맞춤 뉴스"** 섹션 자동 표시
 - 이미 노출된 뉴스 ID 제외(`exclude` 파라미터)로 중복 노출 방지
-- 해외뉴스 별도 섹션 (NewsAPI 수집)
+- 해외뉴스 별도 섹션 (언론사 RSS 수집)
 
 ### 9. 홈 화면 중복 제거
 
@@ -118,7 +120,7 @@ newsdeliver/
 │   │   └── pages.py         # HTML 페이지 렌더링 + 중복 제거 + 맞춤 뉴스
 │   ├── services/
 │   │   ├── naver_news.py    # 네이버 뉴스 수집 + 본문 스크래핑 + 유사 중복 필터
-│   │   ├── global_news.py   # 해외뉴스 수집 (NewsAPI + RSS)
+│   │   ├── global_news.py   # 해외뉴스 수집 (언론사 RSS)
 │   │   ├── ai_summary.py    # AI 뉴스 요약
 │   │   ├── email.py         # 이메일 발송
 │   │   └── store.py         # DB 공통 서비스
@@ -160,8 +162,8 @@ pip install -r requirements.txt
 ### 2. 환경변수 설정 (`.env`)
 
 ```env
-# 데이터베이스 (MySQL 연결 문자열)
-DB_URL=mysql+pymysql://root:비밀번호@localhost:3306/newsdelivery
+# 데이터베이스 (PostgreSQL 연결 문자열)
+DB_URL=postgresql+psycopg2://postgres:비밀번호@localhost:5432/newsdelivery
 
 # 네이버 뉴스 API (뉴스 수집용)
 NAVER_CLIENT_ID=your_naver_client_id
@@ -194,8 +196,6 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/oauth/google/callback
 # AI 요약 (Groq API)
 GROQ_API_KEY=your_groq_api_key
 
-# 해외뉴스 (NewsAPI)
-NEWSAPI_KEY=your_newsapi_key
 
 # 결제 (토스페이먼츠, 선택)
 TOSS_CLIENT_KEY=your_toss_client_key
@@ -260,11 +260,15 @@ Render 무료 플랜은 15분 동안 요청이 없으면 서버가 잠들고 다
 | 작업                  | 주기                     |
 | --------------------- | ------------------------ |
 | 뉴스 자동 수집 (국내) | 2시간마다 + 서버 시작 시 |
-| 해외뉴스 수집         | 3시간마다                |
+| 해외뉴스 수집         | 국내 수집과 같은 작업에서 함께 |
 | 뉴스레터 발송         | 매일 07:30 / 18:30 (KST) |
 
 서버가 잠들어 있으면 내부 스케줄러도 멈추기 때문에 배포 환경에서는 외부 크론을 씁니다.
-`CRON_SECRET`을 설정하면 내부 스케줄러는 꺼지고 cron-job.org가 30분마다 `POST /internal/jobs/fetch-news`를 호출합니다.
+`CRON_SECRET`을 설정하면 내부 스케줄러는 꺼지고 외부에서 30분마다 `/internal/jobs/fetch-news`를 호출합니다.
+
+- GitHub Actions(`.github/workflows/newsdeliver.yml`)가 `/health`로 서버가 깨어날 때까지 기다린 뒤 예약 작업을 요청
+- 주 경로: cron-job.org가 30분마다 GitHub API로 이 워크플로를 실행 (잠든 서버를 바로 부르면 503이 나서)
+- 보조 경로: GitHub 예약 실행 (매시 7분 · 37분)
 
 Render 무료 서버는 깨어나는 데 50초쯤 걸려서 크론 요청(30초 제한)이 끊길 수 있습니다.
 그래서 요청 성공 여부와 상관없이 **서버가 깨어날 때마다 밀린 작업을 처리**합니다.
