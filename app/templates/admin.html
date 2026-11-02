@@ -341,6 +341,7 @@
                 flex-wrap: wrap;
                 flex: 1;
             }
+            .result-msg:empty { display: none; }
             .result-msg {
                 font-size: 13px;
                 font-weight: 600;
@@ -348,6 +349,34 @@
                 width: 100%;
                 padding-left: 4px;
             }
+
+            /* ── 뉴스 관리: 국내 / 해외 전환 ── */
+            .news-switch {
+                display: inline-flex;
+                background: var(--surface);
+                border-radius: 10px;
+                padding: 4px;
+                gap: 4px;
+                margin-bottom: 14px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+            }
+            .news-switch-btn {
+                padding: 8px 22px;
+                border: none;
+                border-radius: 7px;
+                background: none;
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 700;
+                font-family: inherit;
+                cursor: pointer;
+            }
+            .news-switch-btn.active { background: var(--dark); color: #fff; }
+            .news-panel { display: none; }
+            .news-panel.active { display: block; }
+            .news-panel td:nth-child(3) { white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+            .news-panel td .btn { padding: 6px 12px; font-size: 12px; }
+            .news-panel td:nth-child(2) { min-width: 240px; }  /* 모바일에서 제목이 한 글자씩 꺾이지 않게 */
 
             /* ── 필터 바 ── */
             .filter-bar {
@@ -824,21 +853,14 @@
                     <p id="fetch-result" class="result-msg"></p>
                 </div>
 
-                <div class="news-dual-panel" style="display: flex; gap: 24px; align-items: flex-start">
+                <!-- 국내 / 해외 전환 — 두 표를 나란히 두면 표가 좁아져 제목이 여러 줄로 꺾이고 관리 버튼이 잘려서 한 번에 하나씩 보여준다 -->
+                <div class="news-switch">
+                    <button class="news-switch-btn active" onclick="showNewsPanel('domesticPanel', this)">국내뉴스</button>
+                    <button class="news-switch-btn" onclick="showNewsPanel('globalPanel', this)">해외뉴스</button>
+                </div>
+                <div class="news-dual-panel">
                     <!-- 국내뉴스 -->
-                    <div style="flex: 1; min-width: 0">
-                        <div
-                            style="
-                                font-size: 14px;
-                                font-weight: 700;
-                                color: #d42b2b;
-                                margin-bottom: 10px;
-                                padding-bottom: 8px;
-                                border-bottom: 2px solid #d42b2b;
-                            "
-                        >
-                            국내뉴스
-                        </div>
+                    <div id="domesticPanel" class="news-panel active">
                         <div class="filter-bar" style="margin-bottom: 8px">
                             <input
                                 type="text"
@@ -869,19 +891,7 @@
                     </div>
 
                     <!-- 해외뉴스 -->
-                    <div style="flex: 1; min-width: 0">
-                        <div
-                            style="
-                                font-size: 14px;
-                                font-weight: 700;
-                                color: #1d4ed8;
-                                margin-bottom: 10px;
-                                padding-bottom: 8px;
-                                border-bottom: 2px solid #1d4ed8;
-                            "
-                        >
-                            해외뉴스
-                        </div>
+                    <div id="globalPanel" class="news-panel">
                         <div class="filter-bar" style="margin-bottom: 8px">
                             <input
                                 type="text"
@@ -1401,6 +1411,11 @@
 
             // ── 뉴스 관리 ──
             const _newsMap = {};
+            function showNewsPanel(id, btn) {
+                document.querySelectorAll('.news-panel').forEach((el) => el.classList.toggle('active', el.id === id));
+                document.querySelectorAll('.news-switch-btn').forEach((el) => el.classList.toggle('active', el === btn));
+            }
+
             function _buildNewsRow(n) {
                 const date = n.created_at ? n.created_at.substring(0, 10) : '';
                 const badge =
