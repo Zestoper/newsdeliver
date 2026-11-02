@@ -376,6 +376,22 @@
             .news-panel.active { display: block; }
             .news-panel td:nth-child(3) { white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
             .news-panel td .btn { padding: 6px 12px; font-size: 12px; }
+            .date-range { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+            .date-range input[type='date'] { width: 140px; }
+            .date-range span { color: var(--muted); }
+            .range-btn {
+                padding: 7px 11px;
+                border: 1.5px solid var(--border);
+                border-radius: 7px;
+                background: var(--surface);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 700;
+                font-family: inherit;
+                cursor: pointer;
+            }
+            .range-btn:hover { color: var(--text); border-color: var(--text); }
+            .filter-count { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
             .news-panel td:nth-child(2) { min-width: 240px; }  /* 모바일에서 제목이 한 글자씩 꺾이지 않게 */
 
             /* ── 필터 바 ── */
@@ -872,6 +888,16 @@
                             <select id="news-source-filter" onchange="filterNews()" style="width: 140px">
                                 <option value="">전체 언론사</option>
                             </select>
+                            <div class="date-range">
+                                <input type="date" id="news-date-from" onchange="filterNews()" aria-label="시작 날짜" />
+                                <span>~</span>
+                                <input type="date" id="news-date-to" onchange="filterNews()" aria-label="끝 날짜" />
+                                <button type="button" class="range-btn" onclick="setNewsRange('news', 0)">오늘</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('news', 7)">7일</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('news', 30)">30일</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('news', null)">전체</button>
+                            </div>
+                            <span class="filter-count" id="news-count"></span>
                         </div>
                         <div class="table-wrap">
                             <table id="newsTable">
@@ -903,6 +929,16 @@
                             <select id="global-news-source-filter" onchange="filterGlobalNews()" style="width: 140px">
                                 <option value="">전체 언론사</option>
                             </select>
+                            <div class="date-range">
+                                <input type="date" id="global-news-date-from" onchange="filterGlobalNews()" aria-label="시작 날짜" />
+                                <span>~</span>
+                                <input type="date" id="global-news-date-to" onchange="filterGlobalNews()" aria-label="끝 날짜" />
+                                <button type="button" class="range-btn" onclick="setNewsRange('global-news', 0)">오늘</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('global-news', 7)">7일</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('global-news', 30)">30일</button>
+                                <button type="button" class="range-btn" onclick="setNewsRange('global-news', null)">전체</button>
+                            </div>
+                            <span class="filter-count" id="global-news-count"></span>
                         </div>
                         <div class="table-wrap">
                             <table id="globalNewsTable">
@@ -1354,28 +1390,57 @@
             }
 
             // ── 뉴스 검색/필터 ──
-            function filterNews() {
-                const search = document.getElementById('news-search').value.toLowerCase();
-                const source = document.getElementById('news-source-filter').value;
-                document.querySelectorAll('#newsTable tbody tr').forEach((row) => {
+            // 제목 · 언론사 · 작성일(시작~끝) 조건을 함께 적용하고 남은 건수를 보여준다
+            function _filterNewsTable(prefix, tableId) {
+                const search = document.getElementById(`${prefix}-search`).value.toLowerCase();
+                const source = document.getElementById(`${prefix}-source-filter`).value;
+                const from = document.getElementById(`${prefix}-date-from`).value;  // YYYY-MM-DD 또는 ''
+                const to = document.getElementById(`${prefix}-date-to`).value;
+                let shown = 0;
+                const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+                rows.forEach((row) => {
                     const title = row.cells[1]?.textContent.toLowerCase() || '';
                     const rowSource = row.cells[2]?.textContent.trim() || '';
-                    const matchSearch = !search || title.includes(search);
-                    const matchSource = !source || rowSource === source;
-                    row.style.display = matchSearch && matchSource ? '' : 'none';
+                    const date = row.dataset.date || '';
+                    const ok =
+                        (!search || title.includes(search)) &&
+                        (!source || rowSource === source) &&
+                        (!from || date >= from) &&
+                        (!to || date <= to);
+                    row.style.display = ok ? '' : 'none';
+                    if (ok) shown++;
                 });
+                const count = document.getElementById(`${prefix}-count`);
+                if (count) count.textContent = `${shown.toLocaleString()} / ${rows.length.toLocaleString()}건`;
+            }
+
+            function _ymd(d) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+
+            // 빠른 기간 선택 — days=0 오늘 / 7 최근 7일 / null 전체
+            function setNewsRange(prefix, days) {
+                const fromEl = document.getElementById(`${prefix}-date-from`);
+                const toEl = document.getElementById(`${prefix}-date-to`);
+                if (days === null) {
+                    fromEl.value = '';
+                    toEl.value = '';
+                } else {
+                    const today = new Date();
+                    const start = new Date(today);
+                    start.setDate(today.getDate() - Math.max(days - 1, 0));
+                    fromEl.value = _ymd(start);
+                    toEl.value = _ymd(today);
+                }
+                prefix === 'news' ? filterNews() : filterGlobalNews();
+            }
+
+            function filterNews() {
+                _filterNewsTable('news', 'newsTable');
             }
 
             function filterGlobalNews() {
-                const search = document.getElementById('global-news-search').value.toLowerCase();
-                const source = document.getElementById('global-news-source-filter').value;
-                document.querySelectorAll('#globalNewsTable tbody tr').forEach((row) => {
-                    const title = row.cells[1]?.textContent.toLowerCase() || '';
-                    const rowSource = row.cells[2]?.textContent.trim() || '';
-                    const matchSearch = !search || title.includes(search);
-                    const matchSource = !source || rowSource === source;
-                    row.style.display = matchSearch && matchSource ? '' : 'none';
-                });
+                _filterNewsTable('global-news', 'globalNewsTable');
             }
 
             // ── 뉴스 글쓰기 ──
@@ -1422,7 +1487,7 @@
                     n.status === 'published'
                         ? `<span class="badge badge-published">발행</span>`
                         : `<span class="badge badge-draft">임시저장</span>`;
-                return `<tr>
+                return `<tr data-date="${date}">
       <td>${n.id}</td>
       <td>${n.title}</td>
       <td>${n.source || ''}</td>
@@ -1466,6 +1531,8 @@
 
                 _populateSourceFilter(document.getElementById('news-source-filter'), domestic);
                 _populateSourceFilter(document.getElementById('global-news-source-filter'), global);
+                filterNews();
+                filterGlobalNews();
             }
 
             async function toggleStatus(id, current) {
