@@ -2,6 +2,9 @@
 
 > 뉴스를 자동 수집·요약하고 구독자에게 이메일로 배달하는 풀스택 뉴스 플랫폼
 
+**서비스**: https://newsdeliver.vercel.app · **API**: https://newsdeliver.onrender.com
+> 백엔드는 Render 무료 플랜이라 처음 접속 시 서버가 깨어나는 데 최대 1분 정도 걸립니다.
+
 ---
 
 ## 📌 프로젝트 개요

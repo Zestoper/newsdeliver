@@ -5,3 +5,6 @@ __pycache__/
 *.db
 .venv/
 code/
+
+# 개인 면접 공부 노트 (로컬에만 보관)
+Study/
