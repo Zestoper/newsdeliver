@@ -1,9 +1,7 @@
-# 📰 NewsDeliver
-
-> 뉴스를 자동 수집·요약하고 구독자에게 이메일로 배달하는 풀스택 뉴스 플랫폼
+# NewsDeliver — 뉴스 자동 요약 · 이메일 배달 플랫폼
+뉴스를 자동으로 수집하고 AI로 요약해서 구독자에게 이메일로 배달하는 풀스택 뉴스 플랫폼입니다.
 
 ## 시연 영상
-
 https://github.com/user-attachments/assets/30222b8a-e575-48c4-9351-fed1285bf486
 
 **서비스**: https://newsdeliver.vercel.app
