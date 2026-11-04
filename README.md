@@ -2,6 +2,10 @@
 
 > 뉴스를 자동 수집·요약하고 구독자에게 이메일로 배달하는 풀스택 뉴스 플랫폼
 
+## 시연 영상
+
+https://github.com/user-attachments/assets/30222b8a-e575-48c4-9351-fed1285bf486
+
 **서비스**: https://newsdeliver.vercel.app
 > 백엔드는 Render 무료 플랜이라 처음 접속 시 서버가 깨어나는 데 최대 1분 정도 걸립니다.
 
