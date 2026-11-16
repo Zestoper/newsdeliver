@@ -21,18 +21,21 @@ class Settings(BaseSettings):
     TOSS_SECRET_KEY: str = ""
     SKIP_PAYMENT: bool = False
 
-    # 소셜 로그인
-    KAKAO_CLIENT_ID: str = ""
-    KAKAO_CLIENT_SECRET: str = ""
-    KAKAO_REDIRECT_URI: str = "http://localhost:8000/oauth/kakao/callback"
-
-    NAVER_OAUTH_CLIENT_ID: str = ""
-    NAVER_OAUTH_CLIENT_SECRET: str = ""
-    NAVER_OAUTH_REDIRECT_URI: str = "http://localhost:8000/oauth/naver/callback"
-
+    # 소셜 로그인 (구글 · 카카오 · 네이버) — app/routers/oauth.py
+    # 콜백 주소는 {BACKEND_URL}/oauth/{provider}/callback 로 서버가 직접 만든다.
+    BACKEND_URL: str = ""            # 이 서버 주소. 비우면 Render 주소 → SERVER_BASE_URL 순으로 잡는다
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/oauth/google/callback"
+    KAKAO_REST_API_KEY: str = ""
+    KAKAO_CLIENT_SECRET: str = ""    # 카카오 콘솔에서 Client Secret 을 '사용'으로 켰을 때만
+    NAVER_OAUTH_CLIENT_ID: str = ""
+    NAVER_OAUTH_CLIENT_SECRET: str = ""
+    # 아래 4개는 예전 소셜 로그인 설정 — 이제 쓰지 않는다. .env 에 남아 있어도 서버가 뜨도록 자리만 둔다.
+    # KAKAO_CLIENT_ID 는 KAKAO_REST_API_KEY 가 비었을 때만 대신 쓴다.
+    KAKAO_CLIENT_ID: str = ""
+    KAKAO_REDIRECT_URI: str = ""
+    NAVER_OAUTH_REDIRECT_URI: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
 
     SERVER_BASE_URL: str = "http://127.0.0.1:8000"
 
