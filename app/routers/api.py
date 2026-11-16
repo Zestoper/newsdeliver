@@ -78,11 +78,8 @@ class SignupBody(BaseModel):
 
 @router.get("/auth/providers")
 def auth_providers():
-    return {
-        "kakao": bool(settings.KAKAO_CLIENT_ID),
-        "naver": bool(settings.NAVER_OAUTH_CLIENT_ID),
-        "google": bool(settings.GOOGLE_CLIENT_ID),
-    }
+    from app.routers.oauth import enabled_providers
+    return enabled_providers()
 
 
 @router.post("/auth/login")

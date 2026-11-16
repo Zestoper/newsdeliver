@@ -139,18 +139,16 @@ async def admin_page(request: Request):
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, message: str | None = None, social_error: str | None = None) -> HTMLResponse:
-    social_msg = None
-    if social_error:
-        labels = {"kakao": "카카오", "naver": "네이버", "google": "구글"}
-        label = labels.get(social_error, "소셜")
-        social_msg = f"{label} 로그인에 실패했습니다. 앱 키 설정을 확인해주세요."
+async def login_page(request: Request, message: str | None = None, oauth_error: str | None = None) -> HTMLResponse:
+    # 소셜 로그인이 실패하면 app/routers/oauth.py 가 /login?oauth_error=안내문구 로 돌려보낸다
+    from app.routers.oauth import enabled_providers
+    providers = enabled_providers()
     return render(request, "login.html",
-                  message=social_msg or message,
-                  message_type="error" if social_error else "success",
-                  has_kakao=bool(settings.KAKAO_CLIENT_ID),
-                  has_naver=bool(settings.NAVER_OAUTH_CLIENT_ID),
-                  has_google=bool(settings.GOOGLE_CLIENT_ID))
+                  message=oauth_error or message,
+                  message_type="error" if oauth_error else "success",
+                  has_kakao=providers["kakao"],
+                  has_naver=providers["naver"],
+                  has_google=providers["google"])
 
 
 @router.post("/login", response_class=HTMLResponse)
