@@ -55,6 +55,7 @@ https://github.com/user-attachments/assets/30222b8a-e575-48c4-9351-fed1285bf486
 
 - 일반 회원가입 / 로그인 (이메일 인증 포함)
 - **OAuth 소셜 로그인** 지원: 카카오 / 네이버 / 구글 (`oauth_provider` / `oauth_id`)
+  - 인증된 같은 이메일의 기존 계정은 자동 연결 · 키를 넣은 로그인 버튼만 화면에 표시 (`/api/v1/auth/providers`)
 - React 화면은 서명된 Bearer 토큰으로 인증하고 관리자·언론사 페이지(서버 렌더링)는 로그인 쿠키를 그대로 사용
 
 ### 5. 언론사 회원 시스템
@@ -183,20 +184,22 @@ SMTP_PASSWORD=your_smtp_password
 BREVO_API_KEY=your_brevo_api_key
 # MAIL_FROM=보내는 주소(없으면 SMTP_USER 사용, Brevo에서 인증된 주소여야 함)
 
-# 소셜 로그인 — 카카오
-KAKAO_CLIENT_ID=your_kakao_client_id
-KAKAO_CLIENT_SECRET=your_kakao_client_secret
-KAKAO_REDIRECT_URI=http://localhost:8000/oauth/kakao/callback
+# 소셜 로그인 (선택 — 비워두면 해당 버튼만 숨김)
+#   콜백 주소는 {BACKEND_URL}/oauth/{kakao|naver|google}/callback 로 서버가 만든다
+#   → 각 콘솔의 Redirect URI 에 이 주소를 등록
+BACKEND_URL=http://localhost:8000
 
-# 소셜 로그인 — 네이버 OAuth
+# 카카오
+KAKAO_REST_API_KEY=your_kakao_rest_api_key
+KAKAO_CLIENT_SECRET=                 # 카카오 콘솔에서 Client Secret 을 켰을 때만
+
+# 네이버 OAuth (뉴스 수집용 NAVER_CLIENT_ID 와 별개)
 NAVER_OAUTH_CLIENT_ID=your_naver_oauth_client_id
 NAVER_OAUTH_CLIENT_SECRET=your_naver_oauth_client_secret
-NAVER_OAUTH_REDIRECT_URI=http://localhost:8000/oauth/naver/callback
 
-# 소셜 로그인 — 구글
+# 구글
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:8000/oauth/google/callback
 
 # AI 요약 (Groq API)
 GROQ_API_KEY=your_groq_api_key
@@ -235,6 +238,9 @@ npm run dev   # http://localhost:5173
 | ------ | -------------------------- | ------------------------------------------------ |
 | POST   | `/signup`                  | 회원가입                                         |
 | POST   | `/login`                   | 로그인                                           |
+| GET    | `/oauth/{provider}/login`  | 소셜 로그인 시작 (`kakao` · `naver` · `google`)  |
+| GET    | `/oauth/{provider}/callback` | 소셜 로그인 콜백 → 토큰 발급 후 프론트로 이동  |
+| GET    | `/api/v1/auth/providers`   | 사용 가능한 소셜 로그인 목록                     |
 | GET    | `/api/news`                | 뉴스 목록 조회                                   |
 | GET    | `/api/news/{id}`           | 뉴스 상세 조회                                   |
 | POST   | `/api/news/{id}/bookmark`  | 북마크 토글                                      |
